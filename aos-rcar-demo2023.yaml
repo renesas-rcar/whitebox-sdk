@@ -120,6 +120,14 @@ common_data:
     - [INITRAMFS_IMAGE_BUNDLE, "0"]
     - [INITRAMFS_FSTYPES, "cpio.gz"]
 
+  gen3_conf: &GEN3_CONF
+    - [DOM0_MAC, "08:00:27:ff:cb:cb"]
+    - [DOM0_IP, "192.168.0.8"]
+
+  gen4_conf: &GEN4_CONF
+    - [DOM0_MAC, "08:00:27:ff:cf:cb"]
+    - [DOM0_IP, "192.168.1.8"]
+
 components:
   gen4-dom0:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -133,6 +141,7 @@ components:
       conf:
         - *COMMON_CONF
         - *DOM0_CONF
+        - *GEN4_CONF
         - [MACHINE, "%{GENERIC_MACHINE}"]
         - [XT_DOM_NAME, "dom0"]
         - [XT_DOMD_CONFIG_NAME, "%{GEN4_XT_DOMD_CONFIG_NAME}"]
@@ -181,6 +190,7 @@ components:
       conf:
         - *COMMON_CONF
         - *DOMX_CONF
+        - *GEN4_CONF
         - [MACHINE, "%{GEN4_MACHINE}"]
         - [SOC_FAMILY, "%{GEN4_SOC_FAMILY}"]
         - [XT_DOM_NAME, "domd"]
@@ -232,6 +242,7 @@ components:
       conf:
         - *COMMON_CONF
         - *DOM0_CONF
+        - *GEN3_CONF
         - [MACHINE, "%{GENERIC_MACHINE}"]
         - [XT_DOM_NAME, "dom0"]
         - [XT_DOMD_CONFIG_NAME, "%{GEN3_XT_DOMD_CONFIG_NAME}"]
@@ -280,6 +291,7 @@ components:
       conf:
         - *COMMON_CONF
         - *DOMX_CONF
+        - *GEN3_CONF
         - [MACHINE, "%{GEN3_MACHINE}"]
         - [SOC_FAMILY, "%{GEN3_SOC_FAMILY}"]
         - [XT_DOM_NAME, "domd"]

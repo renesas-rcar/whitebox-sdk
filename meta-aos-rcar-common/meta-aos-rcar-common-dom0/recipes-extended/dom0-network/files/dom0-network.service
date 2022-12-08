@@ -1,0 +1,13 @@
+[Unit]
+Description=Dom0 networking
+Requires=domd.service
+After=domd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/xl network-attach Domain-0 backend=DomD mac=%{DOM0_MAC}
+ExecStop=/usr/sbin/xl network-detach Domain-0 %{DOM0_MAC}
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
