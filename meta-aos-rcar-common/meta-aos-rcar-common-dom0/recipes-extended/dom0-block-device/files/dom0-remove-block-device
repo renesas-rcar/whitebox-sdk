@@ -1,0 +1,4 @@
+#!/bin/sh
+rm /var/log/journal/
+umount /var/aos
+/usr/sbin/xl block-detach -f Domain-0 xvda1

@@ -1,0 +1,52 @@
+#!/bin/bash -e
+
+get_device() {
+	# detect boot storage device
+	BOOT_STORAGE=$(tr -d '\0' </proc/device-tree/boot_dev/device)
+
+	if [ -z "$1" ]; then
+		echo "mmcblk0p9"
+		exit 0
+	fi
+
+	if [ -z "$BOOT_STORAGE" ]; then
+		echo "mmcblk0p${1}"
+		exit 0
+	fi
+
+	# Special case for NFS - we want to quite different cmd line
+	if [ $BOOT_STORAGE = nfs ]; then
+		echo "mmcblk0p${1}"
+		exit 0
+	fi
+
+	# guess partition prefix, e.g. "" for sda2 or "p" for mmcblk1p2
+	PART_PREFIX=""
+
+	if echo "${BOOT_STORAGE}" | grep -q 'mmc'; then
+		PART_PREFIX="p"
+	fi
+
+	echo "${BOOT_STORAGE}${PART_PREFIX}${1}"
+}
+
+wait_file() {
+	local file="$1"
+	local wait_seconds="${2:-10}" # 10 seconds as default timeout
+
+	test $wait_seconds -lt 1 && echo 'At least 1 second is required' && return 1
+
+	until test $((wait_seconds--)) -eq 0 -o -e "$file" ; do sleep 1; done
+
+	test $wait_seconds -ge 0 # equivalent: let ++wait_seconds
+}
+
+device=$(get_device 9)
+
+/usr/sbin/xl block-attach Domain-0 backend=DomD,/dev/${device},raw,xvda1,rw
+wait_file /dev/xvda1
+mkdir -p /var/aos
+mount /dev/xvda1 /var/aos/
+mkdir -p /var/aos/log/journal
+rm -rf /var/log/journal
+ln -sf /var/aos/log/journal /var/log/journal

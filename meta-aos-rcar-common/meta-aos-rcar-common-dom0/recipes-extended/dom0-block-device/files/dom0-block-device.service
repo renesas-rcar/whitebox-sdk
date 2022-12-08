@@ -1,0 +1,13 @@
+[Unit]
+Description=Dom0 block device
+Requires=domd.service
+After=domd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/xen/bin/dom0-add-block-device
+ExecStop=/usr/lib/xen/bin/dom0-remove-block-device
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
