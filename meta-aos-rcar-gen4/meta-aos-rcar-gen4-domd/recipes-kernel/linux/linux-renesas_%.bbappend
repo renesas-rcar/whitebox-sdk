@@ -22,6 +22,7 @@ SRC_URI_append = " \
     file://0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch \
     file://0003-HACK-Allow-DomD-enumerate-PCI-devices.patch \
     file://0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch \
+    file://0001-xen-blkback-update-persistent-grants-enablement-logi.patch \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"

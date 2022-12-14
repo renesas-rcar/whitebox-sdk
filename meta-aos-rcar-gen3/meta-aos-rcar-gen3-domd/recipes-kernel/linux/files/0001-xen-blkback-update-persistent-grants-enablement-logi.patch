@@ -1,0 +1,60 @@
+From 588ac802275a301727c75414431189570139d9eb Mon Sep 17 00:00:00 2001
+Message-Id: <588ac802275a301727c75414431189570139d9eb.1670928990.git.oleksii_moisieiev@epam.com>
+From: Andrii Chepurnyi <andrii_chepurnyi@epam.com>
+Date: Tue, 14 Jun 2022 11:16:26 +0200
+Subject: [PATCH] xen-blkback: update persistent grants enablement logic
+
+The original logic has two problems:
+
+1.  Grants enablement logic race condition.
+Grants enablement logic split amend two functions,
+which could provide different behavior depending on
+call flow. Consider a situation where backend
+feature_persistent = true, front driver feature_persistent = false.
+If xen_vbd_create executed prior to connect_ring:
+vbd->feature_gnt_persistent will be initialized
+with true, and further in connect_ring backed will read
+feature_persistent = false for front and disabled persistent
+grant. If the connect_ring executed prior to xen_vbd_create:
+vbd->feature_gnt_persistent will be 0 in connect_ring,
+so backend will not check front feature, in xen_vbd_create
+vbd->feature_gnt_persistent will be initilized to true
+and persistent grant feature will be enabled.
+
+2. There is no logic that after the front driver reconnects,
+the persistent grant feature support may be different.
+
+This patch solves both problems: all persistent grant enablement
+logic placed in one place and the front driver state will be
+rechecked every reconnect if the feature is true.
+
+Signed-off-by: Andrii Chepurnyi <andrii_chepurnyi@epam.com>
+---
+ drivers/block/xen-blkback/xenbus.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 76912c584a76..beb3940f182a 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -522,8 +522,6 @@ static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+ 	if (q && blk_queue_secure_erase(q))
+ 		vbd->discard_secure = true;
+ 
+-	vbd->feature_gnt_persistent = feature_persistent;
+-
+ 	pr_debug("Successful creation of handle=%04x (dom=%u)\n",
+ 		handle, blkif->domid);
+ 	return 0;
+@@ -1098,7 +1096,7 @@ static int connect_ring(struct backend_info *be)
+ 		xenbus_dev_fatal(dev, err, "unknown fe protocol %s", protocol);
+ 		return -ENOSYS;
+ 	}
+-	if (blkif->vbd.feature_gnt_persistent)
++	if (feature_persistent)
+ 		blkif->vbd.feature_gnt_persistent =
+ 			xenbus_read_unsigned(dev->otherend,
+ 					"feature-persistent", 0);
+-- 
+2.25.1
+
