@@ -1,4 +1,4 @@
-From 7933e99643e394fe597c788404b527916add74be Mon Sep 17 00:00:00 2001
+From 40108a0fff1dd48037c62605f0e40c4f7a3716c3 Mon Sep 17 00:00:00 2001
 From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
 Date: Tue, 19 Oct 2021 13:59:39 +0300
 Subject: [PATCH] clk:shmobile: Hide clock for scif3 and hscif0
@@ -8,35 +8,34 @@ not let the kernel to manage it.
 
 Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
 Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
-
 ---
  drivers/clk/renesas/r8a779f0-cpg-mssr.c | 4 ++++
  1 file changed, 4 insertions(+)
 
 diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
-index d34a39c3f7f7..084cd5ee4e47 100644
+index 337fc678bd2e..1cc62bc5effe 100644
 --- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
 +++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
-@@ -120,7 +120,9 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+@@ -121,7 +121,9 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
  };
  
  static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
 +#ifndef CONFIG_XEN
- 	DEF_MOD("hscif0",	514,	R8A779F0_CLK_S0D3),
+ 	DEF_MOD("hscif0",	514,	R8A779F0_CLK_SASYNCPERD2),
 +#endif
- 	DEF_MOD("hscif1",	515,	R8A779F0_CLK_S0D3),
- 	DEF_MOD("hscif2",	516,	R8A779F0_CLK_S0D3),
- 	DEF_MOD("hscif3",	517,	R8A779F0_CLK_S0D3),
+ 	DEF_MOD("hscif1",	515,	R8A779F0_CLK_SASYNCPERD2),
+ 	DEF_MOD("hscif2",	516,	R8A779F0_CLK_SASYNCPERD2),
+ 	DEF_MOD("hscif3",	517,	R8A779F0_CLK_SASYNCPERD2),
 @@ -143,7 +145,9 @@ static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
  	DEF_MOD("rtdm3",	701,	R8A779F0_CLK_S0D2),
- 	DEF_MOD("scif0",	702,	R8A779F0_CLK_S0D12_PER),
- 	DEF_MOD("scif1",	703,	R8A779F0_CLK_S0D12_PER),
+ 	DEF_MOD("scif0",	702,	R8A779F0_CLK_SASYNCPERD4),
+ 	DEF_MOD("scif1",	703,	R8A779F0_CLK_SASYNCPERD4),
 +#ifndef CONFIG_XEN
- 	DEF_MOD("scif3",	704,	R8A779F0_CLK_S0D12_PER),
+ 	DEF_MOD("scif3",	704,	R8A779F0_CLK_SASYNCPERD4),
 +#endif
- 	DEF_MOD("scif4",	705,	R8A779F0_CLK_S0D12_PER),
+ 	DEF_MOD("scif4",	705,	R8A779F0_CLK_SASYNCPERD4),
  	DEF_MOD("sdhi0",	706,	R8A779F0_CLK_SD0),
  	DEF_MOD("sydm1",	709,	R8A779F0_CLK_S0D3),
 -- 
-2.17.1
+2.38.1
 

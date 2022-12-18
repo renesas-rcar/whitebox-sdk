@@ -1,0 +1,51 @@
+From 3dbcf296508c906739b44a24ce1cf4ec9189ce44 Mon Sep 17 00:00:00 2001
+From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+Date: Tue, 13 Dec 2022 01:54:57 +0200
+Subject: [PATCH 3/3] [HACK] s4: perform direct reset
+
+This is the temporary patch. It calls reset controller directly to
+reset the board.
+
+This patch should be removed when Renesas implements proper SCP.
+
+Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+---
+ plat/renesas/rcar_gen4/plat_pm_scmi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/plat/renesas/rcar_gen4/plat_pm_scmi.c b/plat/renesas/rcar_gen4/plat_pm_scmi.c
+index 53aebe729..4fd934b00 100644
+--- a/plat/renesas/rcar_gen4/plat_pm_scmi.c
++++ b/plat/renesas/rcar_gen4/plat_pm_scmi.c
+@@ -19,6 +19,10 @@
+ #include "rcar_private.h"
+ #include "scmi_private.h"
+ 
++#define RST_BASE        0xE6160000
++#define RST_SRESCR0     (RST_BASE + 0x18)
++#define RST_SPRES       0x5AA58000
++
+ /*
+  * This file implements the SCP helper functions using SCMI protocol.
+  */
+@@ -66,6 +70,7 @@ void rcar_scmi_sys_shutdown(void)
+  */
+ void rcar_scmi_sys_reboot(void)
+ {
++#if (SET_SCMI_PARAM == 1)
+ 	int ret;
+ 
+ 	ret = scmi_sys_pwr_state_set(scmi_handle,
+@@ -75,6 +80,9 @@ void rcar_scmi_sys_reboot(void)
+ 				ret);
+ 		panic();
+ 	}
++#else
++	mmio_write_32(RST_SRESCR0, RST_SPRES);
++#endif
+ }
+ 
+ /*
+-- 
+2.38.1
+
