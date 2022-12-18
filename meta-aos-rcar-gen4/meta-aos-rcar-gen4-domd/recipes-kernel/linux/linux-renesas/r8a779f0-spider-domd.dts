@@ -1,0 +1,124 @@
+#include "r8a779f0-spider.dts"
+
+/*
+ * The device tree compiler (DTC) is allocating the phandle from 1 to
+ * onwards. Reserve a high value for the GIC phandle.
+ */
+#define PHANDLE_GIC (65000)
+#define PHANDLE_ITS (64999)
+
+/ {
+	soc {
+		/* This must point to Xen interrupt-parent. */
+		interrupt-parent = <PHANDLE_GIC>;
+	};
+
+	passthrough {
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		rswitch_linkfix: rswitch_linkfix_mem@44000000 {
+			compatible = "renesas,rswitch-linkfix";
+			reg = <0x0 0x44000000 0x0 0x1000>;
+		};
+	};
+	/*
+	 * When creating DT for the guest domain Xen inserts only dummy CPU nodes.
+	 * And the number of these inserted CPU nodes is equal to the number of
+	 * vCPUs assigned to this domain. All CPU properties which original DT has,
+	 * such as OPP, clock, regulator, etc are not passed to the guest’s DT.
+	 *
+	 * Example of guest vCPU node:
+	 *
+	 * cpu@0 {
+	 *     device_type = "cpu";
+	 *     compatible = "arm,armv8";
+	 *     enable-method = "psci";
+	 *     reg = <0x0>;
+	 * };
+	 *
+	 * This results in the fact that all features expecting a57_x or a53_x
+	 * CPU nodes to be present get broken. This is why we have to explicitly
+	 * remove the following.
+	 */
+};
+
+/* Xen will provide its own GIC, mask ours */
+&gic {
+	compatible = "";
+	status = "disabled";
+};
+
+/* Xen will provide vITS with phandle == PHANDLE_ITS. */
+/delete-node/&gic_its;
+
+&pciec0 {
+	msi-map = <0x0 PHANDLE_ITS 0x0 0x1000>;
+};
+
+&pciec1 {
+	msi-map = <0x0 PHANDLE_ITS 0x0 0x1000>;
+};
+
+/* Xen serial consoles */
+&scif3	{
+	status = "disabled";
+};
+
+&hscif0	{
+	status = "disabled";
+};
+
+&rswitch {
+	/delete-property/iommus;
+	memory-region = <&rswitch_linkfix>;
+};
+
+&dmac0 {
+	/delete-property/iommus;
+};
+
+&dmac1 {
+	/delete-property/iommus;
+};
+
+&rt_dmac0  {
+	/delete-property/iommus;
+};
+
+&rt_dmac1  {
+	/delete-property/iommus;
+};
+
+&rt_dmac2  {
+	/delete-property/iommus;
+};
+
+&rt_dmac3  {
+	/delete-property/iommus;
+};
+
+&ipmmu_mm {
+	status = "disabled";
+};
+
+&ipmmu_rt0 {
+	status = "disabled";
+};
+
+&ipmmu_rt1 {
+	status = "disabled";
+};
+
+
+&ipmmu_ds0{
+	status = "disabled";
+};
+
+&ipmmu_hc {
+	status = "disabled";
+};

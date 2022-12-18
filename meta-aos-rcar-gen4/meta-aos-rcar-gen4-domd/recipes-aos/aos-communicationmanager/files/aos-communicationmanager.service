@@ -1,0 +1,18 @@
+[Unit]
+Description=AOS Communication Manager
+Wants=network-online.target aos-iamanager.service aos-servicemanager.service var-aos-downloads.mount
+After=network-online.target aos-iamanager.service aos-servicemanager.service var-aos-downloads.mount
+Requires=var-aos-workdirs.mount
+After=var-aos-workdirs.mount
+ConditionPathExists=!/var/.unprovisioned
+PartOf=aos.target
+
+[Service]
+Environment="CKTEEC_LOGIN_TYPE=user"
+Type=notify
+ExecStart=/usr/bin/aos_communicationmanager -c /etc/aos/aos_communicationmanager.cfg -v debug -j
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

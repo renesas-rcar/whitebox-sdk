@@ -1,0 +1,19 @@
+[Unit]
+Description=AOS Service Manager
+Wants=network-online.target dbus.service aos-iamanager.service var-aos-downloads.mount
+After=network-online.target dbus.service aos-iamanager.service var-aos-downloads.mount
+Requires=var-aos-workdirs.mount var-aos-storages.mount var-aos-states.mount
+After=var-aos-workdirs.mount var-aos-storages.mount var-aos-states.mount
+ConditionPathExists=!/var/.unprovisioned
+PartOf=aos.target
+
+[Service]
+Environment="CKTEEC_LOGIN_TYPE=user"
+Type=notify
+ExecStart=/usr/bin/aos_servicemanager -c /etc/aos/aos_servicemanager.cfg -v debug -j
+ExecStop=/bin/sh -c "/bin/kill -s TERM $MAINPID; while [ -d /proc/$MAINPID ]; do sleep 1; done"
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

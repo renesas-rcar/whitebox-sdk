@@ -1,0 +1,44 @@
+From 59a92aa9a50ace79cd2c00ef418aac0414f34104 Mon Sep 17 00:00:00 2001
+From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+Date: Thu, 11 Nov 2021 23:44:09 +0200
+Subject: [PATCH 2/2] [HACK] s4: Configure IPMMU registers
+
+Enable second stage translation in IPMMU.
+
+Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+---
+ plat/renesas/rcar_gen4/bl31_plat_setup.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/plat/renesas/rcar_gen4/bl31_plat_setup.c b/plat/renesas/rcar_gen4/bl31_plat_setup.c
+index 3eb62cf2d..c9246b54f 100644
+--- a/plat/renesas/rcar_gen4/bl31_plat_setup.c
++++ b/plat/renesas/rcar_gen4/bl31_plat_setup.c
+@@ -95,6 +95,16 @@ void bl31_plat_arch_setup(void)
+ 	    );
+ }
+ 
++static void rcar_ipmmu_setup(void)
++{
++	mmio_write_32(0xeefc0000 + 0x1504, 0x01000000);
++	mmio_write_32(0xeefc0000 + 0x1500, 0xC0000000);
++	mmio_write_32(0xee480000 + 0x1500, 0xC0000000);
++	mmio_write_32(0xeed00000 + 0x1500, 0xC0000000);
++	mmio_write_32(0xeed40000 + 0x1500, 0xC0000000);
++	mmio_write_32(0xee4c0000 + 0x1500, 0xC0000000);
++}
++
+ void bl31_platform_setup(void)
+ {
+ 	plat_rcar_gic_driver_init();
+@@ -111,6 +121,7 @@ void bl31_platform_setup(void)
+ 			CNTCR_FCREQ((uint32_t)(0)) | CNTCR_EN);
+ 
+ 	rcar_pwrc_setup();
++	rcar_ipmmu_setup();
+ 
+ 	/*
+ 	 * mask should match the kernel's MPIDR_HWID_BITMASK so the core can be
+-- 
+2.17.1
+

@@ -1,0 +1,29 @@
+/*
+ * Device Tree default chosen node for systems running XEN hypervisor
+ *
+ * Copyright (C) 2021 EPAM Systems.
+ *
+ * This file is licensed under the terms of the GNU General Public License
+ * version 2.  This program is licensed "as is" without any warranty of any
+ * kind, whether express or implied.
+ */
+
+
+/ {
+	chosen {
+                bootargs = "dom0_mem=256M console=dtuart dtuart=/soc/serial@e6540000 dom0_max_vcpus=2 loglvl=all xsm=flask flask=permissive bootscrub=0 pci-passthrough=on";
+		xen,dom0-bootargs = "root=/dev/ram0 console=hvc0 ignore_loglevel";
+		modules {
+			#address-cells = <2>;
+			#size-cells = <2>;
+			module@1 {
+				compatible = "xen,linux-zimage", "xen,multiboot-module";
+				reg = <0x0 0x7a000000 0x0 0x2000000>;
+			};
+			module@2 {
+				compatible = "xen,xsm-policy", "xen,multiboot-module";
+				reg = <0x0 0x7c000000 0x0 0x10000>;
+			};
+		};
+	};
+};

@@ -1,0 +1,37 @@
+From 00e7c26db822ee66e69d26758470e07f627e858d Mon Sep 17 00:00:00 2001
+From: Harm Berntsen <harm.berntsen@nedap.com>
+Date: Fri, 27 Nov 2020 21:45:56 +0000
+Subject: [PATCH] net: tftp: Fix incorrect tftp_next_ack on no OACK
+
+When the tftp server did not send any OACK, the tftp_next_ack variable
+was not set to the correct value . As the server was transmitting
+blocks we generated a lot of 'Received unexpected block: $n, expected
+$n+1' error messages. Depending on the timeout setting the transfer
+could still complete though.
+
+Signed-off-by: Harm Berntsen <harm.berntsen@nedap.com>
+CC: Ramon Fried <rfried.dev@gmail.com>
+Reviewed-By: Ramon Fried <rfried.dev@gmail.com>
+---
+ net/tftp.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/net/tftp.c b/net/tftp.c
+index 84e970bec1..505aa9e357 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -621,8 +621,10 @@ static void tftp_handler(uchar *pkt, unsigned dest, struct in_addr sip,
+ 		tftp_cur_block++;
+ 		tftp_cur_block %= TFTP_SEQUENCE_SIZE;
+ 
+-		if (tftp_state == STATE_SEND_RRQ)
++		if (tftp_state == STATE_SEND_RRQ) {
+ 			debug("Server did not acknowledge any options!\n");
++			tftp_next_ack = tftp_windowsize;
++		}
+ 
+ 		if (tftp_state == STATE_SEND_RRQ || tftp_state == STATE_OACK ||
+ 		    tftp_state == STATE_RECV_WRQ) {
+-- 
+2.33.0
+

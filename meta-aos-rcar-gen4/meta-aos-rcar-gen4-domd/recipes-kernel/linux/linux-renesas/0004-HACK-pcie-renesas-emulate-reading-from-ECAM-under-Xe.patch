@@ -1,0 +1,68 @@
+From 88462ad413f47dbe66b8c45c0edfe8e206330f61 Mon Sep 17 00:00:00 2001
+From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+Date: Wed, 25 May 2022 20:18:06 +0300
+Subject: [PATCH 4/4] [HACK] pcie: renesas; emulate reading from ECAM under Xen
+
+If kernel is running as Xen guest, hypervisor will emulate ECAM
+spaces for us. Thus, we need to replace child_ops with ops
+that access ECAM address space.
+
+Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+---
+ drivers/pci/controller/dwc/pcie-renesas.c | 27 +++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+index dda55696627f..d3f7d87e0c26 100644
+--- a/drivers/pci/controller/dwc/pcie-renesas.c
++++ b/drivers/pci/controller/dwc/pcie-renesas.c
+@@ -21,6 +21,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/reset.h>
++#include <xen/xen.h>
+ 
+ #include "../../pci.h"
+ #include "pcie-designware.h"
+@@ -151,12 +152,38 @@ static const struct dw_pcie_ops dw_pcie_ops = {
+ 	.link_up = renesas_pcie_link_up,
+ };
+ 
++void __iomem *renesas_xen_map_bus(struct pci_bus *bus, unsigned int devfn,
++			       int where)
++{
++	struct pcie_port *pp = bus->sysdata;
++	const int bus_shift = 20;
++	unsigned int devfn_shift = bus_shift - 8;
++	unsigned int busn = bus->number;
++	void __iomem *base;
++
++	busn -= 1;
++
++	base = pp->va_cfg0_base + (busn << bus_shift);
++	return base + (devfn << devfn_shift) + where;
++}
++
++
++static struct pci_ops renesas_xen_child_ops = {
++	.map_bus = renesas_xen_map_bus,
++	.read = pci_generic_config_read,
++	.write = pci_generic_config_write,
++};
++
+ static int renesas_pcie_host_init(struct pcie_port *pp)
+ {
+ 	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+ 	u32 val;
+ 	int ret;
+ 
++	/* Xen will emulate ECAM address space for us */
++	if (xen_domain())
++		pp->bridge->child_ops = &renesas_xen_child_ops;
++
+ 	dw_pcie_setup_rc(pp);
+ 
+ 	dw_pcie_dbi_ro_wr_en(pci);
+-- 
+2.36.1
+

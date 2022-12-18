@@ -1,0 +1,5 @@
+[Match]
+Name=tsn1
+
+[Network]
+DHCP=yes

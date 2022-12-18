@@ -1,0 +1,8 @@
+[Match]
+Name=tsn0
+
+[Network]
+DHCP=yes
+
+[DHCP]
+CriticalConnection=true

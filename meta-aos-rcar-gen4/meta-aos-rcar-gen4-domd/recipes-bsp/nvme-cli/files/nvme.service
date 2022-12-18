@@ -1,0 +1,11 @@
+[Unit]
+Description=nvme service
+ConditionFileNotEmpty=!/etc/nvme/hostnqn
+
+[Service]
+Type=oneshot
+ExecStart=sh -c "nvme gen-hostnqn > /etc/nvme/hostnqn"
+ExecStart=sh -c "uuidgen > /etc/nvme/hostid"
+
+[Install]
+WantedBy=multi-user.target

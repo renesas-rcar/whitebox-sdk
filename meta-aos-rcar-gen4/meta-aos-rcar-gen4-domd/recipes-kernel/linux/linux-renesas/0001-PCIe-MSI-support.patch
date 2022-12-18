@@ -1,0 +1,241 @@
+From 06941ebb2ecaefebb858940d7681afc45ddf2460 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Wed, 19 Jan 2022 08:54:46 +0200
+Subject: [PATCH] PCIe/MSI support
+
+ITS part is left untouched as ITS is handled by Xen.
+
+Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ .../boot/dts/renesas/r8a779f0-spider.dts      |  2 +-
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi     | 21 +++++++++++++----
+ arch/arm64/configs/defconfig                  |  1 +
+ drivers/misc/pci_endpoint_test.c              |  6 +++++
+ .../pci/controller/dwc/pcie-designware-host.c | 12 +++++++++-
+ drivers/pci/controller/dwc/pcie-renesas.c     | 23 +++++++++++++++++++
+ 6 files changed, 58 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+index 04909efdfb75..064cc13d517a 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+@@ -138,7 +138,7 @@ &pcie_bus_clk {
+ 
+ &pciec0 {
+ 	status = "okay";
+-	pinctrl-0 = <&pcie0_pins>;
++	pinctrl-0 = <&pcie0_pins>, <&pcie1_pins>;
+ 	pinctrl-names = "default";
+ };
+ 
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index 4583fb1d87e2..1a3d5dc63540 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -853,12 +853,21 @@ mmc0: mmc@ee140000 {
+ 		gic: interrupt-controller@f1000000 {
+ 			compatible = "arm,gic-v3";
+ 			#interrupt-cells = <3>;
+-			#address-cells = <0>;
++			#address-cells = <2>;
++			#size-cells = <2>;
++			ranges;
+ 			interrupt-controller;
+ 			reg = <0x0 0xf1000000 0 0x20000>,
+ 			      <0x0 0xf1060000 0 0x110000>;
+ 			interrupts = <GIC_PPI 9
+ 				      (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_HIGH)>;
++
++			gic_its: msi-controller@f1040000 {
++				compatible = "arm,gic-v3-its";
++				msi-controller;
++				#msi-cells = <1>;
++				reg = <0x0 0xf1040000 0 0x20000>;
++			};
+ 		};
+ 
+ 		prr: chipid@fff00044 {
+@@ -1062,7 +1071,7 @@ pciec0: pcie@e65d0000 {
+ 			      <0 0xe65d5000 0 0x1200>,
+ 			      <0 0xe65d6200 0 0x0e00>,
+ 			      <0 0xe65d7000 0 0x1000>,
+-			      <0 0xfe000000 0 0x10000>;
++			      <0 0xfe000000 0 0x400000>;
+ 			reg-names = "dbi",
+ 				    "atu",
+ 				    "dma",
+@@ -1074,7 +1083,7 @@ pciec0: pcie@e65d0000 {
+ 			bus-range = <0x00 0xff>;
+ 			device_type = "pci";
+ 				 /* downstream IO */
+-			ranges =  <0x81000000 0 0x00000000 0 0xfe000000 0 0x00010000
++			ranges =  <0x81000000 0 0x00000000 0 0xfe000000 0 0x00400000
+ 				 /* non-prefetchable memory */
+ 				  0x82000000 0 0x30000000 0 0x30000000 0 0x10000000>;
+ 				     /* Map all possible DDR as inbound ranges */
+@@ -1089,6 +1098,7 @@ pciec0: pcie@e65d0000 {
+ 			interrupt-names = "msi", "dma", "err", "fatal",
+ 					  "nonfatal", "lp", "vndmsg";
+ 			#interrupt-cells = <1>;
++			msi-map = <0x0 &gic_its 0x0 0x1000>;
+ 			interrupt-map-mask = <0 0 0 7>;
+ 			interrupt-map = <0 0 0 1 &gic GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+ 					 0 0 0 2 &gic GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+@@ -1145,7 +1155,7 @@ pciec1: pcie@e65d8000 {
+ 			      <0 0xe65dd000 0 0x1200>,
+ 			      <0 0xe65de200 0 0x0e00>,
+ 			      <0 0xe65df000 0 0x1000>,
+-			      <0 0xee900000 0 0x10000>;
++			      <0 0xee900000 0 0x400000>;
+ 			reg-names = "dbi",
+ 				    "atu",
+ 				    "dma",
+@@ -1157,7 +1167,7 @@ pciec1: pcie@e65d8000 {
+ 			bus-range = <0x00 0xff>;
+ 			device_type = "pci";
+ 				 /* downstream IO */
+-			ranges = <0x81000000 0 0x00000000 0 0xee900000 0 0x00010000
++			ranges = <0x81000000 0 0x00000000 0 0xee900000 0 0x00400000
+ 				 /* non-prefetchable memory */
+ 				 0x82000000 0 0xc0000000 0 0xc0000000 0 0x10000000>;
+ 				     /* Map all possible DDR as inbound ranges */
+@@ -1172,6 +1182,7 @@ pciec1: pcie@e65d8000 {
+ 			interrupt-names = "msi", "dma", "err", "fatal",
+ 					  "nonfatal", "lp", "vndmsg";
+ 			#interrupt-cells = <1>;
++			msi-map = <0x0 &gic_its 0x0 0x1000>;
+ 			interrupt-map-mask = <0 0 0 7>;
+ 			interrupt-map = <0 0 0 1 &gic GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+ 					 0 0 0 2 &gic GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
+index 5a5a39a64389..3e021519f050 100644
+--- a/arch/arm64/configs/defconfig
++++ b/arch/arm64/configs/defconfig
+@@ -239,6 +239,7 @@ CONFIG_PCIE_RENESAS_EP=n
+ CONFIG_PCI_ENDPOINT=y
+ CONFIG_PCI_ENDPOINT_CONFIGFS=y
+ CONFIG_PCI_EPF_TEST=m
++CONFIG_PCI_MSI=y
+ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_FW_LOADER_USER_HELPER=y
+diff --git a/drivers/misc/pci_endpoint_test.c b/drivers/misc/pci_endpoint_test.c
+index 069d72493aa5..2cc4fe1d386e 100644
+--- a/drivers/misc/pci_endpoint_test.c
++++ b/drivers/misc/pci_endpoint_test.c
+@@ -793,11 +793,17 @@ static int pci_endpoint_test_probe(struct pci_dev *pdev,
+ 	init_completion(&test->irq_raised);
+ 	mutex_init(&test->mutex);
+ 
++/*
+ 	if ((dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(48)) != 0) &&
+ 	    dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32)) != 0) {
+ 		dev_err(dev, "Cannot set DMA mask\n");
+ 		return -EINVAL;
+ 	}
++*/
++	if (dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32)) != 0) {
++		dev_err(dev, "Cannot set DMA mask\n");
++		return -EINVAL;
++	}
+ 
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+diff --git a/drivers/pci/controller/dwc/pcie-designware-host.c b/drivers/pci/controller/dwc/pcie-designware-host.c
+index 44c2a6572199..c7b4516b225c 100644
+--- a/drivers/pci/controller/dwc/pcie-designware-host.c
++++ b/drivers/pci/controller/dwc/pcie-designware-host.c
+@@ -8,8 +8,11 @@
+  * Author: Jingoo Han <jg1.han@samsung.com>
+  */
+ 
++#define DEBUG
++
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/module.h>
+ #include <linux/msi.h>
+ #include <linux/of_address.h>
+ #include <linux/of_pci.h>
+@@ -19,6 +22,10 @@
+ #include "../../pci.h"
+ #include "pcie-designware.h"
+ 
++static int msi_init = 0;
++module_param(msi_init, int, 0644);
++MODULE_PARM_DESC(msi_init, "Use own msi_host_init");
++
+ static struct pci_ops dw_pcie_ops;
+ static struct pci_ops dw_child_pcie_ops;
+ 
+@@ -283,6 +290,8 @@ void dw_pcie_msi_init(struct pcie_port *pp)
+ 	if (!IS_ENABLED(CONFIG_PCI_MSI))
+ 		return;
+ 
++	printk("%s: msi_target = %llx\n", __func__, msi_target);
++
+ 	/* Program the msi_data */
+ 	dw_pcie_writel_dbi(pci, PCIE_MSI_ADDR_LO, lower_32_bits(msi_target));
+ 	dw_pcie_writel_dbi(pci, PCIE_MSI_ADDR_HI, upper_32_bits(msi_target));
+@@ -376,7 +385,8 @@ int dw_pcie_host_init(struct pcie_port *pp)
+ 			}
+ 		}
+ 
+-		if (!pp->ops->msi_host_init) {
++		printk("%s: ======== msi_init = %d\n", __func__, msi_init);
++		if (!pp->ops->msi_host_init || msi_init) {
+ 			pp->msi_irq_chip = &dw_pci_msi_bottom_irq_chip;
+ 
+ 			ret = dw_pcie_allocate_domains(pp);
+diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+index bf19c671f169..c06a7a9a3781 100644
+--- a/drivers/pci/controller/dwc/pcie-renesas.c
++++ b/drivers/pci/controller/dwc/pcie-renesas.c
+@@ -54,6 +54,18 @@
+ #define PRTLGC5			0x0714
+ #define INSERT_LANE_SKEW	BIT(6)
+ 
++#define AXIINTCADDR		0x0a00	/* 0x6c00 */
++#define AXIINTCADDR_VAL		0xf1050040	/* FIXME */
++#define AXIINTCCONT		0x0a04	/* 0x6c04 */
++#define AXIINTCCONT_VAL		(BIT(31) | GENMASK(11, 2))
++
++/* PCIEC PHY */
++#define RCVRCTRLP0		0x0040
++#define  PHY0_RX1_TERM_ACDC	BIT(14)
++#define  PHY0_RX0_TERM_ACDC	BIT(13)
++
++#define REFCLKCTRLP0		0x0B8
++
+ /* PCI Shadow offset */
+ #define SHADOW_REG(x)		(0x2000 + (x))
+ /* BAR Mask registers */
+@@ -179,6 +191,13 @@ static int renesas_pcie_host_init(struct pcie_port *pp)
+ 	return 0;
+ }
+ 
++static int renesas_pcie_msi_host_init(struct pcie_port *pp)
++{
++	printk("%s: ============ dummy msi host init\n", __func__);
++	pp->msi_data = 0xf1040000 + 0x10040; /* FIXME */
++	return 0;
++}
++
+ static void renesas_pcie_set_num_vectors(struct pcie_port *pp)
+ {
+ 	pp->num_vectors = MAX_MSI_IRQS;
+@@ -230,6 +249,10 @@ static void renesas_pcie_init_rc(struct renesas_pcie *pcie)
+ 	val |= DEVICE_TYPE_RC;
+ 	renesas_pcie_writel(pcie, PCIEMSR0, val);
+ 
++	printk("%s: ----------- set for INTC 64bit\n", __func__);
++	renesas_pcie_writel(pcie, AXIINTCADDR, AXIINTCADDR_VAL);
++	renesas_pcie_writel(pcie, AXIINTCCONT, AXIINTCCONT_VAL);
++
+ 	/* Enable DBI read-only registers for writing */
+ 	dw_pcie_dbi_ro_wr_en(pci);
+ 
+-- 
+2.36.1
+

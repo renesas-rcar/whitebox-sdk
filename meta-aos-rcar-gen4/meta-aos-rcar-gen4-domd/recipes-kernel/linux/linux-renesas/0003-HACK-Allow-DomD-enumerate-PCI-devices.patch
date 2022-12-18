@@ -1,0 +1,28 @@
+From f5c0c6cb71bbc2bc21d10cf03e8fb1183e526f33 Mon Sep 17 00:00:00 2001
+From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+Date: Tue, 9 Nov 2021 15:25:44 +0200
+Subject: [PATCH 3/4] HACK: Allow DomD enumerate PCI devices
+
+Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+---
+ drivers/xen/pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
+index 2c890f4f2cbc..5fbb8f40dc04 100644
+--- a/drivers/xen/pci.c
++++ b/drivers/xen/pci.c
+@@ -206,8 +206,10 @@ static struct notifier_block device_nb = {
+ 
+ static int __init register_xen_pci_notifier(void)
+ {
++#if 0
+ 	if (!xen_initial_domain())
+ 		return 0;
++#endif
+ 
+ 	return bus_register_notifier(&pci_bus_type, &device_nb);
+ }
+-- 
+2.36.1
+
