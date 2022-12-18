@@ -1,0 +1,15 @@
+[Unit]
+Description=DomF
+Requires=domd.service
+After=domd.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/lib/xen/bin/domf-set-root
+ExecStart=/usr/sbin/xl create /etc/xen/domf.cfg
+ExecStop=/usr/sbin/xl shutdown -w DomF
+ExecStopPost=/usr/sbin/xl destroy DomF
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

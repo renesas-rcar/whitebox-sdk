@@ -1,0 +1,15 @@
+[Unit]
+Description=AOS Identity and Access Manager
+Wants=network-online.target
+After=network-online.target
+PartOf=aos.target
+
+[Service]
+Environment="CKTEEC_LOGIN_TYPE=user"
+Type=notify
+ExecStart=/usr/bin/aos_iamanager -c /etc/aos/aos_iamanager.cfg -v debug -j
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

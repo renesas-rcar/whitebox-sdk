@@ -1,0 +1,32 @@
+From 19d105b6d3913d75a05440b702ad61a98977f49b Mon Sep 17 00:00:00 2001
+From: sverdlin <sverdlin@users.noreply.github.com>
+Date: Mon, 19 Apr 2021 04:25:33 +0200
+Subject: [PATCH] systemd-networkd.socket: Add conflict with shutdown.target
+ (#19348)
+
+systemd-networkd.socket can re-start systemd-networkd.service in
+shutdown and by doing this even stop shutdown.target leaving the
+system in halfway-down state.
+
+Fixes #4955.
+---
+ units/systemd-networkd.socket | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/units/systemd-networkd.socket b/units/systemd-networkd.socket
+index 113306607b..bd2ec744e7 100644
+--- a/units/systemd-networkd.socket
++++ b/units/systemd-networkd.socket
+@@ -12,7 +12,8 @@ Description=Network Service Netlink Socket
+ Documentation=man:systemd-networkd.service(8) man:rtnetlink(7)
+ ConditionCapability=CAP_NET_ADMIN
+ DefaultDependencies=no
+-Before=sockets.target
++Before=sockets.target shutdown.target
++Conflicts=shutdown.target
+ 
+ [Socket]
+ ReceiveBuffer=8M
+-- 
+2.25.1
+
