@@ -1,9 +1,0 @@
-[Unit]
-Description=AOS Reboot service
-ConditionPathExists=/var/aos/downloads/update_rootfs/updated
-
-[Service]
-ExecStart=systemctl reboot --force
-
-[Install]
-WantedBy=multi-user.target
