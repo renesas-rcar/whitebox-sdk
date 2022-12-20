@@ -7,13 +7,7 @@ generate_uboot_image() {
     ln -sfr  ${IMGDEPLOYDIR}/${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.cpio.gz.uInitramfs ${DEPLOY_DIR_IMAGE}/uInitramfs
 }
 
-
-set_image_version() {
-    install -d ${DEPLOY_DIR_IMAGE}/aos
-    echo "VERSION=\"${DOM0_IMAGE_VERSION}\"" > ${DEPLOY_DIR_IMAGE}/aos/version
-}
-
-IMAGE_POSTPROCESS_COMMAND += " generate_uboot_image; set_image_version; "
+IMAGE_POSTPROCESS_COMMAND += " generate_uboot_image; "
 
 IMAGE_ROOTFS_SIZE = "65535"
 
