@@ -1,5 +1,0 @@
-[Unit]
-Description=Reboot system by guest domain request
-
-[Service]
-ExecStart=/usr/bin/guestreboot.sh %i
