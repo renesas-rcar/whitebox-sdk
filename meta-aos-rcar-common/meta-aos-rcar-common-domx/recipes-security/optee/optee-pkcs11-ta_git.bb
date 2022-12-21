@@ -6,6 +6,8 @@ SRC_URI = "git://github.com/OP-TEE/optee_os.git"
 # optee-os 3.18.0
 SRCREV = "1ee647035939e073a2e8dddb727c0f019cc035f1"
 
+COMPATIBLE_MACHINE = "(salvator-x|h3ulcb|m3ulcb|m3nulcb|spider|generic-armv8-xt)"
+
 libdir[unexport] = "1"
 
 EXTRA_OEMAKE += " \
