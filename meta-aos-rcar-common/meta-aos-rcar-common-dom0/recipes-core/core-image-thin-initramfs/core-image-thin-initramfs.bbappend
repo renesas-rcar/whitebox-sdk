@@ -6,4 +6,9 @@ IMAGE_INSTALL += " \
     app-test-utils \
 "
 
+# Aos components
+IMAGE_INSTALL += " \
+    aos-iamanager \
+"
+
 INITRAMFS_MAXSIZE="196608"

@@ -16,3 +16,8 @@ IMAGE_INSTALL += " \
 IMAGE_INSTALL += " \
     openssh \
 "
+
+# Aos components
+IMAGE_INSTALL += " \
+    aos-iamanager \
+"

@@ -24,4 +24,5 @@ IMAGE_INSTALL += " \
 # Aos components
 IMAGE_INSTALL += " \
     aos-vis \
+    aos-iamanager \
 "
