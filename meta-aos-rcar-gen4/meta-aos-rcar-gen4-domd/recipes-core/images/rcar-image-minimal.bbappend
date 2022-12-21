@@ -16,3 +16,7 @@ IMAGE_INSTALL += " kernel-module-ixgbe"
 
 IMAGE_INSTALL += "e2fsprogs"
 
+# System components
+IMAGE_INSTALL += " \
+    openssh \
+"

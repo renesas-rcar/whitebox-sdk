@@ -1,7 +1,7 @@
 # Enable RO rootfs
 IMAGE_FEATURES_append = " read-only-rootfs"
 
-IMAGE_INSTALL_append = " \
+IMAGE_INSTALL += " \
     xen \
     xen-tools-devd \
     xen-tools-scripts-network \
@@ -10,4 +10,9 @@ IMAGE_INSTALL_append = " \
     xen-network \
     dnsmasq \
     block \
+"
+
+# System components
+IMAGE_INSTALL += " \
+    openssh \
 "
