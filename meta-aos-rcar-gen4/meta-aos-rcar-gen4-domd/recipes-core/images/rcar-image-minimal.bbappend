@@ -20,3 +20,8 @@ IMAGE_INSTALL += "e2fsprogs"
 IMAGE_INSTALL += " \
     openssh \
 "
+
+# Aos components
+IMAGE_INSTALL += " \
+    aos-vis \
+"

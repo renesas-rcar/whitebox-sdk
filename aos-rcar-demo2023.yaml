@@ -204,6 +204,9 @@ components:
         - [XT_KERNEL_REV, "%{GEN4_XT_KERNEL_REV}"]
         - [XT_OP_TEE_FLAVOUR, "%{GEN4_XT_OPTEE_FLAVOR}"]
 
+        # Aos configuration
+        - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
+
       build_target: rcar-image-minimal
       layers:
         - "../../../poky/meta"
@@ -562,3 +565,17 @@ parameters:
           GEN3_XT_OP_TEE_FLAVOUR: "salvator_h3"
           GEN3_XT_DOMD_DTB_NAME: "r8a7795-salvator-x-domd.dtb"
           GEN3_XT_XEN_DTB_NAME: "r8a7795-salvator-x-xen.dtb"
+
+  # Aos VIS data provider
+  VIS_DATA_PROVIDER:
+    desc: "Specifies plugin for VIS automotive data"
+    renesassimulator:
+      default: true
+      overrides:
+        variables:
+          AOS_VIS_DATA_PROVIDER: "renesassimulatoradapter"
+
+    telemetryemulator:
+      overrides:
+        variables:
+          AOS_VIS_DATA_PROVIDER: "telemetryemulatoradapter"
