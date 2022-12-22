@@ -54,8 +54,8 @@ common_data:
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "master"
     - type: git
-      url: "https://github.com/al1img/meta-aos-rcar-demo2023"
-      rev: "feature_multinode"
+      url: "https://github.com/aoscloud/meta-aos-rcar-demo2023"
+      rev: "main"
 
   # Sources to be used in DomD
   domd_sources: &DOMD_SOURCES
