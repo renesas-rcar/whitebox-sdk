@@ -236,11 +236,9 @@ components:
 
   gen3-dom0:
     build-dir: "%{YOCTOS_WORK_DIR}"
-    default: true
     sources:
       - *COMMON_SOURCES
       - *GEN3_SOURCES
-
     builder:
       type: yocto
       work_dir: "%{GEN3_DOM0_BUILD_DIR}"
@@ -253,7 +251,6 @@ components:
         - [XT_DOMD_CONFIG_NAME, "%{GEN3_XT_DOMD_CONFIG_NAME}"]
         - [XT_DOMD_DTB_NAME, "%{GEN3_XT_DOMD_DTB_NAME}"]
         - [XT_GUEST_INSTALL, "domd"]
-
       layers:
         - "../../../meta-virtualization"
         - "../../../meta-openembedded/meta-oe"
@@ -267,18 +264,14 @@ components:
         - "../../../meta-xt-rcar/meta-xt-rcar-dom0"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-dom0"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
-
       build_target: core-image-thin-initramfs
       external_src:
         domd: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/"
-
       additional_deps:
         - "%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/Image"
-
       target_images:
         - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
-
   gen3-domd:
     build-dir: "%{YOCTOS_WORK_DIR}"
     sources:
@@ -289,7 +282,6 @@ components:
         url: https://github.com/xen-troops/meta-renesas.git
         rev: "Renesas-Yocto-v5.1-patched"
         dir: "meta-renesas-gen3"
-
     builder:
       type: yocto
       work_dir: "%{GEN3_DOMD_BUILD_DIR}"
@@ -302,7 +294,6 @@ components:
         - [XT_DOM_NAME, "domd"]
         - [XT_DEVICE_TREES, "%{GEN3_XT_DOMD_DTB_NAME} %{GEN3_XT_XEN_DTB_NAME}"]
         - [XT_OP_TEE_FLAVOUR, "%{GEN3_XT_OP_TEE_FLAVOUR}"]
-
       build_target: core-image-minimal
       layers:
         - "../../../poky/meta"
@@ -327,7 +318,6 @@ components:
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domd"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen3/meta-aos-rcar-gen3-domd"
-
       target_images:
         - "tmp/deploy/images/%{GEN3_MACHINE}/Image"
         - "tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
@@ -388,57 +378,68 @@ images:
         type: ext4
         size: 512 MiB
 
-  gen3_full:
-    type: gpt
-    desc: "Full SD-card/eMMC image"
-    partitions:
-      boot_a:
-        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
-        type: ext4
-        size: 128 MiB
-        files:
-          "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
-          "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
-          "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
-          "xenpolicy": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
-          "xen.dtb": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
-
-      boot_b:
-        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
-        type: ext4
-        size: 128 MiB
-        files:
-          "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
-          "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
-          "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
-          "xenpolicy": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
-          "xen.dtb": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
-
-      boot_env:
-        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
-        type: vfat
-        size: 16 MiB
-
-      domd_rootfs:
-        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
-        type: raw_image
-        image_path: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/core-image-minimal-%{GEN3_MACHINE}.ext4"
-        size: 1024 MiB
-
-      domd_var:
-        gpt_type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4 # Linux filesystem data
-        type: ext4
-        size: 1024 MiB
-
-      dom0_aos:
-        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
-        type: ext4
-        size: 512 MiB
-
 parameters:
-  # Machines
+  GEN3_DEVICE:
+    desc: "Add RCAR Gen3-based device as Aos nodes"
+    enable:
+      overrides:
+        components:
+          gen3-dom0:
+            default: true
+
+        images:
+          gen3_full:
+            type: gpt
+            desc: "Full SD-card/eMMC image"
+            partitions:
+              boot_a:
+                gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+                type: ext4
+                size: 128 MiB
+                files:
+                  "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
+                  "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
+                  "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
+                  "xenpolicy": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
+                  "xen.dtb": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
+
+              boot_b:
+                gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+                type: ext4
+                size: 128 MiB
+                files:
+                  "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
+                  "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
+                  "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
+                  "xenpolicy": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
+                  "xen.dtb": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
+
+              boot_env:
+                gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+                type: vfat
+                size: 16 MiB
+
+              domd_rootfs:
+                gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+                type: raw_image
+                image_path: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/core-image-minimal-%{GEN3_MACHINE}.ext4"
+                size: 1024 MiB
+
+              domd_var:
+                gpt_type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4 # Linux filesystem data
+                type: ext4
+                size: 1024 MiB
+
+              dom0_aos:
+                gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+                type: ext4
+                size: 512 MiB
+
+    disable:
+      default: true
+
   GEN3_MACHINE:
-    desc: "RCAR Gen3-based device"
+    desc: "RCAR Gen3-based machine"
     h3ulcb-4x2g-ab:
       default: true
       overrides:
