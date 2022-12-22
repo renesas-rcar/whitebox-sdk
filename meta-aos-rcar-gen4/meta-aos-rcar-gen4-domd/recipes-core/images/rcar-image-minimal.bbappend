@@ -25,4 +25,5 @@ IMAGE_INSTALL += " \
 IMAGE_INSTALL += " \
     aos-vis \
     aos-iamanager \
+    aos-communicationmanager \
 "

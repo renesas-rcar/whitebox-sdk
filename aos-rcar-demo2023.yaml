@@ -22,6 +22,7 @@ variables:
   DOM0_NODE_TYPE: "%{UNIT_MODEL}-%{UNIT_VERSION}-dom0"
 
   NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID}"
+  UM_LIST: "%{GEN4_DOMD_NODE_ID}"
 
   # Gen4 build configuration
 
@@ -229,6 +230,7 @@ components:
         - [NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
         - [NODE_LIST, "%{NODE_LIST}"]
+        - [UM_LIST, "%{UM_LIST}"]
 
         - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
 
@@ -432,6 +434,7 @@ parameters:
       overrides:
         variables:
           NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID} %{GEN3_DOMD_NODE_ID} %{GEN3_DOM0_NODE_ID}"
+          UM_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
 
         components:
           gen3-dom0:
