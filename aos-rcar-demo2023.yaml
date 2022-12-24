@@ -227,6 +227,9 @@ components:
         - [XT_OP_TEE_FLAVOUR, "%{GEN4_XT_OPTEE_FLAVOR}"]
 
         # Aos configuration
+        - [UNIT_MODEL, "%{UNIT_MODEL}"]
+        - [UNIT_VERSION, "%{UNIT_VERSION}"]
+
         - [NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
         - [NODE_LIST, "%{NODE_LIST}"]
