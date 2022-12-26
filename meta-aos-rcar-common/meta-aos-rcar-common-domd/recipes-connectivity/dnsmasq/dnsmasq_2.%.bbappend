@@ -22,5 +22,11 @@ do_install_append() {
             exit 1
         fi
 
+        if [ -z ${DHCP_NET} ]; then
+            bberror "DHCP_NET is not set"
+            exit 1
+        fi
+
         echo "dhcp-host=${DOM0_MAC},dom0,${DOM0_IP},infinite" >> ${D}${sysconfdir}/dnsmasq.conf
+        sed -i "s/192.168.0/${DHCP_NET}/g" ${D}${sysconfdir}/dnsmasq.conf
 }
