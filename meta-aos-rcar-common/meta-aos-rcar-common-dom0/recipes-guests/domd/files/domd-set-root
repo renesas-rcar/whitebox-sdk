@@ -40,11 +40,11 @@ if [ $BOOT_STORAGE = nfs ]; then
     # Escape slahes ( / ->\/ )
     BOOT_STR=$(echo "${BOOT_STR}" | sed "s/\//\\\\\//g")
 
-    echo "Mangling domain configuration: setting storage to network boot"
+    echo "Mangling domain configuration: setting storage to network boot for root"
 
-    sed -i "s/STORAGE_PART[0-9]/${BOOT_STR}/g" $DOMD_CFG_FILE
+    sed -i "s/root=\/dev\/STORAGE_PART[0-9]/root=\/dev\/${BOOT_STR}/g" $DOMD_CFG_FILE
 
-    exit 0
+    BOOT_STORAGE=mmcblk0
 fi
 
 # guess partition prefix, e.g. "" for sda2 or "p" for mmcblk1p2
@@ -57,6 +57,6 @@ fi
 STORAGE_PART="${BOOT_STORAGE}${PART_PREFIX}"
 
 # now make up the configuration
-echo "Mangling domain configuration: setting storage to ${BOOT_STORAGE}"
+echo "Mangling domain configuration: setting storage to ${BOOT_STORAGE} for all devices"
 
 sed -i "s/STORAGE_PART/${STORAGE_PART}/g" $DOMD_CFG_FILE
