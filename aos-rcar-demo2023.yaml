@@ -117,6 +117,8 @@ common_data:
     # Disable HWDB which quite huge (around 15MB) and is not required at all
     - [BAD_RECOMMENDATIONS_append, " udev-hwdb"]
 
+    - [AOS_RUNNER, "runx"]
+
   # Common configuration options for all domx
   domx_conf: &DOMX_CONF
 
