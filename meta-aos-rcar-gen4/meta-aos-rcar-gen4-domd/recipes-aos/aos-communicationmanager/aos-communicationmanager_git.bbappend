@@ -2,6 +2,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://aos-dirs-service.conf \
+    file://optee-identity.conf \
 "
 
 FILES_${PN} += " \
@@ -16,6 +17,7 @@ python __anonymous() {
 do_install_append() {
     install -d ${D}${sysconfdir}/systemd/system/${PN}.service.d
     install -m 0644 ${WORKDIR}/aos-dirs-service.conf ${D}${sysconfdir}/systemd/system/${PN}.service.d/10-aos-dirs-service.conf
+    install -m 0644 ${WORKDIR}/optee-identity.conf ${D}${sysconfdir}/systemd/system/${PN}.service.d/10-optee-identity.conf
 }
 
 python do_update_config() {
