@@ -36,12 +36,12 @@ wait_file() {
 
 	test $wait_seconds -lt 1 && echo 'At least 1 second is required' && return 1
 
-	until test $((wait_seconds--)) -eq 0 -o -e "$file" ; do sleep 1; done
+	until test $((wait_seconds--)) -eq 0 -o -e "$file"; do sleep 1; done
 
 	test $wait_seconds -ge 0 # equivalent: let ++wait_seconds
 }
 
-device=$(get_device 9)
+device=$(get_device 7)
 
 /usr/sbin/xl block-attach Domain-0 backend=DomD,/dev/${device},raw,xvda1,rw
 wait_file /dev/xvda1
