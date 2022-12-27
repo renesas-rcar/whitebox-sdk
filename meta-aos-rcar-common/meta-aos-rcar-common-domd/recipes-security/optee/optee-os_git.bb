@@ -40,15 +40,16 @@ libdir[unexport] = "1"
 OPTEE_ARCH_aarch64 = "arm64"
 
 EXTRA_OEMAKE = "-e MAKEFLAGS= \
-   PLATFORM=rcar \
-   PLATFORM_FLAVOR=${OPTEEFLAVOR} \
-   CFG_ARM64_core=y \
-   CFG_VIRTUALIZATION=y \
-   CROSS_COMPILE_core=${HOST_PREFIX} \
-   CROSS_COMPILE_ta_${OPTEE_ARCH}=${HOST_PREFIX} \
-   ta-targets=ta_${OPTEE_ARCH} \
-   CFLAGS64=--sysroot=${STAGING_DIR_HOST} \
-   CFG_SYSTEM_PTA=y \
+    PLATFORM=rcar \
+    PLATFORM_FLAVOR=${OPTEEFLAVOR} \
+    CFG_ARM64_core=y \
+    CFG_VIRTUALIZATION=y \
+    CROSS_COMPILE_core=${HOST_PREFIX} \
+    CROSS_COMPILE_ta_${OPTEE_ARCH}=${HOST_PREFIX} \
+    ta-targets=ta_${OPTEE_ARCH} \
+    CFLAGS64=--sysroot=${STAGING_DIR_HOST} \
+    CFG_SYSTEM_PTA=y \
+    CFG_RCAR_UART=103 \
 "
 
 do_configure() {
