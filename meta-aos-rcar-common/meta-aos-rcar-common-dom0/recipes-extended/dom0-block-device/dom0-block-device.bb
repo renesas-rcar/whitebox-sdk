@@ -22,7 +22,7 @@ FILES_${PN} = " \
 
 SYSTEMD_SERVICE_${PN} = "dom0-block-device.service"
 
-RDEPENDS_${PN} = "systemd bash"
+RDEPENDS_${PN} = "systemd bash backend-ready"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}

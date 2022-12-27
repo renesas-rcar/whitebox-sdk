@@ -1,7 +1,7 @@
 [Unit]
 Description=Dom0 block device
-Requires=domd.service
-After=domd.service
+Requires=domd.service backend-ready@block.service
+After=domd.service backend-ready@block.service
 
 [Service]
 Type=oneshot
