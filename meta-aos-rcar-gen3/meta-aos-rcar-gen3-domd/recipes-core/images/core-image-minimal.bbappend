@@ -21,4 +21,5 @@ IMAGE_INSTALL += " \
 IMAGE_INSTALL += " \
     aos-iamanager \
     aos-servicemanager \
+    aos-updatemanager \
 "
