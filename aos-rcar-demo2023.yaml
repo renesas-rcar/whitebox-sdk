@@ -11,6 +11,10 @@ variables:
   UNIT_MODEL: "rcar-demo2023"
   UNIT_VERSION: "1.0"
 
+  # Aos version configuration
+  BUNDLE_IMAGE_VERSION: "0.1.0"
+  RH850_IMAGE_VERSION: "1.0.0"
+
   # Aos node configuration
   GEN4_DOMD_NODE_ID: "gen4-domd"
   GEN4_DOM0_NODE_ID: "gen4-dom0"
@@ -112,7 +116,11 @@ common_data:
       ]
 
     # Aos configuration
+    - [UNIT_MODEL, "%{UNIT_MODEL}"]
+    - [UNIT_VERSION, "%{UNIT_VERSION}"]
     - [MAIN_NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
+    - [DOM0_IMAGE_VERSION, "%{BUNDLE_IMAGE_VERSION}"]
+    - [DOMD_IMAGE_VERSION, "%{BUNDLE_IMAGE_VERSION}"]
 
   # Common configuration options for all dom0
   dom0_conf: &DOM0_CONF
@@ -149,6 +157,9 @@ common_data:
     - [DOM0_MAC, "08:00:27:ff:cf:cb"]
     - [DOM0_IP, "10.0.1.8"]
     - [DHCP_NET, "10.0.1"]
+
+    # Aos configuration
+    - [RH850_IMAGE_VERSION, "%{RH850_IMAGE_VERSION}"]
 
   gen3_conf: &GEN3_CONF
     - [DOM0_MAC, "08:00:27:ff:cb:cb"]
@@ -205,6 +216,7 @@ components:
       target_images:
         - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
 
   gen4-domd:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -232,9 +244,6 @@ components:
         - [XT_OP_TEE_FLAVOUR, "%{GEN4_XT_OPTEE_FLAVOR}"]
 
         # Aos configuration
-        - [UNIT_MODEL, "%{UNIT_MODEL}"]
-        - [UNIT_VERSION, "%{UNIT_VERSION}"]
-
         - [NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
         - [NODE_LIST, "%{NODE_LIST}"]
@@ -319,6 +328,7 @@ components:
       target_images:
         - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
 
   gen3-domd:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -391,6 +401,7 @@ images:
         type: ext4
         size: 128 MiB
         files:
+          "/aos/version": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
           "Image": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
           "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
           "xen": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/xen-%{GEN4_MACHINE}.uImage"
@@ -402,6 +413,7 @@ images:
         type: ext4
         size: 128 MiB
         files:
+          "/aos/version": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
           "Image": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
           "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
           "xen": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/xen-%{GEN4_MACHINE}.uImage"
@@ -461,6 +473,7 @@ parameters:
                 type: ext4
                 size: 128 MiB
                 files:
+                  "/aos/version": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
                   "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
                   "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
                   "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
@@ -472,6 +485,7 @@ parameters:
                 type: ext4
                 size: 128 MiB
                 files:
+                  "/aos/version": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
                   "Image": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/Image"
                   "uInitramfs": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
                   "xen": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"

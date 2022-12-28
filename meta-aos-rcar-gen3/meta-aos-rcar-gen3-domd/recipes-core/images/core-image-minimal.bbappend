@@ -23,3 +23,11 @@ IMAGE_INSTALL += " \
     aos-servicemanager \
     aos-updatemanager \
 "
+
+ROOTFS_POSTPROCESS_COMMAND += "set_rootfs_version;"
+
+set_rootfs_version() {
+    install -d ${IMAGE_ROOTFS}/etc/aos
+
+    echo "VERSION=\"${DOMD_IMAGE_VERSION}\"" > ${IMAGE_ROOTFS}/etc/aos/version
+}
