@@ -1,7 +1,7 @@
 [Unit]
 Description=Dom0 networking
-Requires=domd.service
-After=domd.service
+Requires=domd.service backend-ready@bridge.service
+After=domd.service backend-ready@bridge.service
 
 [Service]
 Type=oneshot
