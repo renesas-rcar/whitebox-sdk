@@ -11,7 +11,7 @@
 
 / {
 	chosen {
-                bootargs = "dom0_mem=720M console=dtuart dtuart=/soc/serial@e6540000 dom0_max_vcpus=2 loglvl=all xsm=flask flask=permissive bootscrub=0 pci-passthrough=on";
+                bootargs = "dom0_mem=1024M console=dtuart dtuart=/soc/serial@e6540000 dom0_max_vcpus=2 loglvl=all xsm=flask flask=permissive bootscrub=0 pci-passthrough=on";
 		xen,dom0-bootargs = "root=/dev/ram0 console=hvc0 ignore_loglevel";
 		modules {
 			#address-cells = <2>;

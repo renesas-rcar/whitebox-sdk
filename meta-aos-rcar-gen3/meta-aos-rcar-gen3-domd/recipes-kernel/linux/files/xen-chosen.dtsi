@@ -11,7 +11,7 @@
 
 / {
 	chosen {
-		bootargs = "dom0_mem=720M console=dtuart dtuart=serial0 dom0_max_vcpus=4 bootscrub=0 loglvl=info sched_ratelimit_us=100 hmp-unsafe=true xsm=flask console_timestamps=boot";
+		bootargs = "dom0_mem=1024M console=dtuart dtuart=serial0 dom0_max_vcpus=4 bootscrub=0 loglvl=info sched_ratelimit_us=100 hmp-unsafe=true xsm=flask console_timestamps=boot";
 		xen,dom0-bootargs = "console=hvc0 ignore_loglevel";
 		/delete-property/stdout-path;
 		modules {
