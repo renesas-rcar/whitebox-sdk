@@ -27,6 +27,7 @@ IMAGE_INSTALL += " \
     aos-vis \
     aos-iamanager \
     aos-communicationmanager \
+    aos-servicemanager \
 "
 
 ROOTFS_POSTPROCESS_COMMAND += "set_unit_model;"

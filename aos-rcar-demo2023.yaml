@@ -111,6 +111,9 @@ common_data:
         usbhost opengl ptest multiarch wayland vulkan sysvinit",
       ]
 
+    # Aos configuration
+    - [MAIN_NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
+
   # Common configuration options for all dom0
   dom0_conf: &DOM0_CONF
 

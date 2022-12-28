@@ -9,6 +9,7 @@ IMAGE_INSTALL += " \
 # Aos components
 IMAGE_INSTALL += " \
     aos-iamanager \
+    aos-servicemanager \
 "
 
 INITRAMFS_MAXSIZE="262144"

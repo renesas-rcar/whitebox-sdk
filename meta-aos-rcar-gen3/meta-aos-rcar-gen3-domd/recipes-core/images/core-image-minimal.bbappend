@@ -20,4 +20,5 @@ IMAGE_INSTALL += " \
 # Aos components
 IMAGE_INSTALL += " \
     aos-iamanager \
+    aos-servicemanager \
 "

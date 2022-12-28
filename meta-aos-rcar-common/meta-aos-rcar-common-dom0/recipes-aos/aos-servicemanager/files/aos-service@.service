@@ -1,0 +1,17 @@
+[Unit]
+Description=AOS Service
+After=network.target
+
+[Service]
+Type=exec
+Restart=always
+RemainAfterExit=true
+ExecStartPre=/usr/bin/runX create --pid-file /run/aos/runtime/%i/.pid --bundle /run/aos/runtime/%i %i
+ExecStart=/usr/bin/runX start %i
+ExecStop=/usr/bin/runX kill %i
+
+PIDFile=/run/aos/runtime/%i/.pid
+SuccessExitStatus=SIGKILL
+
+[Install]
+WantedBy=multi-user.target
