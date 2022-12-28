@@ -6,6 +6,7 @@ IMAGE_INSTALL += " \
     devmem2 \
     iccom-support \
     optee-test \
+    block \
 "
 
 IMAGE_INSTALL += "iproute2 iproute2-tc tcpdump nvme-cli"
