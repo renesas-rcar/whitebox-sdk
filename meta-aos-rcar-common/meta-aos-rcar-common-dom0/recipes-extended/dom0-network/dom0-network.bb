@@ -19,7 +19,6 @@ FILES_${PN} = " \
     ${sysconfdir}/systemd/network/eth0.network \
     ${sysconfdir}/systemd/network/eth0.link \
     ${sysconfdir}/systemd/system/systemd-networkd-wait-online.service.d/systemd-networkd-wait-online.conf \
-    ${sysconfdir}/systemd/system/aos-servicemanager.service.d \
     ${systemd_system_unitdir}/dom0-network.service \
 "
 
