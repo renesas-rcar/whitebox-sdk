@@ -27,6 +27,7 @@ do_install_append() {
             exit 1
         fi
 
+        echo "listen-address=127.0.0.1" >> ${D}${sysconfdir}/dnsmasq.conf
         echo "dhcp-host=${DOM0_MAC},${DOM0_NODE_ID},${DOM0_IP},infinite" >> ${D}${sysconfdir}/dnsmasq.conf
         sed -i "s/192.168.0/${DHCP_NET}/g" ${D}${sysconfdir}/dnsmasq.conf
 }
