@@ -142,15 +142,15 @@ common_data:
     # Generate ext4 image files
     - [IMAGE_FSTYPES_append, " ext4"]
 
-  gen3_conf: &GEN3_CONF
-    - [DOM0_MAC, "08:00:27:ff:cb:cb"]
-    - [DOM0_IP, "192.168.0.8"]
-    - [DHCP_NET, "192.168.0"]
-
   gen4_conf: &GEN4_CONF
     - [DOM0_MAC, "08:00:27:ff:cf:cb"]
-    - [DOM0_IP, "192.168.1.8"]
-    - [DHCP_NET, "192.168.1"]
+    - [DOM0_IP, "10.0.1.8"]
+    - [DHCP_NET, "10.0.1"]
+
+  gen3_conf: &GEN3_CONF
+    - [DOM0_MAC, "08:00:27:ff:cb:cb"]
+    - [DOM0_IP, "10.0.2.8"]
+    - [DHCP_NET, "10.0.2"]
 
 components:
   gen4-dom0:
