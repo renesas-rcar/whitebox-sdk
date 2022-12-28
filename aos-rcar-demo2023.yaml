@@ -236,6 +236,7 @@ components:
         - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
         - [NODE_LIST, "%{NODE_LIST}"]
         - [UM_LIST, "%{UM_LIST}"]
+        - [DOM0_NODE_ID, "%{GEN4_DOM0_NODE_ID}"]
 
         - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
 
@@ -306,6 +307,7 @@ components:
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-dom0"
         - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+
       build_target: core-image-thin-initramfs
       external_src:
         domd: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/"
@@ -341,6 +343,7 @@ components:
         # Aos configuration
         - [NODE_ID, "%{GEN3_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
+        - [DOM0_NODE_ID, "%{GEN3_DOM0_NODE_ID}"]
 
       build_target: core-image-minimal
       layers:
