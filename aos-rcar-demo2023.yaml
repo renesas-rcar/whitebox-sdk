@@ -69,8 +69,8 @@ common_data:
       url: "git://git.yoctoproject.org/meta-security"
       rev: "dunfell"
     - type: git
-      url: "https://github.com/al1img/meta-aos"
-      rev: "feature_multinode"
+      url: "https://github.com/aoscloud/meta-aos"
+      rev: "v7.0.0"
     - type: git
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "master"
