@@ -3,6 +3,7 @@ Name=tsn0
 
 [Network]
 DHCP=yes
+DNS=127.0.0.1
 
 [DHCP]
 CriticalConnection=true
