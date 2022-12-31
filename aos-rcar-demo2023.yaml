@@ -55,37 +55,37 @@ common_data:
   common_sources: &COMMON_SOURCES
     - type: git
       url: "https://git.yoctoproject.org/poky"
-      rev: "dunfell"
+      rev: "3155eb565f"
     - type: git
       url: "https://git.openembedded.org/meta-openembedded"
-      rev: "dunfell"
+      rev: "7203130ed"
     - type: git
       url: "https://git.yoctoproject.org/meta-virtualization"
-      rev: "dunfell"
+      rev: "beea119"
     - type: git
       url: "git://git.yoctoproject.org/meta-security"
-      rev: "dunfell"
+      rev: "c62970f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos"
       rev: "v7.0.0"
     - type: git
       url: "https://github.com/xen-troops/meta-xt-common.git"
-      rev: "master"
+      rev: "c1ad85f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos-rcar-demo2023"
-      rev: "main"
+      rev: "v0.1.0"
 
   # Sources to be used in DomD
   domd_sources: &DOMD_SOURCES
     - type: git
       url: "git://git.yoctoproject.org/meta-selinux"
-      rev: "dunfell"
+      rev: "1a13839"
 
   # Sources to be used in Gen3 only
   gen3_sources: &GEN3_SOURCES
     - type: git
       url: "https://github.com/xen-troops/meta-xt-rcar.git"
-      rev: "master"
+      rev: "5d4e9d1"
 
   # Common configuration options for all yocto-based domains
   common_conf: &COMMON_CONF
