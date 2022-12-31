@@ -31,7 +31,7 @@ IMAGE_INSTALL += " \
     aos-updatemanager \
 "
 
-ROOTFS_POSTPROCESS_COMMAND += "set_unit_model; set_rootfs_version;"
+ROOTFS_POSTPROCESS_COMMAND += "set_unit_model; set_rootfs_version; create_unprovisioned_flag;"
 
 set_unit_model() {
     install -d ${IMAGE_ROOTFS}/etc/aos
@@ -43,4 +43,9 @@ set_rootfs_version() {
     install -d ${IMAGE_ROOTFS}/etc/aos
 
     echo "VERSION=\"${DOMD_IMAGE_VERSION}\"" > ${IMAGE_ROOTFS}/etc/aos/version
+}
+
+create_unprovisioned_flag() {
+    install -d ${DEPLOY_DIR_IMAGE}/aos
+    touch ${DEPLOY_DIR_IMAGE}/aos/.unprovisioned
 }

@@ -214,6 +214,7 @@ components:
         - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/.unprovisioned"
 
   gen4-domd:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -278,7 +279,7 @@ components:
         - "tmp/deploy/images/%{GEN4_MACHINE}/xenpolicy-%{GEN4_MACHINE}"
         - "tmp/deploy/images/%{GEN4_MACHINE}/%{GEN4_XT_XEN_DTB_NAME}"
         - "tmp/deploy/images/%{GEN4_MACHINE}/rcar-image-minimal-%{GEN4_MACHINE}.ext4"
-        - "tmp/work/%{GEN4_MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+        - "tmp/deploy/images/%{GEN4_MACHINE}/aos/.unprovisioned"
 
   gen3-dom0:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -326,6 +327,7 @@ components:
         - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/uInitramfs"
         - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/version"
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/aos/.unprovisioned"
 
   gen3-domd:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -385,7 +387,7 @@ components:
         - "tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
         - "tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
         - "tmp/deploy/images/%{GEN3_MACHINE}/core-image-minimal-%{GEN3_MACHINE}.ext4"
-        - "tmp/work/%{GEN3_MACHINE}-poky-linux/core-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+        - "tmp/deploy/images/%{GEN3_MACHINE}/aos/.unprovisioned"
 
 images:
   gen4_full:
@@ -432,7 +434,7 @@ images:
         type: ext4
         size: 512 MiB
         files:
-          "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/work/%{GEN4_MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+          "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/aos/.unprovisioned"
 
       domd_aos:
         gpt_type: CA7D7CCB-63ED-4C53-861C-1742536059CC # LUKS partition
@@ -444,7 +446,7 @@ images:
         type: ext4
         size: 512 MiB
         files:
-          "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/work/%{GENERIC_MACHINE}-poky-linux/core-image-thin-initramfs/1.0-r0/rootfs/var/aos/.unprovisioned"
+          "/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN4_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/.unprovisioned"
 
 parameters:
   GEN3_DEVICE:
@@ -504,14 +506,14 @@ parameters:
                 type: ext4
                 size: 1024 MiB
                 files:
-                  "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/work/%{GEN3_MACHINE}-poky-linux/core-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+                  "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/aos/.unprovisioned"
 
               dom0_aos:
                 gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
                 type: ext4
                 size: 512 MiB
                 files:
-                  "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/work/%{GENERIC_MACHINE}-poky-linux/core-image-thin-initramfs/1.0-r0/rootfs/var/aos/.unprovisioned"
+                  "/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/.unprovisioned"
 
     disable:
       default: true
