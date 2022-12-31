@@ -22,9 +22,6 @@ variables:
   GEN3_DOMD_NODE_ID: "gen3-domd"
   GEN3_DOM0_NODE_ID: "gen3-dom0"
 
-  DOMD_NODE_TYPE: "%{UNIT_MODEL}-%{UNIT_VERSION}-domd"
-  DOM0_NODE_TYPE: "%{UNIT_MODEL}-%{UNIT_VERSION}-dom0"
-
   NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID}"
   UM_LIST: "%{GEN4_DOMD_NODE_ID}"
 
@@ -188,7 +185,7 @@ components:
 
         # Aos configuration
         - [NODE_ID, "%{GEN4_DOM0_NODE_ID}"]
-        - [NODE_TYPE, "%{DOM0_NODE_TYPE}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
 
       layers:
         - "../../../meta-virtualization"
@@ -245,7 +242,7 @@ components:
 
         # Aos configuration
         - [NODE_ID, "%{GEN4_DOMD_NODE_ID}"]
-        - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
         - [NODE_LIST, "%{NODE_LIST}"]
         - [UM_LIST, "%{UM_LIST}"]
         - [DOM0_NODE_ID, "%{GEN4_DOM0_NODE_ID}"]
@@ -303,7 +300,7 @@ components:
 
         # Aos configuration
         - [NODE_ID, "%{GEN3_DOM0_NODE_ID}"]
-        - [NODE_TYPE, "%{DOM0_NODE_TYPE}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
 
       layers:
         - "../../../meta-virtualization"
@@ -355,8 +352,7 @@ components:
 
         # Aos configuration
         - [NODE_ID, "%{GEN3_DOMD_NODE_ID}"]
-        - [NODE_TYPE, "%{DOMD_NODE_TYPE}"]
-        - [DOM0_NODE_ID, "%{GEN3_DOM0_NODE_ID}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
 
       build_target: core-image-minimal
       layers:
