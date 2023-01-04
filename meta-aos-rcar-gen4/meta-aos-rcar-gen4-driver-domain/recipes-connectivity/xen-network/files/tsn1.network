@@ -1,2 +1,6 @@
 [Match]
 Name=tsn1
+
+[Network]
+Address=10.0.0.1/24
+IPMasquerade=yes
