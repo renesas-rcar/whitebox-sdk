@@ -13,7 +13,6 @@ FILES_${PN} += " \
 "
 
 RDEPENDS_${PN} += " \
-    aos-provfirewall \
     aos-setupdisk \
 "
 
