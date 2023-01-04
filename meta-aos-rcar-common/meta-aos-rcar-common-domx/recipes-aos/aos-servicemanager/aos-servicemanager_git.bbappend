@@ -9,6 +9,10 @@ FILES_${PN} += " \
     ${sysconfdir} \
 "
 
+RDEPENDS_${PN} += " \
+    packagegroup-core-nfs-client \
+"
+
 # Base layer for services
 RDEPENDS_${PN} += " \
     python3 \

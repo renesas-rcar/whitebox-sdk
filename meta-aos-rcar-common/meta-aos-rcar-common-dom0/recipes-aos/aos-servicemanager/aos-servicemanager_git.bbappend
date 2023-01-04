@@ -11,6 +11,7 @@ RDEPENDS_${PN}_remove = " \
     aos-dnsname \
     python3 \
     python3-core \
+    packagegroup-core-nfs-client \
 "
 
 do_install_append() {
