@@ -1,0 +1,49 @@
+{
+    "nodes": [
+        {
+            "nodeType": "rcar-demo2023-1.0-gen4-domd",
+            "priority": 100
+        },
+        {
+            "nodeType": "rcar-demo2023-1.0-gen4-dom0",
+            "priority": 51
+        },
+        {
+            "labels": [
+                "gen3"
+            ],
+            "nodeType": "rcar-demo2023-1.0-gen3-domd",
+            "priority": 41
+        },
+        {
+            "labels": [
+                "runxSupport_gen3"
+            ],
+            "nodeType": "rcar-demo2023-1.0-gen3-dom0",
+            "priority": 20,
+            "resources": [
+                {
+                    "name": "gen3-dom0-resource"
+                }
+            ]
+        }
+    ],
+    "components": [
+        {
+            "id": "rcar-demo2023-1.0-gen4-dom0"
+        },
+        {
+            "id": "rcar-demo2023-1.0-gen4-domd"
+        },
+        {
+            "id": "rcar-demo2023-1.0-gen4-rh850"
+        },
+        {
+            "id": "rcar-demo2023-1.0-gen3-dom0"
+        },
+        {
+            "id": "rcar-demo2023-1.0-gen3-domd"
+        }
+    ],
+    "formatVersion": 1
+}
