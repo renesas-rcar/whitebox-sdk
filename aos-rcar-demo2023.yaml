@@ -452,6 +452,7 @@ parameters:
   GEN3_DEVICE:
     desc: "Add RCAR Gen3-based device as Aos nodes"
     enable:
+      default: true
       overrides:
         variables:
           NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID} %{GEN3_DOMD_NODE_ID} %{GEN3_DOM0_NODE_ID}"
@@ -516,7 +517,7 @@ parameters:
                   "/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN3_DOM0_BUILD_DIR}/tmp/deploy/images/%{GENERIC_MACHINE}/aos/.unprovisioned"
 
     disable:
-      default: true
+      default: false
 
   GEN3_MACHINE:
     desc: "RCAR Gen3-based machine"
