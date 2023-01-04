@@ -14,6 +14,10 @@ RDEPENDS_${PN}_remove = " \
     packagegroup-core-nfs-client \
 "
 
+RRECOMMENDS_${PN} = " \
+    kernel-module-overlay \
+"
+
 do_install_append() {
     install -m 0644 ${WORKDIR}/aos-service@.service ${D}${systemd_system_unitdir}
 }
