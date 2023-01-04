@@ -9,6 +9,8 @@ RDEPENDS_${PN}_remove = " \
     cni \
     aos-firewall \
     aos-dnsname \
+    python3 \
+    python3-core \
 "
 
 do_install_append() {
