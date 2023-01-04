@@ -33,17 +33,16 @@ python do_update_config() {
     with open(file_name) as f:
         data = json.load(f)
 
-    node_id = d.getVar("NODE_ID")
-    main_node_id = d.getVar("MAIN_NODE_ID")
+    host = d.getVar("HOST_NAME")+"."+d.getVar("DOMAIN_NAME")
 
     # Update IAM servers
 
-    data["IAMProtectedServerURL"] = node_id+":8089"
-    data["IAMPublicServerURL"] = node_id+":8090"
+    data["IAMProtectedServerURL"] = host+":8089"
+    data["IAMPublicServerURL"] = host+":8090"
 
     # Update CM server
 
-    data["CMServerURL"] = main_node_id+":8093"
+    data["CMServerURL"] = d.getVar("MAIN_NODE_ADDRESS")+":8093"
 
     with open(file_name, "w") as f:
         json.dump(data, f, indent=4)

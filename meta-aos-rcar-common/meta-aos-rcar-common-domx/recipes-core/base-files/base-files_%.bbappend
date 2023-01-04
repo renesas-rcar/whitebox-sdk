@@ -1,1 +1,1 @@
-hostname = "${NODE_ID}"
+hostname = "${HOST_NAME}"

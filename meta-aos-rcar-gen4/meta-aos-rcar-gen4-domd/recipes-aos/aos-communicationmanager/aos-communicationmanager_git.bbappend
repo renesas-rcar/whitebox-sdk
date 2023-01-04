@@ -30,19 +30,19 @@ python do_update_config() {
 
     nodes = d.getVar("NODE_LIST").split()
     ums = d.getVar("UM_LIST").split()
-    node_id = d.getVar("NODE_ID")
+    host = d.getVar("HOST_NAME")+"."+d.getVar("DOMAIN_NAME")
  
     # Update IAM servers
     
-    data["IAMProtectedServerURL"]= node_id+":8089"
-    data["IAMPublicServerURL"] = node_id+":8090"
+    data["IAMProtectedServerURL"]= host+":8089"
+    data["IAMPublicServerURL"] = host+":8090"
 
     # Update SM controller
 
     sm_controller = data["SMController"]
 
     if len(nodes) > 1:
-        sm_controller["FileServerURL"] = node_id+":8094" 
+        sm_controller["FileServerURL"] = host+":8094" 
  
     sm_controller["NodeIDs"] = []
 
@@ -54,9 +54,11 @@ python do_update_config() {
     um_controller = data["UMController"]
 
     if len(ums) > 1:
-        um_controller["FileServerURL"] = node_id+":8092" 
+        um_controller["FileServerURL"] = host+":8092" 
  
     um_controller["UMClients"] = []
+
+    node_id = d.getVar("NODE_ID")
 
     for um in ums:
         um_client = {"UMID": um}

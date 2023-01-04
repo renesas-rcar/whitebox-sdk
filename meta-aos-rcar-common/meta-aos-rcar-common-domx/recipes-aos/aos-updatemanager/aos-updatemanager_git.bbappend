@@ -34,22 +34,19 @@ python do_update_config() {
 
     with open(file_name) as f:
         data = json.load(f)
-
-    node_id = d.getVar("NODE_ID")
-    main_node_id = d.getVar("MAIN_NODE_ID")
  
     # Update IAM servers
     
-    data["IAMPublicServerURL"] = node_id+":8090"
+    data["IAMPublicServerURL"] = d.getVar("HOST_NAME")+"."+d.getVar("DOMAIN_NAME")+":8090"
 
     # Update CM server
 
-    data["CMServerURL"] = main_node_id+":8091"
+    data["CMServerURL"] = d.getVar("MAIN_NODE_ADDRESS")+":8091"
 
     # Update component IDs
 
     for update_module in data["UpdateModules"]:
-        update_module["ID"] = d.getVar("UNIT_MODEL")+"-"+d.getVar("UNIT_VERSION")+"-"+node_id+"-"+update_module["ID"]
+        update_module["ID"] = d.getVar("UNIT_MODEL")+"-"+d.getVar("UNIT_VERSION")+"-"+update_module["ID"]
 
     with open(file_name, "w") as f:
         json.dump(data, f, indent=4)

@@ -46,7 +46,7 @@ python do_update_config() {
 
     for cert_module in data["CertModules"]:
         if "ExtendedKeyUsage" in cert_module and "serverAuth" in cert_module["ExtendedKeyUsage"]:
-            cert_module["AlternativeNames"] = [d.getVar("NODE_ID")]
+            cert_module["AlternativeNames"] = [d.getVar("HOST_NAME")+"."+d.getVar("DOMAIN_NAME")]
 
     with open(file_name, "w") as f:
         json.dump(data, f, indent=4)
