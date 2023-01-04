@@ -1,6 +1,6 @@
 [Unit]
 Description=AOS Reboot service
-ConditionPathExists=/var/aos/downloads/update_rootfs/updated
+ConditionPathExists=/var/aos/workdirs/um/update_rootfs/updated
 
 [Service]
 ExecStart=systemctl reboot --force
