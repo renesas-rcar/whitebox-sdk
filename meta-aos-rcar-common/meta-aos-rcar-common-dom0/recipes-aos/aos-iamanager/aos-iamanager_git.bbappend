@@ -8,6 +8,10 @@ FILES_${PN} += " \
     ${sysconfdir} \
 "
 
+RDEPENDS_${PN}_remove = " \
+    aos-setupdisk \
+"
+
 do_install_append() {
     install -d ${D}${sysconfdir}/systemd/system/${PN}.service.d
     install -d ${D}${sysconfdir}/systemd/system/${PN}-provisioning.service.d

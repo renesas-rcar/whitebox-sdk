@@ -15,6 +15,7 @@ FILES_${PN} += " \
 RDEPENDS_${PN} += " \
     optee-pkcs11-ta \
     optee-client \
+    aos-setupdisk \
 "
 
 do_install_append() {
