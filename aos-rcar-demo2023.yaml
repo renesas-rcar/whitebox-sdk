@@ -12,10 +12,15 @@ variables:
   UNIT_MODEL: "rcar-demo2023"
   UNIT_VERSION: "1.0"
 
-  # Aos version configuration
+  # Aos FOTA configuration
 
   BUNDLE_IMAGE_VERSION: "0.1.0"
+  BUNDLE_REF_VERSION: "0.1.0"
+  BUNDLE_DOM0_TYPE: "full"
+  BUNDLE_DOMD_TYPE: "full"
+  BUNDLE_RH850_TYPE: ""
   RH850_IMAGE_VERSION: "1.0.0"
+  RH850_IMAGE_PATH: "${TOPDIR}/../../../../sample_image_RH850/v1.0/OTA_AlcoholApp_Image"
 
   # Aos node configuration
 
@@ -61,6 +66,8 @@ variables:
   GEN4_XT_KERNEL_BRANCH: "v5.10.41/rcar-5.1.7.rc5-xt"
   GEN4_XT_KERNEL_REV: "${AUTOREV}"
 
+  GEN4_XT_DOMD_IMAGE: "rcar-image-minimal"
+
   # Gen3 build configuration
 
   GEN3_DOM0_BUILD_DIR: "build/gen3/dom0"
@@ -68,6 +75,8 @@ variables:
 
   GEN3_XT_DOMD_DTB_NAME: "%{GEN3_SOC_FAMILY}-%{GEN3_MACHINE}-domd.dtb"
   GEN3_XT_XEN_DTB_NAME: "%{GEN3_SOC_FAMILY}-%{GEN3_MACHINE}-xen.dtb"
+
+  GEN3_XT_DOMD_IMAGE: "core-image-minimal"
 
 common_data:
   # Sources used by all domains
@@ -146,6 +155,14 @@ common_data:
 
     - [AOS_RUNNER, "runx"]
 
+    # Aos configuration
+    - [BUNDLE_DIR, "${TOPDIR}/../../../.."]
+    - [BUNDLE_OSTREE_REPO, "${TOPDIR}/../../../../rootfs_repo"]
+    - [BUNDLE_IMAGE_VERSION, "%{BUNDLE_IMAGE_VERSION}"]
+    - [BUNDLE_DOM0_TYPE, "%{BUNDLE_DOM0_TYPE}"]
+    - [BUNDLE_DOMD_TYPE, "%{BUNDLE_DOMD_TYPE}"]
+    - [DOMD_REF_VERSION, "%{BUNDLE_REF_VERSION}"]
+
   # Common configuration options for all domx
   domx_conf: &DOMX_CONF
 
@@ -187,6 +204,9 @@ components:
         - [XT_DOMD_CONFIG_NAME, "%{GEN4_XT_DOMD_CONFIG_NAME}"]
         - [XT_DOMD_DTB_NAME, "%{GEN4_XT_DOMD_DTB_NAME}"]
         - [XT_GUEST_INSTALL, "domd"]
+        - [XT_XEN_DTB_NAME, "%{GEN4_XT_XEN_DTB_NAME}"]
+        - [XT_DOMD_MACHINE, "%{GEN4_MACHINE}"]
+        - [XT_DOMD_IMAGE, "%{GEN4_XT_DOMD_IMAGE}"]
 
         # Network configuration
         - [DOMAIN_NAME, "%{GEN4_DOMAIN_NAME}"]
@@ -197,6 +217,8 @@ components:
         - [NODE_ID, "%{GEN4_DOM0_NODE_ID}"]
         - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
         - [RH850_IMAGE_VERSION, "%{RH850_IMAGE_VERSION}"]
+        - [BUNDLE_RH850_TYPE, "%{BUNDLE_RH850_TYPE}"]
+        - [RH850_IMAGE_PATH, "%{RH850_IMAGE_PATH}"]
 
       layers:
         - "../../../meta-virtualization"
@@ -271,7 +293,7 @@ components:
 
         - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
 
-      build_target: rcar-image-minimal
+      build_target: "%{GEN4_XT_DOMD_IMAGE}"
       layers:
         - "../../../poky/meta"
         - "../../../poky/meta-poky"
@@ -318,6 +340,9 @@ components:
         - [XT_DOMD_CONFIG_NAME, "%{GEN3_XT_DOMD_CONFIG_NAME}"]
         - [XT_DOMD_DTB_NAME, "%{GEN3_XT_DOMD_DTB_NAME}"]
         - [XT_GUEST_INSTALL, "domd"]
+        - [XT_XEN_DTB_NAME, "%{GEN3_XT_XEN_DTB_NAME}"]
+        - [XT_DOMD_MACHINE, "%{GEN3_MACHINE}"]
+        - [XT_DOMD_IMAGE, "%{GEN3_XT_DOMD_IMAGE}"]
 
         # Network configuration
         - [DOMAIN_NAME, "%{GEN3_DOMAIN_NAME}"]
@@ -389,7 +414,7 @@ components:
         - [NODE_ID, "%{GEN3_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
 
-      build_target: core-image-minimal
+      build_target: "%{GEN3_XT_DOMD_IMAGE}"
       layers:
         - "../../../poky/meta"
         - "../../../poky/meta-poky"
