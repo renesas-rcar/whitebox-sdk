@@ -16,10 +16,11 @@ FILES_${PN} += " \
 "
 
 do_install_append() {
-    if [ -f ${D}${sysconfdir}/systemd/system/systemd-networkd.service.d/port-forward-systemd-networkd.conf ]; then
-        sed -i "s/eth0/tsn0/g" ${D}${sysconfdir}/systemd/system/systemd-networkd.service.d/port-forward-systemd-networkd.conf
-    fi
-
     install -d ${D}${sysconfdir}/systemd/system/systemd-networkd.service.d/
     install -m 0644 ${S}/interface-forward-systemd-networkd.conf ${D}${sysconfdir}/systemd/system/systemd-networkd.service.d
+
+    # Add route to gen3 for tsn1
+    echo "[Route]"  >> ${D}${sysconfdir}/systemd/network/tsn1.network
+    echo "Gateway=10.0.0.2" >> ${D}${sysconfdir}/systemd/network/tsn1.network
+    echo "Destination=${GEN3_DHCP_NET}.0/24" >> ${D}${sysconfdir}/systemd/network/tsn1.network
 }
