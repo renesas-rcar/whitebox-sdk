@@ -1,0 +1,39 @@
+From 488635f41a240b0acd919c4323a1c5c2ac41a3bd Mon Sep 17 00:00:00 2001
+From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+Date: Tue, 3 Jan 2023 00:08:21 +0200
+Subject: [PATCH] plat: rcar: do not enable console for Gen4
+
+During boot, some part of the system disables serial console
+completely, including the functional clock. As OP-TEE does not know
+how to work with CPG module, we can't enable it back. This leads to
+boot lock-up, as OP-TEE tries to wait till serial port will become
+available.
+
+As a workaround - disable console completely.
+
+Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+---
+ core/arch/arm/plat-rcar/main.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/core/arch/arm/plat-rcar/main.c b/core/arch/arm/plat-rcar/main.c
+index ac8d20ee..be064e1f 100644
+--- a/core/arch/arm/plat-rcar/main.c
++++ b/core/arch/arm/plat-rcar/main.c
+@@ -68,8 +68,11 @@ uint32_t rcar_prr_value __nex_bss;
+ 
+ void console_init(void)
+ {
+-	scif_uart_init(&console_data, CONSOLE_UART_BASE);
+-	register_serial_console(&console_data.chip);
++	if (!IS_ENABLED(CFG_RCAR_GEN4))
++	{
++		scif_uart_init(&console_data, CONSOLE_UART_BASE);
++		register_serial_console(&console_data.chip);
++	}
+ }
+ 
+ #ifdef CFG_RCAR_ROMAPI
+-- 
+2.38.1
+
