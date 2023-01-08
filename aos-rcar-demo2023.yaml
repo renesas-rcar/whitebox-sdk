@@ -14,7 +14,7 @@ variables:
 
   # Aos FOTA configuration
 
-  BUNDLE_IMAGE_VERSION: "0.1.0"
+  BUNDLE_IMAGE_VERSION: "0.2.0"
   BUNDLE_REF_VERSION: "0.1.0"
   BUNDLE_DOM0_TYPE: "full"
   BUNDLE_DOMD_TYPE: "full"
@@ -95,13 +95,13 @@ common_data:
       rev: "c62970f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos"
-      rev: "v7.0.0"
+      rev: "v7.0.1"
     - type: git
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "c1ad85f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos-rcar-demo2023"
-      rev: "v0.1.0"
+      rev: "v0.2.0"
 
   # Sources to be used in DomD
   domd_sources: &DOMD_SOURCES

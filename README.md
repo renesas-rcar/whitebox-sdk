@@ -7,13 +7,15 @@ Gen3 device is based on [meta-aos-rcar-gen3](https://github.com/aoscloud/meta-ao
 
 ## Status
 
-This is initial release 0.1.0. This release supports the following features:
+This is release 0.2.0. This release supports the following features:
 
 * R-Car-S4 device:
     - dom0 with running unikernels as Aos services capability;
     - domd with running OCI containers as Aos services capability.
-* R-Car Gen3 device is not fully integrated;
-* FOTA is not fully integrated.
+* R-Car Gen3 device:
+    - dom0 with running unikernels as Aos services capability;
+    - domd with running OCI containers as Aos services capability.
+* FOTA is integrated and supported.
 
 ## Building
 
@@ -44,7 +46,7 @@ parameters. You can check them with `--help-config` command line option:
 
 ```sh
 moulin aos-rcar-demo2023.yaml --help-config
-usage: /home/oleksandr_grytsov/.local/bin/moulin aos-rcar-demo2023.yaml [--GEN3_DEVICE {enable,disable}]
+usage: moulin aos-rcar-demo2023.yaml [--GEN3_DEVICE {enable,disable}]
                                                                         [--GEN3_MACHINE {h3ulcb-4x2g-ab,h3ulcb-4x2g,h3ulcb-4x2g-kf,m3ulcb,salvator-x-m3,salvator-xs-m3-2x4g,salvator-xs-h3,salvator-xs-h3-4x2g,salvator-x-h3-4x2g,salvator-x-h3}]
                                                                         [--VIS_DATA_PROVIDER {renesassimulator,telemetryemulator}]
 
@@ -59,9 +61,8 @@ options:
                         Specifies plugin for VIS automotive data
 ```
 
-By default the only R-Car-S4 device is supported. To add R-Car Gen3 device use `--GEN3_DEVICE enable` option.
-For R-Car-S4 device the only one machine is supported as of now: `spider`. For R-Car Gen3 device different machines are
-supported. The R-Car Gen3 machine can be selected by using `--GEN3_MACHINE` option.
+By default builds for two devices will be performed. It is possible to build standalone product only for R-Car-S4
+device by disabling build for R-Car Gen3 device: ` --GEN3_DEVICE=disable`.
 
 Moulin will generate `build.ninja` file. After that run `ninja` to build the images. Issue the command
 `ninja gen4_full.img` to generate full image for R-Car-S4 device and `ninja gen3_full.img` to generate full image for
