@@ -9,7 +9,3 @@ AOS_INITRAMFS_SCRIPTS += " \
     optee-client \
     lvm2 \
 "
-
-RRECOMMENDS${PN} += " \
-    kernel-module-loop \
-"
