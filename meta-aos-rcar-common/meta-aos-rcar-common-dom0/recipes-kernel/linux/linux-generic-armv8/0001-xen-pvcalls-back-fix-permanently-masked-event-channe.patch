@@ -1,0 +1,48 @@
+From acb6cd9b546097b19a76244751c65ecb7e18066d Mon Sep 17 00:00:00 2001
+Message-Id: <acb6cd9b546097b19a76244751c65ecb7e18066d.1674208804.git.oleksii_moisieiev@epam.com>
+From: Volodymyr Babchuk <Volodymyr_Babchuk@epam.com>
+Date: Thu, 19 Jan 2023 21:11:15 +0000
+Subject: [PATCH] xen/pvcalls-back: fix permanently masked event channel
+
+There is a sequence of events that can lead to a permanently masked
+event channel, because xen_irq_lateeoi() is newer called. This happens
+when a backend receives spurious write event from a frontend. In this
+case pvcalls_conn_back_write() returns early and it does not clears the
+map->write counter. As map->write > 0, pvcalls_back_ioworker() returns
+without calling xen_irq_lateeoi(). This leaves the event channel in
+masked state, a backend does not receive any new events from a
+frontend and the whole communication stops.
+
+Move atomic_set(&map->write, 0) to the very beginning of
+pvcalls_conn_back_write() to fix this issue.
+
+Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+Reported-by: Oleksii Moisieiev <oleksii_moisieiev@epam.com>
+---
+ drivers/xen/pvcalls-back.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/pvcalls-back.c b/drivers/xen/pvcalls-back.c
+index a7d293fa8d14..60f5cd70d770 100644
+--- a/drivers/xen/pvcalls-back.c
++++ b/drivers/xen/pvcalls-back.c
+@@ -173,6 +173,8 @@ static bool pvcalls_conn_back_write(struct sock_mapping *map)
+ 	RING_IDX cons, prod, size, array_size;
+ 	int ret;
+ 
++	atomic_set(&map->write, 0);
++
+ 	cons = intf->out_cons;
+ 	prod = intf->out_prod;
+ 	/* read the indexes before dealing with the data */
+@@ -197,7 +199,6 @@ static bool pvcalls_conn_back_write(struct sock_mapping *map)
+ 		iov_iter_kvec(&msg.msg_iter, READ, vec, 2, size);
+ 	}
+ 
+-	atomic_set(&map->write, 0);
+ 	ret = inet_sendmsg(map->sock, &msg, size);
+ 	if (ret == -EAGAIN) {
+ 		atomic_inc(&map->write);
+-- 
+2.25.1
+

@@ -1,0 +1,42 @@
+From a717dac5ed6aa06fd67fe9f33bf38fcc3dea1b30 Mon Sep 17 00:00:00 2001
+Message-Id: <a717dac5ed6aa06fd67fe9f33bf38fcc3dea1b30.1674215656.git.oleksii_moisieiev@epam.com>
+From: Oleksii Moisieiev <oleksii_moisieiev@epam.com>
+Date: Thu, 8 Dec 2022 09:10:50 +0200
+Subject: [PATCH] xen/pvcalls: free active map buffer on pvcalls_front_free_map
+
+Data buffer for active map is allocated in alloc_active_ring and freed
+in free_active_ring function, which is used only for the error
+cleanup. pvcalls_front_release is calling pvcalls_front_free_map which
+ends foreign access for this buffer, but doesn't free allocated pages.
+Call free_active_ring to clean all allocated resources.
+
+Signed-off-by: Oleksii Moisieiev <oleksii_moisieiev@epam.com>
+---
+ drivers/xen/pvcalls-front.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/xen/pvcalls-front.c b/drivers/xen/pvcalls-front.c
+index 7984645b5956..48aa43f7a639 100644
+--- a/drivers/xen/pvcalls-front.c
++++ b/drivers/xen/pvcalls-front.c
+@@ -225,6 +225,8 @@ static irqreturn_t pvcalls_front_event_handler(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
++static void free_active_ring(struct sock_mapping *map);
++
+ static void pvcalls_front_free_map(struct pvcalls_bedata *bedata,
+ 				   struct sock_mapping *map)
+ {
+@@ -240,7 +242,7 @@ static void pvcalls_front_free_map(struct pvcalls_bedata *bedata,
+ 	for (i = 0; i < (1 << PVCALLS_RING_ORDER); i++)
+ 		gnttab_end_foreign_access(map->active.ring->ref[i], 0, 0);
+ 	gnttab_end_foreign_access(map->active.ref, 0, 0);
+-	free_page((unsigned long)map->active.ring);
++	free_active_ring(map);
+ 
+ 	kfree(map);
+ }
+-- 
+2.25.1
+
