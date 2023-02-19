@@ -1,0 +1,51 @@
+From 6353afbf9bbae0f1b14088c6ecc8af3e14a9312a Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 15 Feb 2023 13:45:30 +0900
+Subject: [PATCH 2/9] Makefile: Fix depend issue
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ Makefile | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 9f4dc03..032a276 100644
+--- a/Makefile
++++ b/Makefile
+@@ -60,17 +60,18 @@ vm:
+ endif
+ 
+ ifeq ($(HV_OBJ),obj_1pe_atk2)
+-vm:
++vm: depend
+ 	make -C ./vm_atk2/vm1_atk2
+ 	make -C ./vm_atk2/vm2_atk2
+ 
+ depend:
+ 	make depend -C ./vm_atk2/vm1_atk2
+ 	make depend -C ./vm_atk2/vm2_atk2
++	touch depend
+ endif
+ 
+ ifeq ($(HV_OBJ),obj_2pe_atk2)
+-vm:
++vm: depend
+ 	make -C ./vm_atk2/vm1_atk2
+ 	make -C ./vm_atk2/vm2_atk2
+ 	make -C ./vm_atk2/vm3_atk2
+@@ -81,10 +82,12 @@ depend:
+ 	make depend -C ./vm_atk2/vm2_atk2
+ 	make depend -C ./vm_atk2/vm3_atk2
+ 	make depend -C ./vm_atk2/vm4_atk2
++	touch depend
+ endif
+ 
+ clean: vmclean atk2clean
+ 	make clean -C hypervisor/obj/$(HV_OBJ); 
++	rm -f depend
+ 
+ VMPROGLIST := $(wildcard vm_prog/*_prog)
+ 
+-- 
+2.34.1
+

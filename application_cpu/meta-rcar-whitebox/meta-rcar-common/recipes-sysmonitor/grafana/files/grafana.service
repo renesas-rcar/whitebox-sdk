@@ -1,0 +1,15 @@
+[Unit]
+Description = Grafana
+After=local-fs.target
+ConditionPathExists=/usr/bin
+
+[Service]
+Environment=GF_PATHS_DATA=/var/grafana
+ExecStart=/usr/bin/grafana/bin/grafana-server
+WorkingDirectory=/usr/bin/grafana
+Restart=no
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+

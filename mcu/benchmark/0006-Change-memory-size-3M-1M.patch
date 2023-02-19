@@ -1,0 +1,121 @@
+From c069e9da05e5313df386ad6fa8e0b01fa5a92607 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 6 Feb 2023 08:43:49 +0000
+Subject: [PATCH 6/9] Change memory size(3M -> 1M)
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ hypervisor/obj/obj_1pe_atk2/sample1.yaml |  8 ++++----
+ vm_atk2/vm1_atk2/u2a_pe1_vm1.clnk        |  2 +-
+ vm_atk2/vm1_atk2/u2a_pe1_vm1.ld          | 12 ++++++------
+ vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk        |  2 +-
+ vm_atk2/vm2_atk2/u2a_pe1_vm2.ld          | 12 ++++++------
+ 5 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/hypervisor/obj/obj_1pe_atk2/sample1.yaml b/hypervisor/obj/obj_1pe_atk2/sample1.yaml
+index ac74da9..c85ef0d 100644
+--- a/hypervisor/obj/obj_1pe_atk2/sample1.yaml
++++ b/hypervisor/obj/obj_1pe_atk2/sample1.yaml
+@@ -27,9 +27,9 @@ HV:
+ VM:
+  - Name:      VM1
+    CoreID:    0  
+-   RestBase:  0x00100000
++   RestBase:  0x00040000
+    Memory:
+-    - {Base: 0x00100000, Size: 0x00100000, Type: rom} # Type は all or rom or ram or peri 
++    - {Base: 0x00040000, Size: 0x00040000, Type: rom} # Type は all or rom or ram or peri 
+     - {Base: 0xfdc04000, Size: 0x00004000, Type: ram}
+     - {Base: 0xfe020000, Size: 0x00010000, Type: ram}
+     - {Base: 0xff000000, Size: 0x01000000, Type: peri}
+@@ -44,9 +44,9 @@ VM:
+     - 707
+  - Name:      VM2
+    CoreID:    0
+-   RestBase:  0x00200000
++   RestBase:  0x00080000
+    Memory:
+-    - {Base: 0x00200000, Size: 0x00100000, Type: rom}
++    - {Base: 0x00080000, Size: 0x00040000, Type: rom}
+     - {Base: 0xfdc08000, Size: 0x00004000, Type: ram}
+     - {Base: 0xfe030000, Size: 0x00010000, Type: ram}
+     - {Base: 0xff000000, Size: 0x01000000, Type: peri}
+diff --git a/vm_atk2/vm1_atk2/u2a_pe1_vm1.clnk b/vm_atk2/vm1_atk2/u2a_pe1_vm1.clnk
+index f686e3b..6749576 100644
+--- a/vm_atk2/vm1_atk2/u2a_pe1_vm1.clnk
++++ b/vm_atk2/vm1_atk2/u2a_pe1_vm1.clnk
+@@ -1 +1 @@
+--start=RESET,EIINTTBL,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text,.data/00100000,.lbss.bss/FDC04000,.data.R,.bss,.stack.bss/FE020000
++-start=RESET,EIINTTBL,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text,.data/00040000,.lbss.bss/FDC04000,.data.R,.bss,.stack.bss/FE020000
+diff --git a/vm_atk2/vm1_atk2/u2a_pe1_vm1.ld b/vm_atk2/vm1_atk2/u2a_pe1_vm1.ld
+index 2364f20..9922060 100644
+--- a/vm_atk2/vm1_atk2/u2a_pe1_vm1.ld
++++ b/vm_atk2/vm1_atk2/u2a_pe1_vm1.ld
+@@ -4,7 +4,7 @@
+ 
+ MEMORY
+ {
+-	INTROM(raxi) : org = 0x00100000, len = 1M
++	INTROM(raxi) : org = 0x00040000, len = 256k
+ 	LRAM(wax)    : org = 0xFDC04000, len = 16k
+ 	CRAM(wax)    : org = 0xFE020000, len = 64k
+ }
+@@ -97,11 +97,11 @@ SECTIONS
+ 	. = ALIGN(4);
+ 	__lbss_end = .;
+ 
+-	.comment 0x00100000 : { *(.comment) }	
+-	.debug			0x00100000 : { *(.debug) }
+-	.line			0x00100000 : { *(.line) }
+-	.debug_srcinfo	0x00100000 : { *(.debug_srcinfo) }
+-	.debug_sfnames	0x00100000 : { *(.debug_sfnames) }
++	.comment 0x00040000 : { *(.comment) }	
++	.debug			0x00040000 : { *(.debug) }
++	.line			0x00040000 : { *(.line) }
++	.debug_srcinfo	0x00040000 : { *(.debug_srcinfo) }
++	.debug_sfnames	0x00040000 : { *(.debug_sfnames) }
+ }
+ /* provide a pointer for the stack */
+  
+\ No newline at end of file
+diff --git a/vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk b/vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk
+index 7e9203a..26948ef 100644
+--- a/vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk
++++ b/vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk
+@@ -1 +1 @@
+--start=RESET,EIINTTBL,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text,.data/00200000,.lbss.bss/FDC08000,.data.R,.bss,.stack.bss/FE030000
++-start=RESET,EIINTTBL,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text,.data/00080000,.lbss.bss/FDC08000,.data.R,.bss,.stack.bss/FE030000
+diff --git a/vm_atk2/vm2_atk2/u2a_pe1_vm2.ld b/vm_atk2/vm2_atk2/u2a_pe1_vm2.ld
+index 34ef57a..65d1ee7 100644
+--- a/vm_atk2/vm2_atk2/u2a_pe1_vm2.ld
++++ b/vm_atk2/vm2_atk2/u2a_pe1_vm2.ld
+@@ -4,7 +4,7 @@
+ 
+ MEMORY
+ {
+-	INTROM(raxi) : org = 0x00200000, len = 1M
++	INTROM(raxi) : org = 0x00080000, len = 256k
+ 	LRAM(wax)    : org = 0xFDC08000, len = 16k
+ 	CRAM(wax)    : org = 0xFE030000, len = 64k
+ }
+@@ -97,11 +97,11 @@ SECTIONS
+ 	. = ALIGN(4);
+ 	__lbss_end = .;
+ 
+-	.comment 0x00200000 : { *(.comment) }	
+-	.debug			0x00200000 : { *(.debug) }
+-	.line			0x00200000 : { *(.line) }
+-	.debug_srcinfo	0x00200000 : { *(.debug_srcinfo) }
+-	.debug_sfnames	0x00200000 : { *(.debug_sfnames) }
++	.comment 0x00080000 : { *(.comment) }	
++	.debug			0x00080000 : { *(.debug) }
++	.line			0x00080000 : { *(.line) }
++	.debug_srcinfo	0x00080000 : { *(.debug_srcinfo) }
++	.debug_sfnames	0x00080000 : { *(.debug_sfnames) }
+ }
+ /* provide a pointer for the stack */
+  
+\ No newline at end of file
+-- 
+2.34.1
+

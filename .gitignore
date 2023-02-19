@@ -1,0 +1,15 @@
+#
+# .gitignore
+#
+
+/tool/CSPlus_CC_Package_V80900-doc-e*
+/mcu/safeg-auto/
+/mcu/safeg-auto-bench/
+G4MH.srec
+realtime_cpu/zephyrproject
+application_cpu/work_*
+application_cpu/aos-rcar-gen4.yaml
+application_cpu/common_data/
+tool/tmp
+tool/kitware-archive.sh
+

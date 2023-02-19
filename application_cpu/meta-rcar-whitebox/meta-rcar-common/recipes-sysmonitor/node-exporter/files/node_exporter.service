@@ -1,0 +1,14 @@
+[Unit]
+Description = Node Exporter
+After=local-fs.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=/usr/bin/node_exporter/node_exporter
+WorkingDirectory=/usr/bin/node_exporter
+Restart=no
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+

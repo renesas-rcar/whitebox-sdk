@@ -1,0 +1,10 @@
+[Unit]
+Description = WAII control service file
+
+[Unit]
+Wants=agt_server.service
+Wants=vissv2server.service
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,16 @@
+[Unit]
+Description = WAII : agt_server
+After=local-fs.target network.target
+PartOf=waii.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=/usr/bin/waii/agt_server/agt_server
+WorkingDirectory=/usr/bin/waii/agt_server
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+#WantedBy=multi-user.target
+

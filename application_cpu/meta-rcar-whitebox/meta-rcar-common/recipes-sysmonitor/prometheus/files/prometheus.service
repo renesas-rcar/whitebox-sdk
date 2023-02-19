@@ -1,0 +1,14 @@
+[Unit]
+Description = Prometheus
+After=local-fs.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=/usr/bin/prometheus/prometheus --config.file=/usr/bin/prometheus/prometheus.yml --storage.tsdb.path=/var/prometheus
+WorkingDirectory=/usr/bin/prometheus
+Restart=no
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+
