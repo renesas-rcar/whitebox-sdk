@@ -1,0 +1,8 @@
+#
+# .gitignore
+#
+
+work_*
+common_data
+aos-rcar-gen4.yaml
+

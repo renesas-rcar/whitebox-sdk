@@ -1,0 +1,21 @@
+This file contains a list of maintainers for whitebox-sdk repository.
+
+Descriptions of section entries:
+
+    M: Mail patches to: FullName <address@domain>
+    F: Files and directories with wildcard patterns.
+       A trailing slash includes all files and subdirectory files.
+       F:   meta-XXXXX/    all files in and below meta-XXXXX
+       F:   meta-XXXXX/*   all files in meta-XXXXX, but not below
+       One pattern per line.  Multiple F: lines acceptable.
+
+Please keep this list in alphabetical order.
+
+Maintainers List (try to look for most precise areas first)
+
+-----------------------------------
+
+Renesas R-Car whitebox-sdk
+M: R-Car Whitebox-SDK team <whiteboxsdk@lm.renesas.com>
+F:      /
+
