@@ -2,7 +2,7 @@
 Execute the following command:
 
 	sudo apt install git	
-	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v1.x
+	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v1.x-dev
 
 # build
 Execute the following command:
