@@ -1,0 +1,139 @@
+From 0ef3a6dc0ac005ff61c088180ddac4305dbf88bd Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Tue, 7 Mar 2023 16:21:04 +0100
+Subject: [PATCH 16/21] iccom: increased CTA size to 16kB
+
+---
+ examples/renesas/iccom/iccom.c          |  2 +-
+ examples/renesas/iccom/iccom_commands.h | 62 ++++---------------------
+ examples/renesas/iccom/iccom_ll.c       |  4 +-
+ 3 files changed, 13 insertions(+), 55 deletions(-)
+
+diff --git a/examples/renesas/iccom/iccom.c b/examples/renesas/iccom/iccom.c
+index cb86e1a..7e857d1 100644
+--- a/examples/renesas/iccom/iccom.c
++++ b/examples/renesas/iccom/iccom.c
+@@ -18,7 +18,7 @@ enum ICCOM_MSG {
+     ICCOM_MSG_ACK
+ };
+ 
+-#define ICCOM_BUF_MAX_SIZE		2048
++#define ICCOM_BUF_MAX_SIZE		(TOTAL_CTA_SIZE/2)
+ #define TIMER_TICK_INTERVAL_NS		(125U)
+ #define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
+diff --git a/examples/renesas/iccom/iccom_commands.h b/examples/renesas/iccom/iccom_commands.h
+index c83233b..1aafc2c 100644
+--- a/examples/renesas/iccom/iccom_commands.h
++++ b/examples/renesas/iccom/iccom_commands.h
+@@ -10,31 +10,21 @@
+  * CC-RH has different types compared to Linux, but since this file is shared
+  * it should compile on both systems
+  */
+-//#ifdef __rh850__
++#ifdef LINUX_TEST_APP
++	#include <stdint.h>
++#else
+ 	typedef uint8	uint8_t;
+ 	typedef uint16	uint16_t;
+ 	typedef uint32	uint32_t;
+ 	typedef sint32	int32_t;
+-//#endif
++#endif
+ 
+ enum iccom_command {
+-	READ_FLASH_ID = 0,
+-	ERASE_AREA,
+-	FLASH_CHUNK,
+-	READ_CHUNK,	
+-	ECHO,
++	ECHO = 0,
+ };
+ 
+-#define FLASH_PAGE_SIZE			0x100	// 256 bytes
+-#define FLASH_PAGE_SIZE_MASK	0xFFFFFF00U
+-
+-// This calculation goes like this:
+-// - 2048 is the maximum size for each ICCOM transaction; this can be changed
+-//   as desired, but both parties (CA55 and G4MH must agree on the same value)
+-// - sizeof(uint8_t) is the header of each command/reply
+-// - sizeof(uint32_t) is used for telling the length of the followind data in
+-//   the echo_command/echo_reply
+-#define MAX_DATA_SIZE		(2048 - sizeof(uint8_t))
++#define TOTAL_CTA_SIZE		0x4000
++#define ICCOM_BUF_MAX_SIZE	(TOTAL_CTA_SIZE/2) // Max size of each transaction (read/write)
+ 
+ // this is the common header shared between all commands
+ #define CMD_HEADER		\
+@@ -56,50 +46,18 @@ struct simple_reply_uint32 {
+ 	uint32_t ret_val;
+ };
+ 
+-#pragma pack(1)
+-struct read_flash_id_command {
+-	CMD_HEADER
+-};
+-
+-#pragma pack(1)
+-struct erase_area_command {
+-	CMD_HEADER
+-	uint32_t start_address;
+-	uint32_t size;
+-};
+-
+-#pragma pack(1)
+-struct flash_chunk_command {
+-	CMD_HEADER
+-	uint32_t start_address;
+-	uint32_t size;
+-	uint8_t data[FLASH_PAGE_SIZE];
+-};
+-
+-#pragma pack(1)
+-struct read_chunk_command {
+-	CMD_HEADER
+-	uint32_t start_address;
+-	uint32_t size;
+-};
+-
+-#pragma pack(1)
+-struct read_chunk_reply {
+-	CMD_HEADER
+-	int32_t ret_val;
+-	uint8_t data[FLASH_PAGE_SIZE];
+-};
++#define MAX_ECHO_DATA_SIZE		((TOTAL_CTA_SIZE/2) - sizeof(uint8_t))
+ 
+ #pragma pack(1)
+ struct echo_command {
+ 	CMD_HEADER
+-	uint8_t data[MAX_DATA_SIZE];
++	uint8_t data[MAX_ECHO_DATA_SIZE];
+ };
+ 
+ #pragma pack(1)
+ struct echo_reply {
+ 	CMD_HEADER
+-	uint8_t data[MAX_DATA_SIZE];
++	uint8_t data[MAX_ECHO_DATA_SIZE];
+ };
+ 
+ #endif //__ICCOM_COMMANDS_H__
+diff --git a/examples/renesas/iccom/iccom_ll.c b/examples/renesas/iccom/iccom_ll.c
+index ccbda1e..826f4ef 100644
+--- a/examples/renesas/iccom/iccom_ll.c
++++ b/examples/renesas/iccom/iccom_ll.c
+@@ -4,8 +4,8 @@
+ //#include "Compiler.h"
+ #include "tpl_compiler.h"
+ 
+-uint32 ICCOM_CTA_MEMORY_CH0 = 0x47FC7000;
+-uint32 ICCOM_CTA_MEMORY_CH1 = 0x47FC8000;
++uint32 ICCOM_CTA_MEMORY_CH0 = 0x47fc7000;
++uint32 ICCOM_CTA_MEMORY_CH1 = 0x47fc9000;
+ 
+ void iccom_ll_init(void)
+ {
+-- 
+2.34.1
+

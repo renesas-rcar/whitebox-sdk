@@ -1,0 +1,700 @@
+From c96d738c4c8e742e89d2c438a671d8153401b8b5 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Wed, 22 Mar 2023 14:37:24 +0100
+Subject: [PATCH 10/21] Add interrupt/counter support for Renesas G4MH: both
+ category 1 and 2 are supported.
+
+---
+ .../code/renesas/counter_call.goilTemplate    |  98 +++++++++
+ .../code/renesas/interrupt_table.goilTemplate | 205 ++++++++++++++++++
+ goil/templates/config/renesas/config.oil      |  54 +++--
+ machines/renesas/cstart0.asm                  |   4 -
+ machines/renesas/renesas_irq.c                |  17 ++
+ machines/renesas/tpl_irq_handler.asm          | 100 +++++++++
+ machines/renesas/tpl_machine.h                |   7 +
+ machines/renesas/tpl_machine_renesas.c        |   4 -
+ machines/renesas/tpl_sc_handler.asm           |   1 +
+ machines/renesas/tpl_startup.asm              |  40 ++--
+ 10 files changed, 485 insertions(+), 45 deletions(-)
+ create mode 100644 goil/templates/code/renesas/counter_call.goilTemplate
+ create mode 100755 goil/templates/code/renesas/interrupt_table.goilTemplate
+ create mode 100644 machines/renesas/renesas_irq.c
+ create mode 100644 machines/renesas/tpl_irq_handler.asm
+
+diff --git a/goil/templates/code/renesas/counter_call.goilTemplate b/goil/templates/code/renesas/counter_call.goilTemplate
+new file mode 100644
+index 0000000..f0286ea
+--- /dev/null
++++ b/goil/templates/code/renesas/counter_call.goilTemplate
+@@ -0,0 +1,98 @@
++#include "tpl_os_kernel.h"              /* tpl_schedule */
++#include "tpl_os_timeobj_kernel.h"      /* tpl_counter_tick */
++#include "tpl_machine_interface.h"      /* tpl_switch_context_from_it */
++
++#define OS_START_SEC_VAR_32BIT
++#include "tpl_memmap.h"
++volatile VAR(uint32, OS_VAR) tpl_time_counter = 0;
++#define OS_STOP_SEC_VAR_32BIT
++#include "tpl_memmap.h"
++
++#define OS_START_SEC_CODE
++#include "tpl_memmap.h"
++%
++
++#------------------------------------------------------------------------------*
++# Target specific initializations
++# build the maps for IRQ
++#
++let objForIRQ := @[]
++
++# Map ISR into objForIRQ
++foreach isr in ISR do
++  let key := isr::SOURCE
++  if not exists objForIRQ[key] then
++    let objForIRQ[key] := @()
++  end if
++  let isr::KIND := "ISR"
++  let objForIRQ[key] += isr
++end foreach
++
++# Map COUNTER into objForIRQ
++foreach cnt in COUNTER do
++  let key := cnt::SOURCE
++  if exists cnt::SOURCE_S::BIT then
++    let key := key + "_bit_" + [cnt::SOURCE_S::BIT string]
++  end if
++  if not exists objForIRQ[key] then
++    let objForIRQ[key] := @()
++  end if
++  let cnt::KIND := "COUNTER"
++  let objForIRQ[key] += cnt
++end foreach
++
++let INTERRUPTMAP := mapof INTERRUPT by NAME
++
++# Build the list of counters to call
++let counterForIRQ := @[]
++
++# Build a list of virtual objects (counters) each of them holding values :
++# handlerSource, handlerName, handlerAck, generatePrimaryIrq
++foreach objList in objForIRQ do
++  foreach obj in objList do
++    if obj::KIND == "COUNTER" then
++      let counterForIRQ[KEY] := @()
++    end if
++  end foreach
++  foreach obj in objList do
++    if obj::KIND == "COUNTER" then
++      let  counterForIRQ[KEY] += obj::NAME
++    end if
++  end foreach
++end foreach
++
++#------------------------------------------------------------------------------*
++foreach objCounter in counterForIRQ do
++  let obj_KEY := KEY
++    %
++FUNC(tpl_bool, OS_CODE) tpl_tick_% !KEY 
++if exists objCounter::SOURCE_S::BIT then
++  %_% ! objCounter::SOURCE_S::BIT
++end if
++%(void)
++{
++%
++  foreach obj in objCounter do
++  %  tpl_counter_tick(&% !obj %_counter_desc);
++%
++  end foreach
++  if obj_KEY == "SysTick" then
++    %   tpl_time_counter++;
++%
++  end if
++%
++  if (tpl_kern.need_schedule == TRUE)
++  {
++    tpl_schedule_from_running();
++    LOCAL_SWITCH_CONTEXT()
++  }
++%
++%
++  return TRUE;
++}
++%
++end foreach
++
++%
++#define OS_STOP_SEC_CODE
++#include "tpl_memmap.h"
+diff --git a/goil/templates/code/renesas/interrupt_table.goilTemplate b/goil/templates/code/renesas/interrupt_table.goilTemplate
+new file mode 100755
+index 0000000..5c38621
+--- /dev/null
++++ b/goil/templates/code/renesas/interrupt_table.goilTemplate
+@@ -0,0 +1,205 @@
++#include "tpl_machine.h"
++#include "iodefine.h"
++
++%
++
++  #check that source is found in target for ISR2
++  foreach isr2 in ISRS2 do
++    let source_ok := false
++    foreach it_source in INTERRUPT do
++      if isr2::SOURCE == it_source::NAME then
++        let source_ok := true
++      end if
++    end foreach
++    if source_ok == false then
++      error isr2::SOURCE : "This interrupt source ".isr2::SOURCE." does not exist"
++    end if
++  end foreach
++  #check that source is found in target for ISR2
++  foreach counter in HARDWARECOUNTERS do
++    let source_ok := false
++    foreach it_source in INTERRUPT do
++      if counter::SOURCE == it_source::NAME then
++        let source_ok := true
++      end if
++    end foreach
++    if source_ok == false & counter::SOURCE != "" then
++      error counter::SOURCE : "This interrupt source ".counter::SOURCE." does not exist"
++    end if
++  end foreach
++
++let current_entry := 0
++%
++/* Functions prototypes */
++%
++  loop ENTRY from 0 to INTERRUPT_COUNT::IT_TABLE_SIZE - 1
++    do
++      let current_entry := ENTRY
++      let function_generated := false # don't produce function entry twice for one source id
++      let source_user_found := false # don't produce function while source is not used
++      foreach interrupt in INTERRUPT do
++        if ENTRY == interrupt::ID then
++          if not function_generated then
++            foreach counter in HARDWARECOUNTERS do
++              if counter::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++            foreach isr1 in ISRS1 do
++              if isr1::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++            foreach isr2 in ISRS2 do
++              if isr2::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++          end if
++
++          # Nothing to do for hardware counters (software counters call directly tpl_counter_tick function)
++          # Nothing to do for ISR category 2
++          # Declare prototypes handlers for ISR category 1
++          foreach isr1 in ISRS1 do
++            if isr1::SOURCE == interrupt::NAME then
++%
++extern FUNC(void, OS_CODE) % !isr1::NAME %_function(void); 
++%
++            end if
++          end foreach
++        end if
++      end foreach
++  end loop
++
++let current_entry := 0
++%
++/* Interrupt functions */
++%
++  loop ENTRY from 0 to INTERRUPT_COUNT::IT_TABLE_SIZE - 1
++    before 
++%
++#define OS_START_SEC_CODE
++#include "tpl_memmap.h"
++%
++    do
++      let current_entry := ENTRY
++      let function_generated := false # don't produce function entry twice for one source id
++      let source_user_found := false # don't produce function while source is not used
++      foreach interrupt in INTERRUPT do
++        if ENTRY == interrupt::ID then
++          if not function_generated then
++            foreach counter in HARDWARECOUNTERS do
++              if counter::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++            foreach isr1 in ISRS1 do
++              if isr1::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++            foreach isr2 in ISRS2 do
++              if isr2::SOURCE == interrupt::NAME then
++                let source_user_found := true
++              end if
++            end foreach
++          end if
++
++          if (not function_generated) & source_user_found then
++%
++FUNC(void, OS_CODE) tpl_interrupt_source_% !interrupt::ID %()
++{
++  /* usefull to clear EICn.EIRFn ? */
++  INTC2.EIC% !interrupt::ID %.BIT.EIRF% !interrupt::ID % = 0;
++
++%
++            template if exists tpl_interrupt_ack in code
++            let function_generated := true
++          end if              
++          # check first for hardware counters (software counters call directly tpl_counter_tick function)
++          foreach counter in HARDWARECOUNTERS do
++            if counter::SOURCE == interrupt::NAME then
++%
++  tpl_tick_% !interrupt::NAME %();
++%  
++            end if
++          end foreach
++          # then check for ISR category 2
++          foreach isr2 in ISRS2 do
++            if isr2::SOURCE == interrupt::NAME then
++%
++  tpl_central_interrupt_handler(% !([TASKS length] + INDEX) %); 
++%    
++            end if
++          end foreach
++          # finally check for ISR category 1
++          foreach isr1 in ISRS1 do
++            if isr1::SOURCE == interrupt::NAME then
++%
++  % !isr1::NAME %_function(); 
++%
++            end if
++          end foreach
++        end if
++
++   # Close the function bracket if it has been produced
++      after
++        if function_generated then
++%}
++%     
++        end if
++      end foreach
++    after
++%
++#define OS_STOP_SEC_CODE
++#include "tpl_memmap.h"
++%
++  end loop
++%
++
++/* Interrupt table vector */
++%
++  loop ENTRY from 0 to INTERRUPT_COUNT::IT_TABLE_SIZE - 1
++    before
++%
++#define OS_START_SEC_CONST_UNSPECIFIED
++#include "tpl_memmap.h"
++CONST(tpl_it_vector_entry, OS_CONST) tpl_it_vector[% !INTERRUPT_COUNT::IT_TABLE_SIZE %] = {
++%
++    do
++      let interrupt_source_detected := false # we just need to know if a source number is used, if not, we link with tpl_null_it function
++      foreach interrupt in INTERRUPT do
++        if ENTRY == interrupt::ID & not interrupt_source_detected then
++          foreach counter in HARDWARECOUNTERS do
++            if counter::SOURCE == interrupt::NAME then
++            let interrupt_source_detected := true
++            end if
++          end foreach
++          foreach isr1 in ISRS1 do
++            if isr1::SOURCE == interrupt::NAME then
++            let interrupt_source_detected := true
++            end if
++          end foreach
++          foreach isr2 in ISRS2 do
++            if isr2::SOURCE == interrupt::NAME then
++            let interrupt_source_detected := true
++            end if
++          end foreach
++        end if
++      end foreach
++      if not interrupt_source_detected then
++        %  { tpl_null_it, (void *)NULL }%
++   else
++        %  { tpl_interrupt_source_% !ENTRY %, (void *)NULL }%
++      end if
++   between %,
++%
++    after
++%
++};
++#define OS_STOP_SEC_CONST_UNSPECIFIED
++#include "tpl_memmap.h"
++%
++  end loop
++%
++%
+diff --git a/goil/templates/config/renesas/config.oil b/goil/templates/config/renesas/config.oil
+index ec3a5c9..de3b27d 100755
+--- a/goil/templates/config/renesas/config.oil
++++ b/goil/templates/config/renesas/config.oil
+@@ -1,4 +1,24 @@
+ IMPLEMENTATION renesas {
++  TASK {
++    UINT32 STACKSIZE = 2048;
++  };
++
++  INTERRUPT [] {
++    UINT32 ID;
++  };
++
++  ISR [] {
++    INTERRUPT_TYPE SOURCE;
++    UINT32 STACKSIZE = 2048;
++  };
++
++  COUNTER [] {
++    INTERRUPT_TYPE SOURCE;
++  };
++
++  INTERRUPT_COUNT {
++    UINT32 IT_TABLE_SIZE;
++  };
+ 
+   OS {
+     BOOLEAN [
+@@ -19,28 +39,28 @@ IMPLEMENTATION renesas {
+     
+     BOOLEAN SYSTEM_CALL = TRUE;
+   };
+-  
+-  TASK {
+-    UINT32 STACKSIZE = 32768;
+-  };
+-  
+-  ISR {
+-    UINT32 STACKSIZE = 32768;
+-    ENUM [SIGTERM, SIGQUIT, SIGUSR2, SIGPIPE, SIGTRAP] SOURCE; 
+-  };
+-
+-  COUNTER {
+-    UINT32 MAXALLOWEDVALUE = 4294967295; /*32 bits unsigned value*/
+-  };
+-  
+ };
+ 
+ CPU renesas {
++  COUNTER SystemCounter {
++    SOURCE = SysTick;
++  };
++
+   PLATFORM_FILES renesas {
+     PATH = "renesas";
+     CFILE = "tpl_machine_renesas.c";
+-    CFILE = "cstart0.asm";
+-    CFILE = "tpl_startup.asm";
+-    CFILE = "tpl_sc_handler.asm";
++    ASFILE = "cstart0.asm";
++    ASFILE = "tpl_startup.asm";
++    ASFILE = "tpl_sc_handler.asm";
++    ASFILE = "tpl_irq_handler.asm";
++    CFILE  = "renesas_irq.c";
+   };
++
++  INTERRUPT_COUNT nb_it {
++    IT_TABLE_SIZE = 767;
++  };
++
++  INTERRUPT iccomInt  { ID = 80; };
++  INTERRUPT SysTick   { ID = 364; };
++  INTERRUPT SysTick2  { ID = 365; };
+ };
+diff --git a/machines/renesas/cstart0.asm b/machines/renesas/cstart0.asm
+index 67e2203..7c328f8 100644
+--- a/machines/renesas/cstart0.asm
++++ b/machines/renesas/cstart0.asm
+@@ -110,10 +110,6 @@ $endif
+ 	; apply PSW and PC to start user mode
+ 	feret
+ 
+-	.public	__irq_handler
+-__irq_handler:
+-	jr32 _irq_handler
+-
+ _exit:
+ 	br	_exit			;  end of program
+ 
+diff --git a/machines/renesas/renesas_irq.c b/machines/renesas/renesas_irq.c
+new file mode 100644
+index 0000000..5e00bd7
+--- /dev/null
++++ b/machines/renesas/renesas_irq.c
+@@ -0,0 +1,17 @@
++#include "tpl_os.h"
++#include "tpl_os_interrupt_kernel.h" /* tpl_it_handler */
++
++extern CONST(tpl_it_vector_entry, OS_CONST) tpl_it_vector[767]; 
++
++void tpl_eeic_handler ()
++{
++	VAR(tpl_it_handler, AUTOMATIC) isr_vector;
++	VAR(u32, AUTOMATIC) source;
++	
++	/* get interrupt id */
++	source = __stsr_rh(13, 0) & 0xfff; /* EIIC */
++
++	/* launch interrupt function (ISR2, timer...) */
++	isr_vector = tpl_it_vector[source].func;
++	isr_vector(tpl_it_vector[source].args);
++}
+diff --git a/machines/renesas/tpl_irq_handler.asm b/machines/renesas/tpl_irq_handler.asm
+new file mode 100644
+index 0000000..586b718
+--- /dev/null
++++ b/machines/renesas/tpl_irq_handler.asm
+@@ -0,0 +1,100 @@
++
++.extern _tpl_run_elected
++.extern _tpl_reentrancy_counter
++.extern _tpl_eeic_handler
++.extern _tpl_kernel_stack_bottom
++
++
++; could be generated by goil? =>
++TPL_KERN_OFFSET_S_RUNNING .equ 0
++TPL_KERN_OFFSET_S_ELECTED .equ 4
++TPL_KERN_OFFSET_RUNNING .equ 8
++TPL_KERN_OFFSET_ELECTED .equ 12
++TPL_KERN_OFFSET_RUNNING_ID .equ 16
++TPL_KERN_OFFSET_ELECTED_ID .equ 20
++TPL_KERN_OFFSET_NEED_SWITCH .equ 24
++TPL_KERN_OFFSET_NEED_SCHEDULE .equ 25
++
++NO_NEED_SWITCH_NOR_SCHEDULE	.equ 0
++NEED_SWITCH	                .equ 1
++; <=
++
++.public	__irq_handler
++__irq_handler:
++	; Save volatile registers on the calling task stack
++	pushsp r2, r2
++	pushsp r4, r20
++	stsr 1, r20 ; retrieve eipsw: calling status
++	pushsp r20, r20
++	stsr 0, r20 ; retrieve eipc: calling pc
++	pushsp r20, r20
++	
++	; Switch to kernel stack
++	mov r3, r4	; save current sp
++	movhi HIGHW1(#_tpl_kernel_stack_bottom), r0, r11 ; load kernel sp from structure
++	movea LOWW(#_tpl_kernel_stack_bottom), r11, r3 ; update sp
++
++	; We have now kernel stack
++	pushsp r4, r4 ; push running stack pointer on kernel stack
++	pushsp r31, r31 ; push link register on kernel stack
++
++	; Initialize NEED_SWITCH and SCHEDULE in tpl_kern structure
++	mov NO_NEED_SWITCH_NOR_SCHEDULE, r10
++	mov #_tpl_kern, r12
++	st.w r10, TPL_KERN_OFFSET_NEED_SWITCH[r12]
++
++	; Call interrupt handler
++	jarl _tpl_eeic_handler, r31
++
++	popsp r31, r31; retrieve link register from kernel stack
++	; Switch back to running stack
++	popsp r5, r5 ; retrieve running stack pointer from kernel stack
++	mov r3, r4 ; save Kernel stack pointer
++	mov r5, r3
++
++	; We have now running stack
++
++	; Check the tpl_need_switch variable
++	; to see if a switch should occurs
++	mov #_tpl_kern, r12
++	ld.w TPL_KERN_OFFSET_NEED_SWITCH[r12], r10
++	andi NEED_SWITCH, r10, r11
++	bz irq_no_context_switch
++
++	; Save the rest of the context
++	pushsp r21, r31
++
++	; Save the current context.
++	mov TPL_KERN_OFFSET_S_RUNNING, r10
++	movhi HIGHW1(#_tpl_kern), r10, r11 ; get pointer to the descriptor of the running task
++	ld.w LOWW(#_tpl_kern)[r11], r10
++
++	st.w r3, [r10] ; save running task sp
++
++	; Switch back to kernel stack
++	mov r4, r3
++
++	; Call tpl_run_elected() with arg=1 (save)
++	mov 1, r6 ; call with the SAVE value.
++	jarl _tpl_run_elected, r31
++
++	; Update the current context according to SP given by the OS
++	mov TPL_KERN_OFFSET_S_RUNNING, r10
++	movhi HIGHW1(#_tpl_kern), r10, r11 ; Get pointer to the descriptor of the new running task
++	ld.w LOWW(#_tpl_kern)[r11], r10
++
++	ld.w [r10], r11 ; Get SP of elected task
++	ld.w [r11], r3
++
++	; epilogue
++	popsp r21, r31
++
++irq_no_context_switch:
++	popsp r20, r20
++	ldsr r20, 0 ; restore eipc: calling pc
++	popsp r20, r20
++	ldsr r20, 1 ; restore eipsw: calling status
++	popsp r4, r20
++	popsp r2, r2
++
++	eiret
+diff --git a/machines/renesas/tpl_machine.h b/machines/renesas/tpl_machine.h
+index 6412dbf..82e2b31 100644
+--- a/machines/renesas/tpl_machine.h
++++ b/machines/renesas/tpl_machine.h
+@@ -54,4 +54,11 @@ typedef struct TPL_STACK *tpl_stack;
+  */
+ #define IDLE_STACK_SIZE 200
+ 
++/* TODO : This function is called after an ISR2 has been terminated. It should
++ *        restore the hardware's cpu priority if it has been increased before
++ *        the execution of the ISR2 (see ppc/multicore/tpl_machine.h for an
++ *        example).
++ */
++#define tpl_restore_cpu_priority()
++
+ #endif
+diff --git a/machines/renesas/tpl_machine_renesas.c b/machines/renesas/tpl_machine_renesas.c
+index c226973..349947c 100644
+--- a/machines/renesas/tpl_machine_renesas.c
++++ b/machines/renesas/tpl_machine_renesas.c
+@@ -176,7 +176,3 @@ FUNC(void, OS_CODE) tpl_init_machine(void)
+ 
+ 	init_systick();
+ }
+-
+-//defined in cstart0.asm... usefull?
+-#pragma interrupt irq_handler
+-void irq_handler(unsigned long arg) {}
+diff --git a/machines/renesas/tpl_sc_handler.asm b/machines/renesas/tpl_sc_handler.asm
+index 5e1ec74..a595687 100644
+--- a/machines/renesas/tpl_sc_handler.asm
++++ b/machines/renesas/tpl_sc_handler.asm
+@@ -33,6 +33,7 @@ _tpl_kernel_stack:
+ 	.dw 0xDEADBEEF
+ 	.endm
+ 
++    .public _tpl_kernel_stack_bottom
+ _tpl_kernel_stack_bottom:
+ 	.dw 0x00000000
+ 
+diff --git a/machines/renesas/tpl_startup.asm b/machines/renesas/tpl_startup.asm
+index 6f0d7b6..a59f886 100644
+--- a/machines/renesas/tpl_startup.asm
++++ b/machines/renesas/tpl_startup.asm
+@@ -87,75 +87,75 @@
+ 
+ 	.align	16
+ 	syncp
+-	jr32	__irq_handler ; _Dummy_EI ; INTn(priority0)
++	jr32	__irq_handler ; INTn(priority0)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority1)
++	jr32	__irq_handler ; INTn(priority1)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority2)
++	jr32	__irq_handler ; INTn(priority2)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority3)
++	jr32	__irq_handler ; INTn(priority3)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority4)
++	jr32	__irq_handler ; INTn(priority4)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority5)
++	jr32	__irq_handler ; INTn(priority5)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority6)
++	jr32	__irq_handler ; INTn(priority6)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority7)
++	jr32	__irq_handler ; INTn(priority7)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority8)
++	jr32	__irq_handler ; INTn(priority8)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority9)
++	jr32	__irq_handler ; INTn(priority9)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority10)
++	jr32	__irq_handler ; INTn(priority10)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority11)
++	jr32	__irq_handler ; INTn(priority11)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority12)
++	jr32	__irq_handler ; INTn(priority12)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority13)
++	jr32	__irq_handler ; INTn(priority13)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority14)
++	jr32	__irq_handler ; INTn(priority14)
+ 
+ 	.align	16
+ 	syncp
+-	jr32	_Dummy_EI ; INTn(priority15)
++	jr32	__irq_handler ; INTn(priority15)
+ 
+ 	.section "EIINTTBL_PE0", const
+ 	.align	512
+-	.dw	#_Dummy_EI ; INT0
+-	.dw	#_Dummy_EI ; INT1
+-	.dw	#_Dummy_EI ; INT2
++	.dw	#__irq_handler ; INT0
++	.dw	#__irq_handler ; INT1
++	.dw	#__irq_handler ; INT2
+ 	.rept	2048 - 3
+-	.dw	#_Dummy_EI ; INTn
++	.dw	#__irq_handler ; INTn
+ 	.endm
+ 
+ 	.section ".text", text
+-- 
+2.34.1
+

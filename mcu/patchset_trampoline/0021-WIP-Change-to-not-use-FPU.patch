@@ -1,0 +1,65 @@
+From 40d893b5879ce6ae6846482127d61c3eb09cd90b Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 27 Mar 2023 18:43:06 +0900
+Subject: [PATCH 21/21] WIP: Change to not use FPU
+
+If using FPU, cast to float doesn't work well.
+This patch makes using software instead of hardware.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/renesas/blink/blink.oil       | 1 +
+ examples/renesas/iccom/iccom.oil       | 1 +
+ examples/renesas/one_task/one_task.oil | 1 +
+ machines/renesas/g4mh/rcar_s4.clnk     | 2 +-
+ 4 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/examples/renesas/blink/blink.oil b/examples/renesas/blink/blink.oil
+index c1a9fea..483da23 100644
+--- a/examples/renesas/blink/blink.oil
++++ b/examples/renesas/blink/blink.oil
+@@ -24,6 +24,7 @@ CPU blink {
+       APP_NAME = "blink_exe";
+       LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
+       CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++      CFLAGS="-Xfloat=soft -Xdbl_size=8 -Xround=nearest";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+     };
+diff --git a/examples/renesas/iccom/iccom.oil b/examples/renesas/iccom/iccom.oil
+index d5d1193..c20e1ea 100644
+--- a/examples/renesas/iccom/iccom.oil
++++ b/examples/renesas/iccom/iccom.oil
+@@ -23,6 +23,7 @@ CPU iccom {
+       APP_NAME = "iccom_exe";
+       LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
+       CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++      CFLAGS="-Xfloat=soft -Xdbl_size=8 -Xround=nearest";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+     };
+diff --git a/examples/renesas/one_task/one_task.oil b/examples/renesas/one_task/one_task.oil
+index 3479d5a..ab909e6 100644
+--- a/examples/renesas/one_task/one_task.oil
++++ b/examples/renesas/one_task/one_task.oil
+@@ -8,6 +8,7 @@ CPU only_one_task {
+       TRAMPOLINE_BASE_PATH = "../../../";
+       LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
+       CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++      CFLAGS="-Xfloat=soft -Xdbl_size=8 -Xround=nearest";
+       APP_NAME = "one_task_exe";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+diff --git a/machines/renesas/g4mh/rcar_s4.clnk b/machines/renesas/g4mh/rcar_s4.clnk
+index ec03e4a..4e42df8 100755
+--- a/machines/renesas/g4mh/rcar_s4.clnk
++++ b/machines/renesas/g4mh/rcar_s4.clnk
+@@ -1,4 +1,4 @@
+--library=lib\v850e3v5\rhf8n.lib
++-library=lib\v850e3v5\rhs8n.lib
+ -library=lib\v850e3v5\libmalloc.lib
+ -start=RESET_PE0,EIINTTBL_PE0/200,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text.cmn,syscall.text,.text,.data/00010000,.data.R,.bss,.stack.bss/FDE00000
+ -fsymbol=.text.cmn
+-- 
+2.34.1
+

@@ -1,0 +1,31 @@
+From b7244a04b7b408b5a563391e12be638e158fa56c Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Wed, 14 Dec 2022 17:07:35 +0100
+Subject: [PATCH 01/21] remove compilation warnings when compiled without error
+ check
+
+If TrampolineOS is compiled without WITH_ERROR_HOOK and without WITH_ORTI,
+'error' variable is declared but unused, which can lead to compilation
+warnings.
+Update PROCESS_ERROR macro to remove the warning.
+---
+ os/tpl_os_error.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/os/tpl_os_error.h b/os/tpl_os_error.h
+index 8dafb8a..2b3a377 100644
+--- a/os/tpl_os_error.h
++++ b/os/tpl_os_error.h
+@@ -1049,7 +1049,8 @@ tpl_service.parameters.id.spinlock_id = (spinlockid);
+       PROCESS_ERROR_ORTI(error)    \
+     }
+ #else
+-#define PROCESS_ERROR(error)
++/* Avoid compilation warning */
++#define PROCESS_ERROR(error) (void) error;
+ #endif
+ 
+ /**
+-- 
+2.34.1
+

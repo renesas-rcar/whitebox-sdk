@@ -1,0 +1,55 @@
+From ba606922ec2b3b350225a243b4515c4e8d833b06 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Wed, 14 Dec 2022 17:41:56 +0100
+Subject: [PATCH 02/21] update goil templates to take into account tpl_invoque
+ extension
+
+Use tpl_invoque EXTENSION declared in 'code' directory in other goil templates.
+---
+ goil/templates/build/Makefile.goilTemplate | 2 +-
+ goil/templates/build/build_py.goilTemplate | 2 +-
+ goil/templates/build/make_py.goilTemplate  | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/goil/templates/build/Makefile.goilTemplate b/goil/templates/build/Makefile.goilTemplate
+index 2e6285c..13d2ef5 100755
+--- a/goil/templates/build/Makefile.goilTemplate
++++ b/goil/templates/build/Makefile.goilTemplate
+@@ -62,7 +62,7 @@ end foreach
+ if OS::SYSTEM_CALL then
+ %
+ OIL_GENERATED_FILES += tpl_dispatch_table.c
+-OIL_GENERATED_FILES += tpl_invoque.S
++OIL_GENERATED_FILES += tpl_invoque.% !EXTENSION %
+ %
+ else
+ %
+diff --git a/goil/templates/build/build_py.goilTemplate b/goil/templates/build/build_py.goilTemplate
+index f0da871..64df198 100755
+--- a/goil/templates/build/build_py.goilTemplate
++++ b/goil/templates/build/build_py.goilTemplate
+@@ -408,7 +408,7 @@ cSourceList.append(projfile.ProjectFile("% !PROJECT %/tpl_app_config.c"))
+ if OS::SYSTEM_CALL then
+ %
+ cSourceList.append(projfile.ProjectFile("% !PROJECT %/tpl_dispatch_table.c"))
+-cSourceList.append(projfile.ProjectFile("% !PROJECT %/tpl_invoque.S"))%
++cSourceList.append(projfile.ProjectFile("% !PROJECT %/tpl_invoque.% !EXTENSION %"))%
+ else
+ %
+ cSourceList.append(projfile.ProjectFile("% !PROJECT %/tpl_os.c"))%
+diff --git a/goil/templates/build/make_py.goilTemplate b/goil/templates/build/make_py.goilTemplate
+index f55c842..3d1b059 100755
+--- a/goil/templates/build/make_py.goilTemplate
++++ b/goil/templates/build/make_py.goilTemplate
+@@ -123,7 +123,7 @@ sourceList.append("% !PROJECT %/tpl_app_config.c")
+ if OS::SYSTEM_CALL then
+ %
+ sourceList.append("% !PROJECT %/tpl_dispatch_table.c")
+-sourceList.append("% !PROJECT %/tpl_invoque.S")%
++sourceList.append("% !PROJECT %/tpl_invoque.% !EXTENSION %")%
+ else
+ %
+ sourceList.append("% !PROJECT %/tpl_os.c")%
+-- 
+2.34.1
+

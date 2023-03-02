@@ -1,0 +1,38 @@
+From 43cc8f622aadc7db4fd92584a39e5340a9993d4c Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 24 Mar 2023 16:59:36 +0900
+Subject: [PATCH 20/21] WIP: Fix timer interupt is 4x slower than expected
+
+This fix is based on the real measurement.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ machines/renesas/tpl_machine_renesas.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/machines/renesas/tpl_machine_renesas.c b/machines/renesas/tpl_machine_renesas.c
+index 349947c..41dc7a7 100644
+--- a/machines/renesas/tpl_machine_renesas.c
++++ b/machines/renesas/tpl_machine_renesas.c
+@@ -9,7 +9,8 @@ VAR (tpl_context, OS_VAR) idle_task_context;
+ VAR(tpl_stack_word, OS_VAR) idle_stack[IDLE_STACK_SIZE/sizeof(tpl_stack_word)];
+ 
+ #define SYSTICK_HZ		((u32) 80000000) /* 80MHz : is it the correct frequency? */
+-#define TICKS_FOR_10MS	SYSTICK_HZ / 100
++#define PRESCALER		(0)
++#define TICKS_FOR_10MS		SYSTICK_HZ / (1<<PRESCALER) / 100 / 4
+ 
+ static void stop_systick()
+ {
+@@ -35,7 +36,7 @@ static void init_systick()
+ 	stop_systick();
+ 
+ 	/* clear TAUJnPRS0 to use PCLK clock for CK0 (ie diviser = 2^0) */
+-	TAUJ1.TPS.BIT.PRS0 = 0;
++	TAUJ1.TPS.BIT.PRS0 = PRESCALER;
+ 
+ 	/* set systick as interval timer */
+ 	TAUJ1.CMOR0.BIT.MD = 0;
+-- 
+2.34.1
+

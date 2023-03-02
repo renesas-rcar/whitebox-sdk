@@ -1,0 +1,25 @@
+From ced950fab5d1aab0e097585cac7c43ad9d8c3255 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 2 Mar 2023 16:20:19 +0900
+Subject: [PATCH 18/21] WIP: Fix build error on Linux
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ goil/templates/build/renesas/g4mh/compiler_cmake.goilTemplate | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/goil/templates/build/renesas/g4mh/compiler_cmake.goilTemplate b/goil/templates/build/renesas/g4mh/compiler_cmake.goilTemplate
+index cbe08b7..523ab1d 100644
+--- a/goil/templates/build/renesas/g4mh/compiler_cmake.goilTemplate
++++ b/goil/templates/build/renesas/g4mh/compiler_cmake.goilTemplate
+@@ -32,6 +32,6 @@ set(LINKER_SCRIPT % !basePath %machines/renesas/g4mh/rcar_s4.clnk)
+ # original rule uses ${CMAKE_C_COMPILER} instead
+ set(CMAKE_C_LINK_EXECUTABLE
+     "${LINKER} <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -output=<TARGET> -list=<TARGET>.map -subcommand=${LINKER_SCRIPT} <LINK_LIBRARIES>
+-	nm -n <TARGET>.abs > <TARGET>.syms
++	bash -c 'nm -n <TARGET>.abs > <TARGET>.syms'
+ 	${LINKER} <TARGET>.abs -output=<TARGET>.run -form=stype"
+ )
+-- 
+2.34.1
+

@@ -5,6 +5,7 @@
 /tool/CSPlus_CC_Package_V80900-doc-e*
 /mcu/safeg-auto/
 /mcu/safeg-auto-bench/
+/mcu/trampoline/
 G4MH.srec
 realtime_cpu/zephyrproject
 application_cpu/work

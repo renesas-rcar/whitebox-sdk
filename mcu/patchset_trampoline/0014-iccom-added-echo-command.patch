@@ -1,0 +1,78 @@
+From fba614e7d4fdfcfe304c55175bfae6a9c43ec848 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Fri, 3 Mar 2023 11:05:57 +0100
+Subject: [PATCH 14/21] iccom: added echo command
+
+---
+ examples/renesas/iccom/iccom.c          | 10 ++++++++++
+ examples/renesas/iccom/iccom_commands.h | 23 ++++++++++++++++++++++-
+ 2 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/examples/renesas/iccom/iccom.c b/examples/renesas/iccom/iccom.c
+index 9592b0d..f951641 100644
+--- a/examples/renesas/iccom/iccom.c
++++ b/examples/renesas/iccom/iccom.c
+@@ -137,6 +137,16 @@ static void iccom_handle_rx_msg(size_t size)
+ 		//	iccom_send((uint8*)reply_pkt, sizeof(struct read_chunk_reply));
+ 		//	break;
+ 		//}
++		case ECHO: {
++			struct echo_command* cmd_pkt = (struct read_chunk_command*) rx_buffer;
++			struct echo_reply* reply_pkt = (struct read_chunk_reply*) tx_buffer;
++
++			// Just copy the data back
++			memcpy(reply_pkt, cmd_pkt, size);
++			iccom_send((uint8*)reply_pkt, size);
++			break;
++		}
++
+ 		default:
+ 			break;
+ 	}
+diff --git a/examples/renesas/iccom/iccom_commands.h b/examples/renesas/iccom/iccom_commands.h
+index 49fabb9..c83233b 100644
+--- a/examples/renesas/iccom/iccom_commands.h
++++ b/examples/renesas/iccom/iccom_commands.h
+@@ -21,12 +21,21 @@ enum iccom_command {
+ 	READ_FLASH_ID = 0,
+ 	ERASE_AREA,
+ 	FLASH_CHUNK,
+-	READ_CHUNK,
++	READ_CHUNK,	
++	ECHO,
+ };
+ 
+ #define FLASH_PAGE_SIZE			0x100	// 256 bytes
+ #define FLASH_PAGE_SIZE_MASK	0xFFFFFF00U
+ 
++// This calculation goes like this:
++// - 2048 is the maximum size for each ICCOM transaction; this can be changed
++//   as desired, but both parties (CA55 and G4MH must agree on the same value)
++// - sizeof(uint8_t) is the header of each command/reply
++// - sizeof(uint32_t) is used for telling the length of the followind data in
++//   the echo_command/echo_reply
++#define MAX_DATA_SIZE		(2048 - sizeof(uint8_t))
++
+ // this is the common header shared between all commands
+ #define CMD_HEADER		\
+ 		uint8_t cmd_id;
+@@ -81,4 +90,16 @@ struct read_chunk_reply {
+ 	uint8_t data[FLASH_PAGE_SIZE];
+ };
+ 
++#pragma pack(1)
++struct echo_command {
++	CMD_HEADER
++	uint8_t data[MAX_DATA_SIZE];
++};
++
++#pragma pack(1)
++struct echo_reply {
++	CMD_HEADER
++	uint8_t data[MAX_DATA_SIZE];
++};
++
+ #endif //__ICCOM_COMMANDS_H__
+-- 
+2.34.1
+

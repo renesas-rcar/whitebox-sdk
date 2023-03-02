@@ -1,0 +1,112 @@
+From aa162f9483061821c371ee4c900670dba7425de9 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 2 Mar 2023 16:23:24 +0900
+Subject: [PATCH 19/21] WIP: Fix trampoline doesn't work well.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ machines/renesas/tpl_startup.asm | 23 ++---------------------
+ 1 file changed, 2 insertions(+), 21 deletions(-)
+
+diff --git a/machines/renesas/tpl_startup.asm b/machines/renesas/tpl_startup.asm
+index a59f886..e3b2076 100644
+--- a/machines/renesas/tpl_startup.asm
++++ b/machines/renesas/tpl_startup.asm
+@@ -37,8 +37,8 @@
+ 	jr32	__start ; RESET
+ 
+ 	.align	16
+-	syncp
+-	jr32	_Dummy ; SYSERR
++_SYSERR:
++	jr32	_SYSERR ; SYSERR
+ 
+ 	.align	16
+ 	jr32	_Dummy
+@@ -56,7 +56,6 @@
+ 	jr32	_Dummy ; RIE
+ 
+ 	.align	16
+-	syncp
+ 	jr32	_Dummy_EI ; FPE/FXE
+ 
+ 	.align	16
+@@ -78,75 +77,57 @@
+ 	jr32	_Dummy
+ 
+ 	.align	16
+-	syncp
+ 	jr32	_Dummy ; FENMI
+ 
+ 	.align	16
+-	syncp
+ 	jr32	_Dummy ; FEINT
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority0)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority1)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority2)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority3)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority4)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority5)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority6)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority7)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority8)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority9)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority10)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority11)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority12)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority13)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority14)
+ 
+ 	.align	16
+-	syncp
+ 	jr32	__irq_handler ; INTn(priority15)
+ 
+ 	.section "EIINTTBL_PE0", const
+-- 
+2.34.1
+
