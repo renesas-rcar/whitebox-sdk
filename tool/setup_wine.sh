@@ -33,4 +33,4 @@ fi
 sudo apt update
 
 sudo apt install --install-recommends winehq-stable -y
-winecfg
+LANG=C winecfg
