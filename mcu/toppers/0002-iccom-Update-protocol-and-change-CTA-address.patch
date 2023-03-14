@@ -1,0 +1,143 @@
+From 419c748820938615f99f0165d1f6c6eb633358a4 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Mon, 13 Mar 2023 09:32:13 +0900
+Subject: [PATCH] [PATCH] iccom: Update protocol and change CTA address
+
+-Updated iccom protocol
+-Changed iccom CTA address from 0x47fc7000 to 0x47fc9000
+---
+ vm_atk2/vm1_atk2/iccom/iccom_cdd.c | 15 ++++++++-------
+ vm_atk2/vm1_atk2/iccom/iccom_ll.c  |  6 +++---
+ vm_atk2/vm1_atk2/iccom/iccom_ll.h  | 29 ++++++++++-------------------
+ 3 files changed, 21 insertions(+), 29 deletions(-)
+
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+index e064b44..1696dd5 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+@@ -26,18 +26,18 @@ static void iccom_notify_tx_data(size_t message)
+ {
+ 	iccom_set_out_msg_reg((uint32)message);
+ 	iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
+-	iccom_set_out_ctrl_reg(ICCOM_SEND_NORMAL | ICCOM_SEND_BUFF_UPPER | ICCOM_INT_TRIGGER);
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_DATA | ICCOM_CTRL_BUFF_UPPER | ICCOM_CTRL_INT);
+ }
+ 
+ static void iccom_send_rx_data_ack(uint32 message)
+ {
+ 	iccom_set_out_msg_reg(message);
+-	iccom_set_out_ctrl_reg(ICCOM_SEND_ACK | ICCOM_ACK_BUFF_UPPER | ICCOM_INT_TRIGGER);
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_ACK | ICCOM_CTRL_BUFF_BOTTOM | ICCOM_CTRL_INT);
+ }
+ 
+ static void iccom_send_initialization_ack(void)
+ {
+-	iccom_set_out_ctrl_reg(ICCOM_INIT_FINISHED | ICCOM_INT_TRIGGER);
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_INIT_COMPLETED | ICCOM_CTRL_INT);
+ }
+ 
+ static sint32 iccom_wait_for_out_interrupt_clear(uint32_t timeout_ms)
+@@ -57,7 +57,7 @@ static sint32 iccom_wait_for_out_interrupt_clear(uint32_t timeout_ms)
+ 			iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
+ 			return -1;
+ 		}
+-	} while (out_ctrl_reg & ICCOM_INT_MASK);
++	} while (out_ctrl_reg & ICCOM_CTRL_INT);
+ 
+ 	return 0;
+ }
+@@ -118,13 +118,14 @@ static void iccom_handle_rx_msg(size_t size)
+ 			reply_pkt->cmd_id = cmd_pkt->cmd_id;
+ 			reply_pkt->ret_val = flash_read_chunk(cmd_pkt->start_address,
+ 										cmd_pkt->size, reply_pkt->data);
+-			iccom_send(reply_pkt, sizeof(struct read_chunk_reply));
++			iccom_send((uint8*)reply_pkt, sizeof(struct read_chunk_reply));
+ 			break;
+ 		}
+ 		default:
+ 			break;
+ 	}
+ Exit:
++	;
+ }
+ 
+ static void iccom_handle_ack_received(void)
+@@ -134,9 +135,9 @@ static void iccom_handle_ack_received(void)
+ 
+ enum ICCOM_MSG iccom_get_msg_type(uint32 control)
+ {
+-	if (ICCOM_INIT_FINISHED == (control & ICCOM_INIT_MASK))
++	if (control & ICCOM_CTRL_INIT_COMPLETED)
+ 		return ICCOM_MSG_INIT;
+-	if (ICCOM_SEND_NORMAL == (control & ICCOM_SEND_MASK))
++	if (control & ICCOM_CTRL_DATA)
+ 		return ICCOM_MSG_DATA;
+ 	else
+ 		return ICCOM_MSG_ACK;
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_ll.c b/vm_atk2/vm1_atk2/iccom/iccom_ll.c
+index 9847d8b..e44988d 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_ll.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_ll.c
+@@ -3,8 +3,8 @@
+ #include <string.h>
+ #include "Compiler.h"
+ 
+-uint32 ICCOM_CTA_MEMORY_CH0 = 0x47FC7000;
+-uint32 ICCOM_CTA_MEMORY_CH1 = 0x47FC8000;
++uint32 ICCOM_CTA_MEMORY_CH0 = 0x47FC9000;
++uint32 ICCOM_CTA_MEMORY_CH1 = 0x47FCA000;
+ 
+ void iccom_ll_init(void)
+ {
+@@ -76,7 +76,7 @@ void iccom_clear_interrupt(void)
+ {
+ 	volatile uint32 reg = 0;
+ 	reg = MFIS0.MFISAM0IICR0;
+-	reg &= ~(ICCOM_INT_TRIGGER);
++	reg &= ~(ICCOM_CTRL_INT);
+ 	MFIS0.MFISAM0IICR0 = reg;
+ }
+ 
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_ll.h b/vm_atk2/vm1_atk2/iccom/iccom_ll.h
+index f362f5e..64bd6bd 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_ll.h
++++ b/vm_atk2/vm1_atk2/iccom/iccom_ll.h
+@@ -6,25 +6,16 @@
+ 
+ static const uint32 ICCOM_HW_CONTROL_INIT = 0x00000000UL;
+ 
+-#define ICCOM_INT_TRIGGER              0x00000001UL
+-#define ICCOM_INT_CLEAR                0x00000000UL
+-#define ICCOM_SEND_NORMAL              0x00000002UL
+-#define ICCOM_SEND_ACK                 0x00000000UL
+-#define ICCOM_SEND_BUFF_UPPER          0x00000000UL
+-#define ICCOM_SEND_BUFF_BOTTOM         0x00000004UL
+-#define ICCOM_ACK_BUFF_UPPER           0x00000000UL
+-#define ICCOM_ACK_BUFF_BOTTOM          0x00000008UL
+-#define ICCOM_INIT_FINISHED            0x00000010UL
+-#define ICCOM_INIT_UNFINISHED          0x00000000UL
+-#define ICCOM_FATAL_DETECTED           0x00000020UL
+-#define ICCOM_FATAL_NOT_DETECTED       0x00000000UL
+-
+-#define ICCOM_INT_MASK                 0x00000001UL
+-#define ICCOM_SEND_MASK                0x00000002UL
+-#define ICCOM_SEND_CTA_MASK            0x00000004UL
+-#define ICCOM_ACK_CTA_MASK             0x00000008UL
+-#define ICCOM_INIT_MASK                0x00000010UL
+-#define ICCOM_FATAL_MASK               0x00000020UL
++// *** workalound
++#define ICCOM_INT_TRIGGER			0x00000001UL
++
++// IMPORTANT: Keep these masks aligned between CA55 and G4MH
++#define ICCOM_CTRL_INT				(0x00000001U)
++#define ICCOM_CTRL_BUFF_UPPER		(0x00000002U)
++#define ICCOM_CTRL_BUFF_BOTTOM		(0x00000004U)
++#define ICCOM_CTRL_DATA				(0x00000008U)
++#define ICCOM_CTRL_ACK				(0x00000010U)
++#define ICCOM_CTRL_INIT_COMPLETED	(0x00000020U)
+ 
+ typedef enum {
+     ICCOM_CHANNEL_0 = 0,
+-- 
+2.25.1
+
