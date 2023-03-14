@@ -20,7 +20,7 @@ Save the downloaded file (CSPlus_CC_Package_V80900-doc-e.zip) in the "tool" fold
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v2.0.0.sh
+	./build_whitebox_v2.1.sh
 
 #You can check the generated image with the following command:
 
