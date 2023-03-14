@@ -1,0 +1,2258 @@
+From a915881b973b2ef532c746a4cd1595a3e5d8cac6 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 15 Mar 2023 14:46:56 +0900
+Subject: [PATCH] Cleanup and improve performance
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ Makefile       |   28 +-
+ iccom_core.c   |  252 +++-----
+ iccom_core.h   |   39 +-
+ iccom_driver.c | 1607 +++++++++++++++++++-----------------------------
+ iccom_driver.h |   86 +--
+ 5 files changed, 751 insertions(+), 1261 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 4eed01a..a1d45bf 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,16 +1,26 @@
+-ccflags-y+=-Werror
++#ccflags-y+=-Werror
+ ccflags-y+=-I$(M)/public
+ 
+ DEBUG  ?= N
+ ifeq ($(DEBUG),Y)
+ 	ccflags-y+=-DDEBUG
++	ccflags-y+=-DDEBUG_CONVERT_PRDEBUG_TO_PRINTK
++	ccflags-y+=-DICCOM_SAMPLE_SEND_TIME_MEASUREMENT
+ endif
+-obj-m += iccom.o
+ 
+-iccom-objs :=   \
+-		iccom_core.o \
+-		iccom_driver.o \
+-		iccom_kernel_api.o
+-clean :
+-		rm -f *.o
+-		rm -f *.ko
++obj-m := iccom.o
++iccom-y := iccom_core.o iccom_driver.o
++
++SRC := $(shell pwd)
++
++all:
++	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
++
++modules_install:
++	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
++
++clean:
++	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
++	rm -f Module.markers Module.symvers modules.order
++	rm -rf .tmp_versions Modules.symvers
++	
+diff --git a/iccom_core.c b/iccom_core.c
+index 5d007d1..7bff44c 100644
+--- a/iccom_core.c
++++ b/iccom_core.c
+@@ -24,113 +24,90 @@
+ #include <linux/file.h>
+ #include <linux/list.h>
+ #include <linux/miscdevice.h>
++#include <linux/poll.h>
+ 
+ #include "iccom.h"
+ #include "iccom_core.h"
+ 
+ static LIST_HEAD(g_iccom_list_head);
+ 
+-static int iccom_core_open(struct inode *inode, struct file *filp);
+-static int iccom_core_release(struct inode *inode, struct file *filp);
+-static ssize_t iccom_core_read(struct file *filp, char __user *buf,
+-				size_t count, loff_t *pos);
+-static ssize_t iccom_core_write(struct file *filp, const char __user *buf,
+-				size_t count, loff_t *pos);
+-static int32_t iccom_core_device_match(struct device *device,
+-				const void *devname);
+-static long iccom_core_ioctl(struct file *filp, unsigned int cmd,
+-				unsigned long arg);
+-
+-
+-/* Receive open system call */
+ static int iccom_core_open(struct inode *inode, struct file *filp)
+ {
+ 	int32_t ret;
+-	struct iccom *l_iccom;
+-	struct iccom_channel *l_channel = NULL;
++	struct iccom *iccom;
+ 
+-	pr_debug("%s: Start\n", __func__);
++	iccom = container_of(filp->private_data, struct iccom, miscdev);
+ 
+-	l_iccom = container_of(filp->private_data, struct iccom, miscdev);
+-
+-	ret = l_iccom->ops->open(l_iccom, &l_channel);
+-	if (ret == 0) {
+-		filp->private_data = l_channel;
+-	}
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
++	ret = iccom->ops->open(iccom);
+ 
+ 	return ret;
+ }
+ 
+-/* Receive close system call */
+ static int iccom_core_release(struct inode *inode, struct file *filp)
+ {
+-	struct iccom_channel *l_channel;
+-	struct iccom *l_iccom;
++	struct iccom *iccom;
+ 	int32_t ret;
+ 
+-	pr_debug("%s: Start\n", __func__);
++	iccom = container_of(filp->private_data, struct iccom, miscdev);
+ 
+-	l_channel = (struct iccom_channel *)filp->private_data;
+-	l_iccom = l_channel->iccom;
+-
+-	ret = l_iccom->ops->close(l_channel);
+-	if (ret == 0) {
+-		filp->private_data = l_iccom;
+-	}
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
++	ret = iccom->ops->close(iccom);
+ 
+ 	return ret;
+ }
+ 
+-/* Receive read system call */
+ static ssize_t iccom_core_read(struct file *filp, char __user *buf,
+ 				size_t count, loff_t *pos)
+ {
+-	ssize_t ret;
+-	struct iccom_channel *l_channel;
+-	struct iccom *l_iccom;
++	int32_t ret;
++	struct iccom *iccom;
+ 	struct iccom_cmd cmd;
+ 
+-	pr_debug("%s: Start\n", __func__);
+-
+-	l_channel = (struct iccom_channel *)filp->private_data;
+-	l_iccom = l_channel->iccom;
++	iccom = container_of(filp->private_data, struct iccom, miscdev);
+ 
+ 	cmd.buf = buf;
+ 	cmd.count = count;
+ 
+-	ret = l_iccom->ops->read(l_channel, &cmd);
++	//dev_info(iccom->dev, "[ICCOM] asked to read %d bytes\n", cmd.count);
++	ret = iccom->ops->read(iccom, &cmd);
++	//dev_info(iccom->dev, "[ICCOM] read returned %d\n", ret);
+ 
+-	pr_debug("%s: End ret = %zd\n", __func__, ret);
+-
+-	return ret;
++	if (ret < 0)
++		return ret;
++	return cmd.count;
+ }
+ 
+-/* Receive write system call */
+ static ssize_t iccom_core_write(struct file *filp, const char __user *buf,
+ 				size_t count, loff_t *pos)
+ {
+-	ssize_t ret;
++	int32_t ret;
+ 	struct iccom_cmd cmd;
+-	struct iccom *l_iccom;
+-	struct iccom_channel *l_channel;
++	struct iccom *iccom;
+ 
+-	pr_debug("%s: Start\n", __func__);
+-
+-	l_channel = (struct iccom_channel *)filp->private_data;
+-	l_iccom = l_channel->iccom;
++	iccom = container_of(filp->private_data, struct iccom, miscdev);
+ 
+ 	cmd.buf = (uint8_t *)buf;
+ 	cmd.count = count;
+ 
+-	ret = l_iccom->ops->write(l_channel, &cmd);
++	//dev_info(iccom->dev, "[ICCOM] asked to write %d bytes\n", cmd.count);
++	ret = iccom->ops->write(iccom, &cmd);
++	//dev_info(iccom->dev, "[ICCOM] write returned %d\n", ret);
+ 
+-	pr_debug("%s: End ret = %zd\n", __func__, ret);
++	if (ret < 0)
++		return ret;
++	return count;
++}
+ 
+-	return ret;
++unsigned int iccom_core_poll(struct file *filp, struct poll_table_struct *wait)
++{
++	struct iccom *iccom;
++	unsigned int mask = 0;
++
++	iccom = container_of(filp->private_data, struct iccom, miscdev);
++	//dev_info(iccom->dev, "Poll returns that read is possible\n");
++
++	mask = POLLIN | POLLRDNORM;
++
++	return mask;
+ }
+ 
+ const struct file_operations iccom_fops = {
+@@ -139,64 +116,51 @@ const struct file_operations iccom_fops = {
+ 	.write = &iccom_core_write,
+ 	.open = &iccom_core_open,
+ 	.release = &iccom_core_release,
+-	.unlocked_ioctl = &iccom_core_ioctl,
++	.poll = &iccom_core_poll,
+ };
+ 
+-/* call from kernel space */
+ struct iccom *iccom_core_alloc(struct device *dev, int32_t channel_no,
+-				const struct iccom_ops *ops, size_t len)
++				const struct iccom_ops *ops)
+ {
+-	struct iccom *l_iccom;
+-	int32_t ret = ICCOM_OK;
+-
+-	pr_debug("%s: Start\n", __func__);
++	struct iccom *iccom;
+ 
+ 	if ((dev == NULL) || (ops == NULL) ||
+ 	    (ops->open == NULL) || (ops->close  == NULL) ||
+ 	    (ops->read == NULL) || (ops->write == NULL)) {
+ 		pr_err("[Err]Param err dev = %p, ops = %p\n", dev, ops);
+-		l_iccom = NULL;
+-		ret = ICCOM_NG;
++		iccom = NULL;
++		return ERR_PTR(-EINVAL);
+ 	}
+ 
+-	if (ret == ICCOM_OK) {
+-		l_iccom = (struct iccom *)devm_kzalloc(
+-						dev,
+-						sizeof(struct iccom) + len,
+-						GFP_KERNEL);
+-		if (l_iccom == NULL) {
+-			dev_err(dev, "[Err]No memory\n");
+-			ret = ICCOM_NG;
+-		}
++	iccom = (struct iccom *)devm_kzalloc(dev,
++						sizeof(struct iccom), GFP_KERNEL);
++	if (iccom == NULL) {
++		dev_err(dev, "[Err]No memory for allocating iccom struct\n");
++		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+-	if (ret == ICCOM_OK) {
+-		l_iccom->ops = ops;
+-		l_iccom->dev = dev;
+-		l_iccom->priv = &l_iccom[1];
+-		l_iccom->flg = 0U;
++	iccom->ops = ops;
++	iccom->dev = dev;
++	iccom->is_open = 0U;
+ 
+-		(void)snprintf(l_iccom->name, sizeof(l_iccom->name), "iccom%d",
+-				channel_no);
+-		mutex_init(&l_iccom->mutex_channel_open);
++	(void)snprintf(iccom->name, sizeof(iccom->name), "iccom%d",
++					channel_no);
++	mutex_init(&iccom->data_mutex);
+ 
+-		l_iccom->miscdev.parent = dev;
+-		l_iccom->miscdev.minor = MISC_DYNAMIC_MINOR;
+-		l_iccom->miscdev.name = l_iccom->name;
+-		l_iccom->miscdev.fops = &iccom_fops;
++	iccom->miscdev.parent = dev;
++	iccom->miscdev.minor = MISC_DYNAMIC_MINOR;
++	iccom->miscdev.name = iccom->name;
++	iccom->miscdev.fops = &iccom_fops;
+ 
+-		INIT_LIST_HEAD(&l_iccom->list);
+-	}
++	INIT_LIST_HEAD(&iccom->list);
+ 
+-	pr_debug("%s: End\n", __func__);
+-
+-	return l_iccom;
++	return iccom;
+ }
+ 
+ int32_t iccom_core_free(struct iccom *iccom)
+ {
+ 	list_del(&iccom->list);
+-	mutex_destroy(&iccom->mutex_channel_open);
++	mutex_destroy(&iccom->data_mutex);
+ 	devm_kfree(iccom->dev, iccom);
+ 
+ 	return 0;
+@@ -206,22 +170,19 @@ int32_t iccom_core_add(struct iccom *iccom)
+ {
+ 	int32_t rc;
+ 
+-	pr_debug("%s: Start\n", __func__);
+-
+-	if (iccom != NULL) {
+-		rc = misc_register(&iccom->miscdev);
+-		if (rc == 0) {
+-			dev_set_drvdata(iccom->miscdev.this_device, iccom);
+-			list_add_tail(&iccom->list, &g_iccom_list_head);
+-		} else {
+-			pr_err("[Err]misc_register failed %d\n", rc);
+-		}
+-	} else {
+-		rc = -EINVAL;
++	if (iccom == NULL) {
+ 		pr_err("[Err]iccom NULL\n");
++		return -EINVAL;
+ 	}
+ 
+-	pr_debug("%s: End rc=%d\n", __func__, rc);
++	rc = misc_register(&iccom->miscdev);
++	if (rc < 0) {
++		pr_err("[Err]misc_register failed %d\n", rc);
++		return rc;
++	}
++
++	dev_set_drvdata(iccom->miscdev.this_device, iccom);
++	list_add_tail(&iccom->list, &g_iccom_list_head);
+ 
+ 	return rc;
+ }
+@@ -230,79 +191,8 @@ int32_t iccom_core_del(struct iccom *iccom)
+ {
+ 	int32_t ret;
+ 
+-	pr_debug("%s: Start\n", __func__);
+ 	misc_deregister(&iccom->miscdev);
+ 	ret = iccom_core_free(iccom);
+-	pr_debug("%s: End\n", __func__);
+ 
+ 	return ret;
+-}
+-
+-static int32_t iccom_core_device_match(struct device *device,
+-					const void *devname)
+-{
+-	struct iccom *l_iccom;
+-	int32_t ret;
+-	int32_t ret_cmp;
+-
+-	l_iccom = dev_get_drvdata(device);
+-	ret_cmp = strncmp(devname, l_iccom->name, sizeof(l_iccom->name));
+-
+-	if (ret_cmp == 0) {
+-		ret = 1;
+-	} else {
+-		ret = 0;
+-	}
+-
+-	return ret;
+-}
+-
+-struct iccom *iccom_core_get_iccom(const int8_t *devname)
+-{
+-	struct iccom *l_iccom;
+-	struct list_head *l_list;
+-	struct device *l_device = NULL;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	list_for_each(l_list, &g_iccom_list_head) {
+-		l_iccom = list_entry(l_list, struct iccom, list);
+-		if (l_iccom != NULL) {
+-			l_device = class_find_device(
+-				l_iccom->miscdev.this_device->class,
+-				NULL, devname, &iccom_core_device_match);
+-			if (l_device != NULL) {
+-				break;
+-			}
+-		}
+-	}
+-
+-	if (l_device == NULL) {
+-		l_iccom = NULL;
+-	} else {
+-		l_iccom = dev_get_drvdata(l_device);
+-	}
+-
+-	pr_debug("%s: End\n", __func__);
+-
+-	return l_iccom;
+-}
+-
+-static long iccom_core_ioctl(struct file *filp, unsigned int cmd,
+-				unsigned long arg)
+-{
+-	int64_t ret;
+-	struct iccom *l_iccom;
+-	struct iccom_channel *l_channel;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	l_channel = (struct iccom_channel *)filp->private_data;
+-	l_iccom = l_channel->iccom;
+-
+-	ret = l_iccom->ops->ioctl(l_channel, cmd, (void *)arg);
+-
+-	pr_debug("%s: End ret = %lld\n", __func__, ret);
+-
+-	return ret;
+-}
++}
+\ No newline at end of file
+diff --git a/iccom_core.h b/iccom_core.h
+index 26eaa6b..57a82e0 100644
+--- a/iccom_core.h
++++ b/iccom_core.h
+@@ -18,51 +18,46 @@
+ #include <linux/miscdevice.h>
+ #include <linux/list.h>
+ 
+-#define VERSION_OF_RENESAS		"1.0.0"
++#include "iccom_driver.h"
+ 
+-#define ICCOM_ON			(1U)	/* FLAG ON  */
+-#define ICCOM_OFF			(0U)	/* FLAG OFF */
++#define VERSION_OF_RENESAS		"1.0.0"
+ 
+ #define ICCOM_MAX_ICCOM_DEV_NAME	(128)
+ 
+-/* ioctl request command */
+-#define ICCOM_IOC_CANCEL_RECEIVE	(1)
++#if defined(DEBUG) && defined(DEBUG_CONVERT_PRDEBUG_TO_PRINTK)
++#undef pr_debug
++#define pr_debug(fmt, ...)		\
++	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#endif
+ 
+ struct iccom {
+ 	struct list_head list;
+ 	int8_t name[ICCOM_MAX_ICCOM_DEV_NAME];
+-	void *priv; /* set iccom_hardware_info. */
+ 	const struct iccom_ops *ops;
+ 	struct device *dev;
+ 	struct miscdevice miscdev;
+-	uint32_t flg;
+-	struct iccom_channel *channel;
+-	struct mutex mutex_channel_open;
+-};
+-
+-struct iccom_channel {
+-	struct iccom *iccom;
+-	void *priv; /* set iccom_communication_info. */
++	struct mutex data_mutex;
++	uint8_t is_open;
++	struct iccom_hardware_info hw_info;
++	struct iccom_communication_info *comm_info;
+ };
+ 
+ struct iccom_cmd {
+ 	uint8_t *buf;
+-	size_t count;
++	uint32_t count;
+ };
+ 
+ struct iccom_ops {
+ 	struct module *owner;
+ 	const char *type;
+-	int32_t (*open)(struct iccom *iccom,
+-			struct iccom_channel **channel_out);
+-	int32_t (*close)(struct iccom_channel *channel);
+-	ssize_t (*read)(struct iccom_channel *channel, struct iccom_cmd *cmd);
+-	ssize_t (*write)(struct iccom_channel *channel, struct iccom_cmd *cmd);
+-	int32_t (*ioctl)(struct iccom_channel *channel, int32_t req, void *arg);
++	int32_t (*open)(struct iccom *iccom);
++	int32_t (*close)(struct iccom *iccom);
++	int32_t (*read)(struct iccom *iccom, struct iccom_cmd *cmd);
++	int32_t (*write)(struct iccom *iccom, struct iccom_cmd *cmd);
+ };
+ 
+ struct iccom *iccom_core_alloc(struct device *dev, int32_t channel_no,
+-				const struct iccom_ops *ops, size_t len);
++				const struct iccom_ops *ops);
+ int32_t iccom_core_free(struct iccom *iccom);
+ int32_t iccom_core_add(struct iccom *iccom);
+ int32_t iccom_core_del(struct iccom *iccom);
+diff --git a/iccom_driver.c b/iccom_driver.c
+index f2219aa..3199e40 100644
+--- a/iccom_driver.c
++++ b/iccom_driver.c
+@@ -22,8 +22,6 @@
+ #include <linux/errno.h>
+ #include <linux/of_address.h>
+ #include <linux/uaccess.h>
+-#include <linux/spinlock.h>
+-#include <linux/semaphore.h>
+ #include <linux/mutex.h>
+ #include <linux/wait.h>
+ #include <linux/interrupt.h>
+@@ -34,978 +32,95 @@
+ #include "iccom_core.h"
+ #include "iccom_driver.h"
+ 
+-static int32_t iccom_drv_open(struct iccom *iccom,
+-				struct iccom_channel **channel_out);
+-static ssize_t iccom_drv_read(struct iccom_channel *channel,
+-				struct iccom_cmd *cmd);
+-static ssize_t iccom_drv_write(struct iccom_channel *channel,
+-				struct iccom_cmd *cmd);
+-static int32_t iccom_drv_ioctl(struct iccom_channel *channel,
+-				int32_t req, void *arg);
+-static int32_t iccom_drv_close(struct iccom_channel *channel);
+-static irqreturn_t iccom_drv_isr(int irq, void *dev_id);
+-static int32_t iccom_drv_write_mfis(struct iccom_channel *channel,
+-				uint32_t write_data, size_t msg_size);
+-static int32_t iccom_drv_poll_int_clear(uint32_t *iicr_add, int32_t timer);
+-static int32_t iccom_drv_probe(struct platform_device *pdev);
+-static int32_t iccom_drv_remove(struct platform_device *pdev);
+-static int32_t iccom_drv_init(void);
+-static void iccom_drv_exit(void);
+-static void iccom_drv_device_release(struct device *dev);
+-static void iccom_drv_release_channel(struct iccom_channel *channel);
+-static void iccom_drv_release_iccom(struct iccom *iccom, uint8_t request_flg);
++#define ICCOM_POLLING_PERIOD_US		(1000U)
+ 
+-static int32_t iccom_drv_poll_int_clear(uint32_t *iicr_add, int32_t timer)
++#define ICCOM_REQUEST_IICR		(0x01U)
++#define ICCOM_REQUEST_EICR		(0x02U)
++#define ICCOM_REQUEST_IMBR		(0x04U)
++#define ICCOM_REQUEST_EMBR		(0x08U)
++#define ICCOM_REQUEST_CTA		(0x10U)
++#define ICCOM_REQUEST_IRQ		(0x20U)
++#define ICCOM_REQUEST_ALL		(0x3FU)
++
++#define ICCOM_MFIS_LEN			(4U)
++#define ICCOM_REG_OFFSET_LEN		(16)
++#define ICCOM_CTA_MEMORY_LEN		(16)
++
++// IMPORTANT: Keep these masks aligned between CA55 and G4MH
++#define ICCOM_CTRL_INT				(0x00000001U)
++#define ICCOM_CTRL_BUFF_UPPER		(0x00000002U)
++#define ICCOM_CTRL_BUFF_BOTTOM		(0x00000004U)
++#define ICCOM_CTRL_DATA				(0x00000008U)
++#define ICCOM_CTRL_ACK				(0x00000010U)
++#define ICCOM_CTRL_INIT_COMPLETED	(0x00000020U)
++
++#define IICR_SEND_DATA	(ICCOM_CTRL_DATA | ICCOM_CTRL_BUFF_BOTTOM | ICCOM_CTRL_INT)
++#define IICR_SEND_ACK	(ICCOM_CTRL_ACK | ICCOM_CTRL_BUFF_UPPER | ICCOM_CTRL_INT)
++
++#define ICCOM_MODULE_NAME		"ICCOM driver"
++#define ICCOM_MAX_NAME_LENGTH	128
++
++/*
++	Upper = send from G4MH to CA55
++	Bottom = send from CA55 to G4MH
++*/
++#define ICCOM_CTA_BOTTOM_OFFSET 	(0x0000)
++#define ICCOM_CTA_UPPER_OFFSET		(0x1000)
++#define ICCOM_TOTAL_CTA_SIZE		(0x2000)
++
++// Return all the relevant registers to a known initial state
++static void iccom_drv_reset_registers(
++							struct iccom_communication_info *iccom_comm)
++{
++	iowrite32(0x00, iccom_comm->mfis_imbr_addr);
++	iowrite32(0x00, iccom_comm->mfis_iicr_addr);
++	iowrite32(0x00, iccom_comm->mfis_embr_addr);
++	iowrite32(0x00, iccom_comm->mfis_eicr_addr);
++}
++
++// Update IICR and IMBR in order to signal G4 that there is some data/ack to read
++static void iccom_drv_write_iicr_imbr(
++					struct iccom_communication_info *iccom_comm,
++					uint32_t iicr_val, uint32_t imbr_val)
++{
++	iowrite32(imbr_val, iccom_comm->mfis_imbr_addr);
++	iowrite32(iicr_val, iccom_comm->mfis_iicr_addr);
++}
++
++// Clear the EICR in order to let G4 know that we received the message (data/ack)
++static void iccom_drv_clear_eicr(struct iccom_communication_info *iccom_comm)
++{
++	iowrite32(0x00, iccom_comm->mfis_eicr_addr);
++}
++
++// Wait for the IICR's bit 0 (interrupt) to be cleared on the G4 side. This
++// function is used when interrupts are disabled, i.e. during "open" or
++// inside the ISR handling thread
++static int32_t iccom_drv_poll_int_clear(struct iccom *iccom)
+ {
+ 	int32_t i;
+-	uint32_t check_mfis;
+-	int32_t ret;
++	uint32_t iicr_val;
++	struct iccom_communication_info *iccom_comm = iccom->comm_info;
+ 
+-	pr_debug("%s: Start\n", __func__);
+-
+-	for (i = 0; i < timer; i++) {
+-		check_mfis = ioread32(iicr_add);
+-		if ((check_mfis & ICCOM_CTRL_INT) == 0U) {
+-			break;
++	for (i = 0; i < iccom->hw_info.int_clear_timeout; i++) {
++		iicr_val = ioread32(iccom_comm->mfis_iicr_addr);
++		if ((iicr_val & ICCOM_CTRL_INT) == 0U) {
++			return 0;
+ 		}
+-		usleep_range(ICCOM_WAIT_TIMER_US, ICCOM_WAIT_TIMER_US + 1U);
++		usleep_range(ICCOM_POLLING_PERIOD_US, ICCOM_POLLING_PERIOD_US + 1U);
+ 	}
+ 
+-	if (i < timer) {
+-		ret = ICCOM_OK;
+-	} else {
+-		ret = -EDEADLK;
+-	}
++	// reset registers to a default state
++	iccom_drv_reset_registers(iccom_comm);
+ 
+-	pr_debug("%s: End ret = %d, count = %d\n", __func__, ret, i);
++	dev_err(iccom->dev, "[Err] Operation timed out\n");
+ 
+-	return ret;
++	return -EDEADLK;
+ }
+ 
+-static int32_t iccom_drv_write_mfis(struct iccom_channel *channel,
+-				uint32_t write_data, size_t msg_size)
++static void iccom_drv_release_comm(struct iccom_communication_info *iccom_comm)
+ {
+-	int32_t ret;
+-	struct iccom_communication_info *iccom_comm;
+-	struct iccom_hardware_info *iccom_hw;
+-
+-	pr_debug("%s: Start write_data = 0x%x, msg_size = %zd\n",
+-		__func__, write_data, msg_size);
+-
+-	iccom_comm = (struct iccom_communication_info *)channel->priv;
+-	iccom_hw = (struct iccom_hardware_info *)channel->iccom->priv;
+-
+-	mutex_lock(&iccom_comm->mutex_poll_intbit);
+-
+-	ret = iccom_drv_poll_int_clear(iccom_comm->mfis_iicr_addr,
+-					iccom_hw->trg_timeout);
+-	if (ret == ICCOM_OK) {
+-		iowrite32(msg_size, iccom_comm->mfis_imbr_addr);
+-		iowrite32(write_data, iccom_comm->mfis_iicr_addr);
+-	}
+-
+-	mutex_unlock(&iccom_comm->mutex_poll_intbit);
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static int32_t iccom_drv_open(struct iccom *iccom,
+-				struct iccom_channel **channel_out)
+-{
+-	int32_t ret = ICCOM_OK;
+-	struct iccom_channel *l_channel = NULL;
+-	struct iccom_communication_info *iccom_comm = NULL;
+-	struct iccom_hardware_info *iccom_hw;
+-	uint32_t write_iicr;
+-	uint32_t copy_eicr;
+-	void __iomem *remap_addr;
+-
+-	dev_dbg(iccom->dev, "%s: Start\n", __func__);
+-
+-	mutex_lock(&iccom->mutex_channel_open);
+-	if ((iccom->flg & ICCOM_FLG_CH_OPEN) == 0U) {
+-		pr_debug("Open route\n");
+-		iccom->flg |= ICCOM_FLG_CH_OPEN;
+-		mutex_unlock(&iccom->mutex_channel_open);
+-		l_channel = (struct iccom_channel *)devm_kzalloc(
+-			iccom->dev,
+-			sizeof(struct iccom_channel) +
+-			sizeof(struct iccom_communication_info),
+-			GFP_KERNEL);
+-		if (l_channel == NULL) {
+-			ret = -ENOMEM;
+-			dev_err(iccom->dev, "[Err]No enough memory\n");
+-		}
+-	} else {
+-		ret = -EBUSY;
+-		dev_err(iccom->dev, "[Err]This channel already open\n");
+-		mutex_unlock(&iccom->mutex_channel_open);
+-	}
+-
+-	if (ret == ICCOM_OK) {
+-		l_channel->iccom = iccom;
+-		l_channel->priv = &l_channel[1];
+-
+-		iccom_comm = (struct iccom_communication_info *)l_channel->priv;
+-		iccom_hw = (struct iccom_hardware_info *)iccom->priv;
+-
+-		iccom_comm->read_status = ICCOM_READ_STATE_WAIT_READ;
+-		iccom_comm->write_status[ICCOM_CTA_UPPER] =
+-						ICCOM_WRITE_STATE_WAIT_WRITE;
+-		iccom_comm->write_status[ICCOM_CTA_BOTTOM] =
+-						ICCOM_WRITE_STATE_WAIT_WRITE;
+-
+-		(void)memset(&iccom_comm->ack_arrive, 0,
+-				sizeof(iccom_comm->ack_arrive));
+-		(void)memset(&iccom_comm->recv_index, 0,
+-				sizeof(iccom_comm->recv_index));
+-		(void)memset(&iccom_comm->recv_eicr, 0,
+-				sizeof(iccom_comm->recv_eicr));
+-		(void)memset(&iccom_comm->recv_embr, 0,
+-				sizeof(iccom_comm->recv_embr));
+-		(void)memset(&iccom_comm->ack_embr, 0,
+-				sizeof(iccom_comm->ack_embr));
+-		(void)memset(&iccom_comm->cta_flg, 0,
+-				sizeof(iccom_comm->cta_flg));
+-
+-		sema_init(&iccom_comm->sem_send_cta, ICCOM_CTA_SBUF_NUM);
+-		mutex_init(&iccom_comm->mutex_poll_intbit);
+-		spin_lock_init(&iccom_comm->spinlock_mfis_info);
+-
+-		spin_lock_init(&iccom_comm->spinlock_cta_flg);
+-
+-		init_waitqueue_head(&iccom_comm->write_q);
+-		init_waitqueue_head(&iccom_comm->read_q);
+-		init_waitqueue_head(&iccom_comm->ioctl_q);
+-		iccom_comm->close_flg = 0;
+-
+-		remap_addr = ioremap_nocache(
+-			(uintptr_t)iccom_hw->mfis_iicr_addr, ICCOM_MFIS_LEN);
+-		if (remap_addr == NULL) {
+-			dev_err(iccom->dev, "[Err]Remap IICR failed\n");
+-			ret = -ENOMEM;
+-		} else {
+-			iccom_comm->mfis_iicr_addr = (uint32_t *)remap_addr;
+-		}
+-
+-		remap_addr = ioremap_nocache(
+-			(uintptr_t)iccom_hw->mfis_eicr_addr, ICCOM_MFIS_LEN);
+-		if (remap_addr == NULL) {
+-			dev_err(iccom->dev, "[Err]Remap EICR failed\n");
+-			ret = -ENOMEM;
+-		} else {
+-			iccom_comm->mfis_eicr_addr = (uint32_t *)remap_addr;
+-		}
+-
+-		remap_addr = ioremap_nocache(
+-			(uintptr_t)iccom_hw->mfis_imbr_addr, ICCOM_MFIS_LEN);
+-		if (remap_addr == NULL) {
+-			dev_err(iccom->dev, "[Err]Remap IMBR failed\n");
+-			ret = -ENOMEM;
+-		} else {
+-			iccom_comm->mfis_imbr_addr = (uint32_t *)remap_addr;
+-		}
+-
+-		remap_addr = ioremap_nocache(
+-			(uintptr_t)iccom_hw->mfis_embr_addr, ICCOM_MFIS_LEN);
+-		if (remap_addr == NULL) {
+-			dev_err(iccom->dev, "[Err]Remap EMBR failed\n");
+-			ret = -ENOMEM;
+-		} else {
+-			iccom_comm->mfis_embr_addr = (uint32_t *)remap_addr;
+-		}
+-
+-		remap_addr = ioremap_nocache((uintptr_t)iccom_hw->cta_addr,
+-				iccom_hw->cta_size);
+-		if (remap_addr == NULL) {
+-			dev_err(iccom->dev, "[Err]Remap CTA failed\n");
+-			ret = -ENOMEM;
+-		} else {
+-			iccom_comm->cta_addr = (uint8_t *)remap_addr;
+-		}
+-	}
+-
+-	if (ret == ICCOM_OK) {
+-		dev_dbg(iccom->dev, "flg check: 0x%X\n",
+-			(iccom->flg & ICCOM_FLG_CH_INIT_END));
+-		if ((iccom->flg & ICCOM_FLG_CH_INIT_END) == 0U) {
+-			write_iicr =
+-				(ICCOM_CTRL_INIT_END | ICCOM_CTRL_INT);
+-			iowrite32(write_iicr,
+-				iccom_comm->mfis_iicr_addr);
+-
+-			mutex_lock(&iccom_comm->mutex_poll_intbit);
+-			ret = iccom_drv_poll_int_clear(
+-				iccom_comm->mfis_iicr_addr,
+-				iccom_hw->trg_timeout);
+-			mutex_unlock(&iccom_comm->mutex_poll_intbit);
+-			if (ret == ICCOM_OK) {
+-				iccom->flg |= ICCOM_FLG_CH_INIT_END;
+-			} else {
+-				ret = -EDEADLK;
+-				dev_err(iccom->dev,
+-					"[Err] Channel init EDEADLK\n");
+-			}
+-		}
+-	}
+-
+-	if (ret == ICCOM_OK) {
+-		*channel_out = l_channel;
+-		iccom->channel = l_channel;
+-
+-		/*
+-		 * Discard the interrupt received prior to the
+-		 * open process is completed.
+-		 */
+-		copy_eicr = ioread32(iccom_comm->mfis_eicr_addr);
+-		iowrite32((copy_eicr & ICCOM_CTRL_CLEAR_INIT_BIT),
+-			iccom_comm->mfis_eicr_addr);
+-		enable_irq(iccom_hw->irq_no);
+-
+-		dev_dbg(iccom->dev, "iccom_communication_info\n");
+-		dev_dbg(iccom->dev, "mfis_iicr_addr = %p\n",
+-			iccom_comm->mfis_iicr_addr);
+-		dev_dbg(iccom->dev, "mfis_eicr_addr = %p\n",
+-			iccom_comm->mfis_eicr_addr);
+-		dev_dbg(iccom->dev, "mfis_imbr_addr = %p\n",
+-			iccom_comm->mfis_imbr_addr);
+-		dev_dbg(iccom->dev, "mfis_embr_addr = %p\n",
+-			iccom_comm->mfis_embr_addr);
+-		dev_dbg(iccom->dev, "cta_addr = %p\n", iccom_comm->cta_addr);
+-	} else {
+-		if (ret != -EBUSY) {
+-			mutex_lock(&iccom->mutex_channel_open);
+-			iccom->flg &= ~ICCOM_FLG_CH_OPEN;
+-			mutex_unlock(&iccom->mutex_channel_open);
+-			if (l_channel != NULL) {
+-				iccom_drv_release_channel(l_channel);
+-			}
+-		}
+-	}
+-	dev_dbg(iccom->dev, "%s: End ret = %d\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static ssize_t iccom_drv_read(struct iccom_channel *channel,
+-				struct iccom_cmd *cmd)
+-{
+-	struct iccom_communication_info *iccom_comm;
+-	int32_t ret_poll;
+-	uint32_t set_info;
+-	enum iccom_cta_area cta_sw;
+-	int32_t err_wait;
+-	uintptr_t irq_flg = 0UL;
+-	ssize_t ret = ICCOM_OK;
+-	uint8_t *tgt_addr;
+-	int64_t ret_cpy = 0;
+-	int32_t ret_access;
+-	uint32_t recv_i;
+-
+-	pr_debug("%s: Start\n", __func__);
+-	iccom_comm = (struct iccom_communication_info *)channel->priv;
+-
+-	if (iccom_comm->read_status == ICCOM_READ_STATE_SEND_ACK) {
+-		pr_debug("Send ACK\n");
+-		cta_sw = iccom_comm->recv_index[0];
+-		set_info = (cta_sw << ICCOM_SHIFT_SET_ACK_AREA);
+-		set_info |= ICCOM_CTRL_INT;
+-
+-		/* Organize MFIS information */
+-		spin_lock_irqsave(&iccom_comm->spinlock_mfis_info, irq_flg);
+-		for (recv_i = 0U; recv_i < (ICCOM_CTA_RBUF_NUM - 1); recv_i++) {
+-			iccom_comm->recv_index[recv_i] =
+-				iccom_comm->recv_index[recv_i + 1U];
+-		}
+-		iccom_comm->data_arrive--;
+-		spin_unlock_irqrestore(&iccom_comm->spinlock_mfis_info,
+-					irq_flg);
+-
+-		ret_poll = iccom_drv_write_mfis(channel, set_info,
+-			iccom_comm->recv_embr[cta_sw]);
+-		if (ret_poll != ICCOM_OK) {
+-			iccom_comm->read_status = ICCOM_READ_STATE_WAIT_READ;
+-			ret = -EDEADLK;
+-			dev_err(channel->iccom->dev, "[Err]Send Ack failed\n");
+-		}
+-	}
+-
+-	if (ret == ICCOM_OK) {
+-		if (iccom_comm->data_arrive == 0U) {
+-			iccom_comm->read_status = ICCOM_READ_STATE_RECEIVING;
+-		}
+-		pr_debug("Wait read\n");
+-		err_wait = wait_event_interruptible(iccom_comm->read_q,
+-			((iccom_comm->data_arrive >= 1) ||
+-				iccom_comm->close_flg == 1));
+-		if (err_wait < 0) {
+-			ret = -EINTR;
+-		} else if (iccom_comm->data_arrive == 0) {
+-			pr_debug("read close flg = %d\n",
+-				iccom_comm->close_flg);
+-			/* Iccom_lib_Final() is called and all ACK is sended. */
+-			iccom_comm->close_flg = 2;
+-			wake_up_interruptible(&iccom_comm->ioctl_q);
+-			ret = -ECANCELED;
+-		} else {
+-			cta_sw = iccom_comm->recv_index[0];
+-			cmd->count = iccom_comm->recv_embr[cta_sw];
+-			tgt_addr = (iccom_comm->cta_addr +
+-				((cta_sw + ICCOM_CTA_SBUF_NUM) *
+-					ICCOM_BUF_MAX_SIZE));
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+-			ret_access = access_ok(cmd->buf, cmd->count);
+-#else
+-			ret_access = access_ok(VERIFY_WRITE, cmd->buf,
+-					cmd->count);
+-#endif
+-			if (ret_access != 0) {
+-				dev_dbg(channel->iccom->dev,
+-					"copy_to_user route\n");
+-				ret_cpy = copy_to_user(cmd->buf, tgt_addr,
+-							cmd->count);
+-			} else {
+-				dev_dbg(channel->iccom->dev,
+-					"memcpy route\n");
+-				memcpy_fromio(cmd->buf, tgt_addr, cmd->count);
+-			}
+-
+-			if (ret_cpy == 0) {
+-				iccom_comm->read_status =
+-					ICCOM_READ_STATE_SEND_ACK;
+-				ret = cmd->count;
+-			}
+-		}
+-	}
+-
+-	pr_debug("%s: End ret = %zd\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static ssize_t iccom_drv_write(struct iccom_channel *channel,
+-				struct iccom_cmd *cmd)
+-{
+-	struct iccom_communication_info *iccom_comm;
+-	struct iccom_hardware_info *iccom_hw;
+-	int32_t ret_pall;
+-	enum iccom_cta_area cta_sw = ICCOM_CTA_UPPER;
+-	uint32_t mfis_set_info;
+-	int32_t err;
+-	ssize_t ret = 0;
+-	int64_t ret_cpy = 0;
+-	uint8_t *tgt_addr;
+-	enum iccom_cta_area snd_area;
+-	uintptr_t irq_flg = 0UL;
+-
+-	pr_debug("%s: Start cmd->cnt = %zd\n", __func__, cmd->count);
+-
+-	iccom_comm = (struct iccom_communication_info *)channel->priv;
+-	iccom_hw = (struct iccom_hardware_info *)channel->iccom->priv;
+-
+-	if (down_trylock(&iccom_comm->sem_send_cta) != 0) {
+-		pr_err("[Err]No CTA semaphore\n");
+-		ret = -ENOSPC;
+-	} else {
+-		spin_lock_irqsave(&iccom_comm->spinlock_cta_flg, irq_flg);
+-		for (snd_area = 0; snd_area < ICCOM_CTA_COUNT; snd_area++) {
+-			if ((iccom_comm->cta_flg[snd_area] == 0U) &&
+-				(iccom_comm->write_status[snd_area] ==
+-						ICCOM_WRITE_STATE_WAIT_WRITE)) {
+-				cta_sw = snd_area;
+-				iccom_comm->cta_flg[cta_sw] = 1U;
+-				break;
+-			}
+-		}
+-		spin_unlock_irqrestore(&iccom_comm->spinlock_cta_flg, irq_flg);
+-
+-		if (snd_area >= ICCOM_CTA_COUNT) {
+-			pr_err("[Err]CTA area is all used\n");
+-			ret = -ENOSPC;
+-		} else {
+-			pr_debug("CTA%d write\n", cta_sw);
+-
+-			tgt_addr = (iccom_comm->cta_addr +
+-				(cta_sw * ICCOM_BUF_MAX_SIZE));
+-			dev_dbg(channel->iccom->dev,
+-				"memcpy_toio : "
+-				"tgt_addr = %p, buf = %p,"
+-				" count = %lu\n", (void *)tgt_addr,
+-				(void *)cmd->buf, cmd->count);
+-				memcpy_toio(tgt_addr, cmd->buf, cmd->count);
+-
+-			if (ret_cpy == 0) {
+-				dev_dbg(channel->iccom->dev, "Write success\n");
+-				mfis_set_info = ((cta_sw
+-						<< ICCOM_SHIFT_SET_SEND_AREA)
+-						| (ICCOM_CTRL_INT
+-						| ICCOM_CTRL_SND_ACK));
+-				pr_debug("mfis set info :0x%X\n",
+-						mfis_set_info);
+-				iccom_comm->ack_arrive[cta_sw] = 0U;
+-				iccom_comm->write_status[cta_sw] =
+-						ICCOM_WRITE_STATE_RECV_ACK;
+-				ret_pall = iccom_drv_write_mfis(channel,
+-						mfis_set_info, cmd->count);
+-				if (ret_pall != ICCOM_OK) {
+-					dev_err(channel->iccom->dev,
+-						"[Err]Write EDEADLK\n");
+-					spin_lock_irqsave(
+-						&iccom_comm->spinlock_cta_flg,
+-						irq_flg);
+-					iccom_comm->cta_flg[cta_sw] = 0U;
+-					spin_unlock_irqrestore(
+-						&iccom_comm->spinlock_cta_flg,
+-						irq_flg);
+-					ret = -EDEADLK;
+-				} else {
+-					pr_debug("Wait ack\n");
+-					err = wait_event_interruptible_timeout(
+-						iccom_comm->write_q,
+-						(iccom_comm->ack_arrive[cta_sw]
+-							== 1),
+-						iccom_hw->ack_timeout_jf);
+-					if (err == 0) {
+-						ret = -ETIMEDOUT;
+-					} else if (err < 0) {
+-						ret = -EINTR;
+-					} else {
+-						ret
+-						 = iccom_comm->ack_embr[cta_sw];
+-					}
+-				}
+-				iccom_comm->write_status[cta_sw] =
+-						ICCOM_WRITE_STATE_WAIT_WRITE;
+-			} else {
+-				spin_lock_irqsave(&iccom_comm->spinlock_cta_flg,
+-							irq_flg);
+-				iccom_comm->cta_flg[cta_sw] = 0U;
+-				spin_unlock_irqrestore(
+-						&iccom_comm->spinlock_cta_flg,
+-						irq_flg);
+-			}
+-		}
+-		up(&iccom_comm->sem_send_cta);
+-	}
+-
+-	pr_debug("%s: End ret = %zd\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static int32_t iccom_drv_ioctl(struct iccom_channel *channel,
+-				int32_t req, void *arg)
+-{
+-	int32_t ret = 0;
+-	struct iccom_communication_info *iccom_comm;
+-	struct iccom_hardware_info *iccom_hw;
+-	int32_t err_wait;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	iccom_comm = (struct iccom_communication_info *)channel->priv;
+-	iccom_hw = (struct iccom_hardware_info *)channel->iccom->priv;
+-
+-	switch (req) {
+-	case ICCOM_IOC_CANCEL_RECEIVE:
+-		disable_irq(iccom_hw->irq_no);
+-		iccom_comm->close_flg = 1;
+-		wake_up_interruptible(&iccom_comm->read_q);
+-		/* Wait ACK send finish or trg timeout */
+-		err_wait = wait_event_interruptible_timeout(
+-					iccom_comm->ioctl_q,
+-					(iccom_comm->close_flg == 2),
+-					iccom_hw->trg_timeout);
+-		if (err_wait == 0) {
+-			pr_err("[Err]Wait all ACK send failed.\n");
+-			ret = -ETIMEDOUT;
+-		}
+-		break;
+-	default:
+-		ret = -EINVAL;
+-		pr_err("[Err]Invalid argument. req=%d\n", req);
+-		break;
+-	}
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static int32_t iccom_drv_close(struct iccom_channel *channel)
+-{
+-	struct iccom *l_iccom;
+-	struct iccom_communication_info *iccom_comm;
+-	struct iccom_hardware_info *iccom_hw;
+-	uintptr_t irq_flg = 0UL;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	l_iccom = channel->iccom;
+-	iccom_comm = (struct iccom_communication_info *)channel->priv;
+-	iccom_hw = (struct iccom_hardware_info *)l_iccom->priv;
+-
+-	if (iccom_comm->close_flg == 0) {
+-		pr_debug("%s: disable_irq exec . iccom_comm->close_flg = %u\n",
+-			__func__, iccom_comm->close_flg);
+-		/* Process finalize but not call Iccom_lib_Final(). */
+-		disable_irq(iccom_hw->irq_no);
+-	}
+-
+-	spin_lock_irqsave(&iccom_comm->spinlock_mfis_info, irq_flg);
+-	(void)memset(&iccom_comm->recv_index, 0,
+-		sizeof(iccom_comm->recv_index));
+-	(void)memset(&iccom_comm->recv_embr, 0, sizeof(iccom_comm->recv_embr));
+-	iccom_comm->data_arrive = 0;
+-	spin_unlock_irqrestore(&iccom_comm->spinlock_mfis_info, irq_flg);
+-	wake_up_interruptible(&iccom_comm->read_q);
+-	l_iccom->channel = NULL;
+-
+-	iccom_drv_release_channel(channel);
+-	l_iccom->flg &= ~ICCOM_FLG_CH_OPEN;
+-
+-	pr_debug("%s: End\n", __func__);
+-
+-	return ICCOM_OK;
+-}
+-
+-/* Interrupt handler */
+-static irqreturn_t iccom_drv_isr(int irq, void *dev_id)
+-{
+-	uint32_t mfis_ctrl;
+-	uint32_t mfis_msg;
+-	enum iccom_cta_area cta_sw;
+-	uint32_t snd_ack_flg;
+-	struct iccom_communication_info *iccom_comm = NULL;
+-	struct iccom_channel *l_channel;
+-	struct iccom *l_iccom;
+-	uintptr_t irq_flg = 0UL;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	disable_irq_nosync(irq);
+-
+-	l_iccom = (struct iccom *)dev_id;
+-	l_channel = l_iccom->channel;
+-	/*
+-	 * If the close function is called by the present function after
+-	 * it has been called, to check here for iccom_channel there is a
+-	 * possibility of NULL
+-	 */
+-	if (l_channel != NULL) {
+-		iccom_comm = (struct iccom_communication_info *)l_channel->priv;
+-	}
+-	/*
+-	 * If the close function is called by the present function after
+-	 * it has been called, to check here for iccom_communication_info
+-	 * there is a possibility of NULL
+-	 */
+ 	if (iccom_comm != NULL) {
+-		mfis_ctrl = ioread32(iccom_comm->mfis_eicr_addr);
+-
+-		pr_debug("mfis ctrl :0x%X\n", mfis_ctrl);
+-		snd_ack_flg = mfis_ctrl & ICCOM_CTRL_SND_ACK;
+-		mfis_msg = ioread32(iccom_comm->mfis_embr_addr);
+-
+-		if (snd_ack_flg == 0U) {
+-			cta_sw = (mfis_ctrl & ICCOM_CTRL_ACK_BUFF)
+-				>> ICCOM_SHIFT_GET_ACK_AREA;
+-			pr_debug("Recv Ack\n");
+-			/* Check target message is not timeout. */
+-			spin_lock_irqsave(&iccom_comm->spinlock_cta_flg,
+-						irq_flg);
+-			iccom_comm->cta_flg[cta_sw] = 0U;
+-			spin_unlock_irqrestore(&iccom_comm->spinlock_cta_flg,
+-						irq_flg);
+-
+-			if (iccom_comm->write_status[cta_sw]
+-			     == ICCOM_WRITE_STATE_RECV_ACK) {
+-					iccom_comm->ack_arrive[cta_sw] = 1U;
+-					iccom_comm->ack_embr[cta_sw] = mfis_msg;
+-					wake_up_interruptible(
+-						&iccom_comm->write_q);
+-			} else {
+-				pr_err("[Err]No wait Area \n");
+-			}
+-		} else {
+-			cta_sw = (mfis_ctrl & ICCOM_CTRL_SND_BUFF)
+-				>> ICCOM_SHIFT_GET_RECV_AREA;
+-			pr_debug("Recv Msg\n");
+-			/* Check receiving message rule. */
+-			if (iccom_comm->data_arrive < ICCOM_CTA_RBUF_NUM) {
+-				/* Save MFIS info */
+-				spin_lock_irqsave(
+-					&iccom_comm->spinlock_mfis_info,
+-					irq_flg);
+-				iccom_comm->recv_index[iccom_comm->data_arrive]
+-					= cta_sw;
+-				iccom_comm->data_arrive++;
+-				spin_unlock_irqrestore(
+-					&iccom_comm->spinlock_mfis_info,
+-					irq_flg);
+-				iccom_comm->recv_eicr[cta_sw] = mfis_ctrl;
+-				iccom_comm->recv_embr[cta_sw] = mfis_msg;
+-				wake_up_interruptible(&iccom_comm->read_q);
+-			}
+-		}
+-		iowrite32((mfis_ctrl & ICCOM_CTRL_CLEAR_INIT_BIT),
+-			iccom_comm->mfis_eicr_addr);
+-	}
+-	enable_irq(irq);
+-
+-	pr_debug("%s: End\n", __func__);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-const struct iccom_ops iccom_drv_fops = {
+-	.owner		= THIS_MODULE,
+-	.open		= &iccom_drv_open,
+-	.read		= &iccom_drv_read,
+-	.write		= &iccom_drv_write,
+-	.ioctl		= &iccom_drv_ioctl,
+-	.close		= &iccom_drv_close,
+-};
+-
+-static const struct of_device_id iccom_drv_match[] = {
+-	{ .compatible = "renesas,iccom-rcar", },
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(of, iccom_drv_match);
+-
+-static int32_t iccom_drv_probe(struct platform_device *pdev)
+-{
+-	struct iccom *l_iccom = NULL;
+-	struct iccom_hardware_info *iccom_hw = NULL;
+-	struct resource mfis_base;
+-	struct resource *req_iicr;
+-	struct resource *req_eicr;
+-	struct resource *req_imbr;
+-	struct resource *req_embr;
+-	struct resource *req_cta;
+-	int32_t ret = ICCOM_OK;
+-	int32_t ret_irq;
+-	int32_t ret_get_irq;
+-	const void *reg_offset_ptr;
+-	const void *cta_addr_ptr;
+-	const void *ack_timer_ptr;
+-	const void *trg_timer_ptr;
+-	struct device_node *dev_node;
+-	int8_t channel_name[ICCOM_CANNEL_NO_LEN];
+-	int32_t len;
+-	enum Iccom_channel_number i;
+-	enum Iccom_channel_number l_channel_no = ICCOM_CHANNEL_MAX;
+-	size_t fixed_len;
+-	uint8_t request_flg = 0U;
+-	int32_t ret_cmp;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	dev_node = dev_of_node(&pdev->dev);
+-	if (dev_node != NULL) {
+-		fixed_len = strlen(dev_node->name);
+-		for (i = ICCOM_CHANNEL_0; i < ICCOM_CHANNEL_MAX; i++) {
+-			(void)snprintf(channel_name, ICCOM_CANNEL_NO_LEN,
+-					"%d", i);
+-			ret_cmp = strncmp(&dev_node->name[fixed_len - 1U],
+-				channel_name, strlen(channel_name));
+-			if (ret_cmp == 0) {
+-				l_channel_no = i;
+-				break;
+-			}
+-		}
+-		if (i >= ICCOM_CHANNEL_MAX) {
+-			ret = -ENODEV;
+-			dev_err(&pdev->dev, "Get Channel No failed\n");
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			l_iccom = iccom_core_alloc(&pdev->dev,
+-						(int32_t)l_channel_no,
+-						&iccom_drv_fops,
+-						sizeof(*iccom_hw));
+-			if (l_iccom == NULL) {
+-				ret = -ENOMEM;
+-				pr_err("[Err]iccom_core_alloc err\n");
+-			}
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			iccom_hw =
+-				(struct iccom_hardware_info *)l_iccom->priv;
+-			ret_get_irq = platform_get_irq(pdev, 0U);
+-			if (ret_get_irq <= 0) {
+-				ret = ret_get_irq;
+-				pr_err("[Err]Get_irq err\n");
+-			} else {
+-				iccom_hw->irq_no = (uint32_t)ret_get_irq;
+-			}
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			ret = of_address_to_resource(dev_node, 0, &mfis_base);
+-			if (ret != 0) {
+-				dev_err(l_iccom->dev,
+-					"Get MFIS base failed\n");
+-			}
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			reg_offset_ptr = of_get_property(dev_node,
+-							"iccom,reg-offset",
+-							&len);
+-			if ((reg_offset_ptr == NULL) ||
+-				(len < ICCOM_REG_OFFSET_LEN)) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev,
+-					"No defined reg_offset\n");
+-			}
+-
+-			cta_addr_ptr = of_get_property(dev_node,
+-							"iccom,cta-memory",
+-							&len);
+-			if ((cta_addr_ptr == NULL) ||
+-				(len < ICCOM_CTA_MEMORY_LEN)) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev,
+-					"No defined cta_memory\n");
+-			}
+-
+-			ack_timer_ptr = of_get_property(dev_node,
+-							"iccom,ack-timeout",
+-							NULL);
+-			if (ack_timer_ptr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev,
+-					"No defined ack_timeout\n");
+-			}
+-
+-			trg_timer_ptr = of_get_property(dev_node,
+-							"iccom,trg-timeout",
+-							NULL);
+-			if (trg_timer_ptr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev,
+-					"No defined trg_timeout\n");
+-			}
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			iccom_hw->mfis_iicr_addr =
+-				mfis_base.start + be32_to_cpup(reg_offset_ptr);
+-			iccom_hw->mfis_eicr_addr =
+-					mfis_base.start +
+-					be32_to_cpup(reg_offset_ptr + 4);
+-			iccom_hw->mfis_imbr_addr =
+-					mfis_base.start +
+-					be32_to_cpup(reg_offset_ptr + 8);
+-			iccom_hw->mfis_embr_addr =
+-					mfis_base.start +
+-					be32_to_cpup(reg_offset_ptr + 12);
+-
+-			iccom_hw->cta_addr = be32_to_cpup(cta_addr_ptr + 4);
+-			iccom_hw->cta_size = be32_to_cpup(cta_addr_ptr + 12);
+-
+-			iccom_hw->trg_timeout = be32_to_cpup(trg_timer_ptr);
+-			iccom_hw->ack_timeout_jf =
+-					msecs_to_jiffies(
+-						be32_to_cpup(ack_timer_ptr));
+-
+-			ret_irq = request_irq(iccom_hw->irq_no,
+-						(irq_handler_t)&iccom_drv_isr,
+-						IRQF_PROBE_SHARED,
+-						l_iccom->name,
+-						(void *)l_iccom);
+-
+-			if (ret_irq != 0) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev, "SAME IRQ registered\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_IRQ;
+-				disable_irq_nosync(iccom_hw->irq_no);
+-			}
+-
+-			req_iicr = request_mem_region(
+-					(uintptr_t)iccom_hw->mfis_iicr_addr,
+-					ICCOM_MFIS_LEN, l_iccom->name);
+-			if (req_iicr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev, "Overlap IICR\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_IICR;
+-			}
+-			req_eicr = request_mem_region(
+-					(uintptr_t)iccom_hw->mfis_eicr_addr,
+-					ICCOM_MFIS_LEN, l_iccom->name);
+-			if (req_eicr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev, "Overlap EICR\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_EICR;
+-			}
+-			req_imbr = request_mem_region(
+-					(uintptr_t)iccom_hw->mfis_imbr_addr,
+-					ICCOM_MFIS_LEN, l_iccom->name);
+-			if (req_imbr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev, "Overlap IMBR\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_IMBR;
+-			}
+-			req_embr = request_mem_region(
+-					(uintptr_t)iccom_hw->mfis_embr_addr,
+-					ICCOM_MFIS_LEN, l_iccom->name);
+-			if (req_embr == NULL) {
+-				ret = -ENODEV;
+-				dev_err(l_iccom->dev, "Overlap EMBR\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_EMBR;
+-			}
+-			req_cta = request_mem_region(
+-						(uintptr_t)iccom_hw->cta_addr,
+-						(uintptr_t)iccom_hw->cta_size,
+-						l_iccom->name);
+-			if (req_cta == NULL) {
+-				ret = -ENODEV;
+-				dev_err(&pdev->dev, "Overlap CTA\n");
+-			} else {
+-				request_flg |= ICCOM_REQUEST_CTA;
+-			}
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			ret = iccom_core_add(l_iccom);
+-		}
+-
+-		if (ret == ICCOM_OK) {
+-			platform_set_drvdata(pdev, l_iccom);
+-			pr_info("ICCOM Channel%d ready\n", l_channel_no);
+-			pr_debug("Channel %d info\n", l_channel_no);
+-			pr_debug("IRQ: 0x%X", iccom_hw->irq_no);
+-			pr_debug("MFISARIICR: 0x%X\n",
+-				iccom_hw->mfis_iicr_addr);
+-			pr_debug("MFISAREICR: 0x%X\n",
+-				iccom_hw->mfis_eicr_addr);
+-			pr_debug("MFISARIMBR: 0x%X\n",
+-				iccom_hw->mfis_imbr_addr);
+-			pr_debug("MFISAREMBR: 0x%X\n",
+-				iccom_hw->mfis_embr_addr);
+-			pr_debug("CTA: 0x%X\n", iccom_hw->cta_addr);
+-			pr_debug("ACK_TIMEOUT: %llu\n", iccom_hw->ack_timeout_jf);
+-			pr_debug("TRG_TIMEOUT: %d\n", iccom_hw->trg_timeout);
+-		} else {
+-			if (l_iccom != NULL) {
+-				iccom_drv_release_iccom(l_iccom, request_flg);
+-				(void)iccom_core_free(l_iccom);
+-			}
+-			if (l_channel_no != ICCOM_CHANNEL_MAX) {
+-				pr_err("[Err]channel %d not use\n",
+-					l_channel_no);
+-			}
+-		}
+-	} else {
+-		/* No operation */
+-	}
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static int32_t iccom_drv_remove(struct platform_device *pdev)
+-{
+-	int32_t ret = ICCOM_OK;
+-	struct iccom *l_iccom;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	l_iccom = platform_get_drvdata(pdev);
+-	if (l_iccom != NULL) {
+-		iccom_drv_release_iccom(l_iccom, ICCOM_REQUEST_ALL);
+-		ret = iccom_core_del(l_iccom);
+-	}
+-
+-	pr_debug("%s: End ret = %d\n", __func__, ret);
+-
+-	return ret;
+-}
+-
+-static struct platform_driver iccom_driver = {
+-	.probe = &iccom_drv_probe,
+-	.remove = __exit_p(iccom_drv_remove),
+-	.driver = {
+-		   .name = "iccom",
+-		   .owner = THIS_MODULE,
+-		   .of_match_table = iccom_drv_match,
+-		   },
+-};
+-
+-static struct platform_device iccom_device = {
+-	.name = "iccom",
+-	.id = 0,
+-	.dev = {
+-			.release = &iccom_drv_device_release
+-		},
+-};
+-
+-static __init int32_t iccom_drv_init(void)
+-{
+-	int32_t ret;
+-
+-	pr_info("%s initialization(R-Car Rev.%s)\n",
+-		ICCOM_MODULE_NAME, VERSION_OF_RENESAS);
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	ret = platform_driver_register(&iccom_driver);
+-	if (ret == 0) {
+-		ret = platform_device_register(&iccom_device);
+-		if (ret != 0) {
+-			platform_driver_unregister(&iccom_driver);
+-		}
+-	}
+-
+-	pr_info("%s initialization finish\n", ICCOM_MODULE_NAME);
+-
+-	pr_debug("%s: End\n", __func__);
+-
+-	return ret;
+-}
+-
+-static void __exit iccom_drv_exit(void)
+-{
+-
+-	pr_info("%s de-initialization\n", ICCOM_MODULE_NAME);
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	platform_device_unregister(&iccom_device);
+-	platform_driver_unregister(&iccom_driver);
+-
+-	pr_info("%s de-initialization finish\n", ICCOM_MODULE_NAME);
+-
+-	pr_debug("%s: End\n", __func__);
+-}
+-
+-static void iccom_drv_device_release(struct device *dev)
+-{
+-	pr_debug("%s: dev=%p\n", __func__, dev);
+-}
+-
+-static void iccom_drv_release_channel(struct iccom_channel *channel)
+-{
+-	struct iccom_communication_info *iccom_comm = NULL;
+-
+-	pr_debug("%s: Start\n", __func__);
+-
+-	if (channel != NULL) {
+-		iccom_comm = (struct iccom_communication_info *)channel->priv;
+-	}
+-
+-	if (iccom_comm != NULL) {
+-		mutex_destroy(&iccom_comm->mutex_poll_intbit);
+ 		if (iccom_comm->cta_addr != NULL) {
+ 			iounmap(iccom_comm->cta_addr);
+ 		}
+@@ -1025,19 +140,13 @@ static void iccom_drv_release_channel(struct iccom_channel *channel)
+ 		if (iccom_comm->mfis_iicr_addr != NULL) {
+ 			iounmap(iccom_comm->mfis_iicr_addr);
+ 		}
+-		devm_kfree(channel->iccom->dev, channel);
+ 	}
+-
+-	pr_debug("%s: End\n", __func__);
+ }
+ 
+-static void iccom_drv_release_iccom(struct iccom *iccom, uint8_t request_flg)
++static void iccom_drv_release_hw(struct iccom *iccom, uint8_t request_flg)
+ {
+-	struct iccom_hardware_info *iccom_hw;
++	struct iccom_hardware_info *iccom_hw = &(iccom->hw_info);
+ 
+-	dev_dbg(iccom->dev, "%s: Start flg = 0x%X\n", __func__, request_flg);
+-
+-	iccom_hw = (struct iccom_hardware_info *)iccom->priv;
+ 	if (iccom_hw != NULL) {
+ 		if ((request_flg & ICCOM_REQUEST_IICR) != 0U) {
+ 			release_mem_region((uintptr_t)iccom_hw->mfis_iicr_addr,
+@@ -1063,8 +172,566 @@ static void iccom_drv_release_iccom(struct iccom *iccom, uint8_t request_flg)
+ 			free_irq(iccom_hw->irq_no, (void *)iccom);
+ 		}
+ 	}
++}
+ 
+-	pr_debug("%s: End\n", __func__);
++static void dump_buffer(uint8_t* buf, size_t len)
++{
++	size_t i = 0;
++	char line[50] = { 0 };
++	char* ptr;
++
++	while (true) {
++		if ( ((i % 16) == 0) || (i >= len) ) {
++			printk("%s", line);
++			memset(line, 0, sizeof(line));
++			ptr = line;
++			if (i >= len) {
++				return;
++			}
++		}
++		ptr += sprintf(ptr, "%02x ", buf[i]);
++		i++;
++	}
++}
++
++static int32_t iccom_drv_open(struct iccom *iccom)
++{
++	int32_t ret = ICCOM_OK;
++	struct iccom_communication_info *iccom_comm = NULL;
++	struct iccom_hardware_info *iccom_hw;
++	void __iomem *remap_addr;
++
++	dev_dbg(iccom->dev, "%s: Start\n", __func__);
++
++	if (iccom->is_open) {
++		dev_err(iccom->dev, "[Err]This channel already open\n");
++		return -EINVAL;
++	}
++
++	iccom->comm_info = (struct iccom_communication_info*) devm_kzalloc(
++							iccom->dev,
++							sizeof(struct iccom_communication_info),
++							GFP_KERNEL);
++	if (IS_ERR(iccom->comm_info)) {
++		dev_err(iccom->dev, "[Err]Cannot allocate iccom_communication_info\n");
++		return -ENOMEM;
++	}
++
++	iccom->comm_info->rx_data_buff = (uint8_t*) devm_kzalloc(
++							iccom->dev,
++							sizeof(uint8_t) * ICCOM_BUF_MAX_SIZE,
++							GFP_KERNEL);
++	if (IS_ERR(iccom->comm_info->rx_data_buff)) {
++		dev_err(iccom->dev, "[Err]Cannot allocate rx_data_buff\n");
++		return -ENOMEM;
++	}
++	iccom->comm_info->valid_rx_data = 0;
++
++	iccom_comm = iccom->comm_info;
++	iccom_hw = &(iccom->hw_info);
++
++	mutex_init(&iccom_comm->comm_mutex);
++
++	init_waitqueue_head(&iccom_comm->write_q);
++	init_waitqueue_head(&iccom_comm->read_q);
++
++	remap_addr = ioremap((uintptr_t)iccom_hw->mfis_iicr_addr, ICCOM_MFIS_LEN);
++	if (remap_addr == NULL) {
++		dev_err(iccom->dev, "[Err]Remap IICR failed\n");
++		return -ENOMEM;
++	}
++	iccom_comm->mfis_iicr_addr = (uint32_t *)remap_addr;
++
++	remap_addr = ioremap((uintptr_t)iccom_hw->mfis_eicr_addr, ICCOM_MFIS_LEN);
++	if (remap_addr == NULL) {
++		dev_err(iccom->dev, "[Err]Remap EICR failed\n");
++		return -ENOMEM;
++	}
++	iccom_comm->mfis_eicr_addr = (uint32_t *)remap_addr;
++
++	remap_addr = ioremap((uintptr_t)iccom_hw->mfis_imbr_addr, ICCOM_MFIS_LEN);
++	if (remap_addr == NULL) {
++		dev_err(iccom->dev, "[Err]Remap IMBR failed\n");
++		return -ENOMEM;
++	}
++	iccom_comm->mfis_imbr_addr = (uint32_t *)remap_addr;
++
++	remap_addr = ioremap((uintptr_t)iccom_hw->mfis_embr_addr, ICCOM_MFIS_LEN);
++	if (remap_addr == NULL) {
++		dev_err(iccom->dev, "[Err]Remap EMBR failed\n");
++		return -ENOMEM;
++	}
++	iccom_comm->mfis_embr_addr = (uint32_t *)remap_addr;
++
++	remap_addr = ioremap((uintptr_t)iccom_hw->cta_addr, iccom_hw->cta_size);
++	if (remap_addr == NULL) {
++		dev_err(iccom->dev, "[Err]Remap CTA failed\n");
++		return -ENOMEM;
++	}
++	iccom_comm->cta_addr = (uint8_t *)remap_addr;
++
++	iccom_drv_reset_registers(iccom_comm);
++
++	// Signal that the initialization is completed
++	iccom_drv_write_iicr_imbr(iccom_comm,
++						ICCOM_CTRL_INIT_COMPLETED | ICCOM_CTRL_INT, 0);
++
++	ret = iccom_drv_poll_int_clear(iccom);
++	if (ret != 0) {
++		dev_err(iccom->dev, "[Err] Initialization not Acked\n");
++		return -EDEADLK;
++	}
++
++	iccom_drv_reset_registers(iccom_comm);
++	enable_irq(iccom->hw_info.irq_no);
++
++	return ret;
++}
++
++static int32_t iccom_drv_read(struct iccom *iccom, struct iccom_cmd *cmd)
++{
++	struct iccom_communication_info *iccom_comm;
++	int32_t ret = 0;
++	unsigned long copy_ret;
++
++	iccom_comm = iccom->comm_info;
++
++	mutex_lock(&iccom_comm->comm_mutex);
++
++	cmd->count = 0;
++
++	if (iccom_comm->valid_rx_data == 0) {
++		dev_err(iccom->dev, "[Err]No data to read\n");
++		ret = -ENODATA;
++		goto Exit;
++	}
++
++	if (!access_ok(cmd->buf, ICCOM_BUF_MAX_SIZE)) {
++		dev_err(iccom->dev, "[Err]Cannot access output buffer while reading");
++		ret = -EIO;
++		goto Exit;
++	}
++
++	copy_ret = copy_to_user(cmd->buf, iccom_comm->rx_data_buff,
++								iccom_comm->valid_rx_data);
++	if (copy_ret > 0) {
++		dev_err(iccom->dev, "[Err]Cannot copy data to userspace");
++		ret = -EIO;
++		goto Exit;
++	}
++	cmd->count = iccom_comm->valid_rx_data;
++
++	//dump_buffer(iccom_comm->rx_data_buff,
++	//		(iccom_comm->valid_rx_data < 32) ? iccom_comm->valid_rx_data : 32);
++
++	iccom_comm->valid_rx_data = 0;
++	memset(iccom_comm->rx_data_buff, 0, ICCOM_BUF_MAX_SIZE);
++
++	dev_dbg(iccom->dev, "Returning %d bytes\n", cmd->count);
++
++Exit:
++	mutex_unlock(&iccom_comm->comm_mutex);
++
++	if (ret < 0) {
++		return ret;
++	}
++	return 0;
++}
++
++static int32_t iccom_drv_write(struct iccom *iccom, struct iccom_cmd *cmd)
++{
++	struct iccom_communication_info *iccom_comm;
++	struct iccom_hardware_info *iccom_hw;
++	ssize_t ret = 0;
++	uint8_t *tgt_addr;
++	unsigned long copy_ret;
++
++	iccom_comm = iccom->comm_info;
++	iccom_hw = &(iccom->hw_info);
++
++	mutex_lock(&iccom_comm->comm_mutex);
++
++	iccom_comm->ack_received = 0;
++	iccom_comm->valid_rx_data = 0;
++	memset(iccom_comm->rx_data_buff, 0, ICCOM_BUF_MAX_SIZE);
++	iccom_drv_reset_registers(iccom_comm);
++
++	tgt_addr = iccom_comm->cta_addr + ICCOM_CTA_BOTTOM_OFFSET;
++ 
++	if (!access_ok(cmd->buf, cmd->count)) {
++		dev_err(iccom->dev, "[Err]Cannot access output buffer while writing");
++		ret = -EIO;
++		goto Exit;
++	}
++	copy_ret = copy_from_user(tgt_addr, cmd->buf, cmd->count);
++	if (copy_ret > 0) {
++		dev_err(iccom->dev, "[Err]Cannot copy data from userspace");
++		ret = -EIO;
++		goto Exit;
++	}
++
++	//dump_buffer(tgt_addr, cmd->count);
++
++	dev_dbg(iccom->dev, "Sending message of %d bytes\n", cmd->count);
++	iccom_drv_write_iicr_imbr(iccom_comm, IICR_SEND_DATA, cmd->count);
++
++	// wait for the sent data to be acked
++	ret = wait_event_interruptible_timeout(iccom_comm->write_q,
++									(iccom_comm->ack_received != 0),
++									iccom_hw->ack_timeout);
++	if (ret < 0) {
++		dev_err(iccom->dev, "[Err]Write operation interrupted\n");
++		ret = -EINTR;
++		goto Exit;
++	} else if (ret == 0) {
++		dev_err(iccom->dev, "[Err]Write operation timed out\n");
++		ret = -ETIMEDOUT;
++		goto Exit;
++	}
++
++	// wait for the reply
++	ret = wait_event_interruptible_timeout(iccom_comm->read_q,
++									(iccom_comm->valid_rx_data >= 1),
++									iccom->hw_info.read_timeout);
++	
++	if (ret < 0) {
++		dev_err(iccom->dev, "[Err]Read operation interrupted");
++		goto Exit;
++	} else if (ret == 0) {
++		dev_err(iccom->dev, "[Err]Read operation timed out");
++		ret = -ENODATA;
++		goto Exit;
++	}
++
++	dev_dbg(iccom->dev, "Sent message was ACKed successfully\n");
++
++Exit:
++	mutex_unlock(&iccom_comm->comm_mutex);
++
++	if (ret < 0) {
++		iccom_drv_reset_registers(iccom_comm);
++		iccom_comm->ack_received = 0;
++		iccom_comm->valid_rx_data = 0;
++		memset(iccom_comm->rx_data_buff, 0, ICCOM_BUF_MAX_SIZE);
++
++		return ret;
++	}
++
++	return 0;
++}
++
++static int32_t iccom_drv_close(struct iccom *iccom)
++{
++	struct iccom_communication_info *iccom_comm;
++	struct iccom_hardware_info *iccom_hw;
++
++	iccom_comm = iccom->comm_info;
++	iccom_hw = &(iccom->hw_info);
++
++	disable_irq(iccom_hw->irq_no);
++
++	devm_kfree(iccom->dev, iccom->comm_info->rx_data_buff);
++	iccom_drv_release_comm(iccom_comm);
++	devm_kfree(iccom->dev, iccom->comm_info);
++
++	return ICCOM_OK;
++}
++
++static irqreturn_t iccom_drv_isr(int irq, void *iccom_ptr)
++{
++	struct iccom *iccom;
++	struct iccom_communication_info *iccom_comm = NULL;
++	uint32_t mfis_eicr, mfis_embr;
++	uint8_t *src_addr;
++	int32_t ret;
++
++	iccom = (struct iccom *)iccom_ptr;
++	iccom_comm = iccom->comm_info;
++
++	if (iccom_comm == NULL) {
++		dev_err(iccom->dev, "[Err] invalid pointer in IRQ function\n");
++		return IRQ_HANDLED;
++	}
++
++	mfis_eicr = ioread32(iccom_comm->mfis_eicr_addr);
++	mfis_embr = ioread32(iccom_comm->mfis_embr_addr);
++	
++	if (mfis_eicr & ICCOM_CTRL_ACK) {
++		dev_dbg(iccom->dev, "Received Ack\n");
++
++		iccom_comm->ack_received = 1;
++		wake_up_interruptible(&iccom_comm->write_q);
++
++		iccom_drv_write_iicr_imbr(iccom_comm, 0x00, 0x00);
++		iccom_drv_clear_eicr(iccom_comm);
++	} else if (mfis_eicr & ICCOM_CTRL_DATA) {
++		dev_dbg(iccom->dev, "Received message\n");
++
++		// copy data to the internal structure
++		src_addr = iccom_comm->cta_addr + ICCOM_CTA_UPPER_OFFSET;
++		memcpy(iccom_comm->rx_data_buff, src_addr, ICCOM_BUF_MAX_SIZE);
++		iccom_comm->valid_rx_data = mfis_embr;
++
++		iccom_drv_clear_eicr(iccom_comm);
++
++		// send ACK
++		dev_dbg(iccom->dev, "Send Ack\n");
++
++		iccom_drv_write_iicr_imbr(iccom_comm, IICR_SEND_ACK, 0x00);
++
++		ret = iccom_drv_poll_int_clear(iccom);
++		if (ret < 0) {
++			dev_err(iccom->dev, "[Err]Ack was not acked");
++			goto Exit;
++		}
++
++		wake_up_interruptible(&iccom_comm->read_q);
++	} else if (mfis_eicr & ICCOM_CTRL_INIT_COMPLETED) {
++		dev_dbg(iccom->dev, "Initialization completed ACK\n");
++		iccom_drv_clear_eicr(iccom_comm);
++	} else {
++		dev_err(iccom->dev, "Unknown interrupt reason\n");
++		iccom_drv_clear_eicr(iccom_comm);
++	}
++
++Exit:
++
++	return IRQ_HANDLED;
++}
++
++const struct iccom_ops iccom_drv_fops = {
++	.owner		= THIS_MODULE,
++	.open		= &iccom_drv_open,
++	.read		= &iccom_drv_read,
++	.write		= &iccom_drv_write,
++	.close		= &iccom_drv_close,
++};
++
++static const struct of_device_id iccom_drv_match[] = {
++	{ .compatible = "renesas,iccom-rcar", },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(of, iccom_drv_match);
++
++static int32_t iccom_drv_probe(struct platform_device *pdev)
++{
++	struct iccom *iccom = NULL;
++	struct iccom_hardware_info *iccom_hw = NULL;
++	struct resource mfis_base;
++	struct resource *req_res;
++	int32_t ret = 0;
++	const void *dts_val_ptr;
++	struct device_node *dev_node;
++	int8_t channel_name[ICCOM_MAX_NAME_LENGTH];
++	int32_t len;
++	enum Iccom_channel_number i;
++	enum Iccom_channel_number l_channel_no = ICCOM_CHANNEL_MAX;
++	size_t dts_name_len;
++	uint8_t request_flg = 0U;
++	int32_t ret_cmp;
++
++	dev_node = dev_of_node(&pdev->dev);
++	if (dev_node == NULL) {
++		return -EINVAL;
++	}
++
++	dts_name_len = strlen(dev_node->name);
++	for (i = ICCOM_CHANNEL_0; i < ICCOM_CHANNEL_MAX; i++) {
++		(void)snprintf(channel_name, ICCOM_MAX_NAME_LENGTH,
++				"%d", i);
++		ret_cmp = strncmp(&dev_node->name[dts_name_len - 1U],
++							channel_name, strlen(channel_name));
++		if (ret_cmp == 0) {
++			l_channel_no = i;
++			break;
++		}
++	}
++	if (i >= ICCOM_CHANNEL_MAX) {
++		dev_err(&pdev->dev, "[Err]Specified channel does not exist\n");
++		return -ENODEV;
++	}
++
++	iccom = iccom_core_alloc(&pdev->dev, (int32_t)l_channel_no,
++								&iccom_drv_fops);
++	if (IS_ERR(iccom)) {
++		pr_err("[Err]iccom_core_alloc failed\n");
++		return PTR_ERR(iccom);
++	}
++	iccom_hw = &(iccom->hw_info);
++
++	ret = platform_get_irq(pdev, 0U);
++	if (ret <= 0) {
++		pr_err("[Err]Get_irq err\n");
++		return -EIO;
++	}
++	iccom_hw->irq_no = ret;
++	dev_info(iccom->dev, "Got IRQ=%d\n", iccom_hw->irq_no);
++
++	ret = request_threaded_irq(iccom_hw->irq_no,
++						NULL, (irq_handler_t)&iccom_drv_isr,
++						IRQF_ONESHOT,
++						iccom->name, (void *)iccom);
++	if (ret < 0) {
++		dev_err(iccom->dev, "[Err]Cannot request IRQ\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_IRQ;
++	disable_irq(iccom_hw->irq_no);
++
++	ret = of_address_to_resource(dev_node, 0, &mfis_base);
++	if (ret != 0) {
++		dev_err(iccom->dev, "[Err]Get MFIS base failed\n");
++		return -EINVAL;
++	}
++
++	dts_val_ptr = of_get_property(dev_node, "iccom,reg-offset", &len);
++	if ((dts_val_ptr == NULL) || (len < ICCOM_REG_OFFSET_LEN)) {
++		dev_err(iccom->dev, "[Err]No defined reg_offset\n");
++		return -ENODEV;
++	}
++	iccom_hw->mfis_iicr_addr = mfis_base.start +
++								be32_to_cpup(dts_val_ptr);
++	iccom_hw->mfis_eicr_addr = mfis_base.start +
++								be32_to_cpup(dts_val_ptr + 4);
++	iccom_hw->mfis_imbr_addr = mfis_base.start +
++								be32_to_cpup(dts_val_ptr + 8);
++	iccom_hw->mfis_embr_addr = mfis_base.start +
++								be32_to_cpup(dts_val_ptr + 12);
++
++	dts_val_ptr = of_get_property(dev_node, "iccom,cta-memory", &len);
++	if ((dts_val_ptr == NULL) || (len < ICCOM_CTA_MEMORY_LEN)) {
++		dev_err(iccom->dev, "[Err]No defined cta_memory\n");
++		return -ENODEV;
++	}
++	iccom_hw->cta_addr = be32_to_cpup(dts_val_ptr + 4);
++	iccom_hw->cta_size = ICCOM_TOTAL_CTA_SIZE;
++
++	dts_val_ptr = of_get_property(dev_node, "iccom,ack-timeout", NULL);
++	if (dts_val_ptr == NULL) {
++		dev_err(iccom->dev, "[Err]No defined ack-timeout\n");
++		return -ENODEV;
++	}
++	iccom_hw->int_clear_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
++
++	dts_val_ptr = of_get_property(dev_node, "iccom,int-clear-timeout", NULL);
++	if (dts_val_ptr == NULL) {
++		dev_err(iccom->dev, "[Err]No defined int-clear-timeout\n");
++		return -ENODEV;
++	}
++	iccom_hw->ack_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
++
++	dts_val_ptr = of_get_property(dev_node, "iccom,read-timeout", NULL);
++	if (dts_val_ptr == NULL) {
++		dev_err(iccom->dev, "[Err]No defined read-timeout\n");
++		return -ENODEV;
++	}
++	iccom_hw->read_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
++
++	req_res = request_mem_region((uintptr_t)iccom_hw->mfis_iicr_addr,
++									ICCOM_MFIS_LEN, iccom->name);
++	if (req_res == NULL) {
++		dev_err(iccom->dev, "[Err]Cannot request IICR region\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_IICR;
++
++	req_res = request_mem_region((uintptr_t)iccom_hw->mfis_eicr_addr,
++									ICCOM_MFIS_LEN, iccom->name);
++	if (req_res == NULL) {
++		dev_err(iccom->dev, "[Err]Cannot request EICR region\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_EICR;
++
++	req_res = request_mem_region((uintptr_t)iccom_hw->mfis_imbr_addr,
++									ICCOM_MFIS_LEN, iccom->name);
++	if (req_res == NULL) {
++		dev_err(iccom->dev, "[Err]Cannot request IMBR region\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_IMBR;
++
++	req_res = request_mem_region((uintptr_t)iccom_hw->mfis_embr_addr,
++									ICCOM_MFIS_LEN, iccom->name);
++	if (req_res == NULL) {
++		dev_err(iccom->dev, "[Err]Cannot request EMBR region\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_EMBR;
++
++	req_res = request_mem_region( (uintptr_t)iccom_hw->cta_addr,
++								(uintptr_t)iccom_hw->cta_size,
++								iccom->name);
++	if (req_res == NULL) {
++		dev_err(&pdev->dev, "[Err]Cannot request CTA region\n");
++		return -ENODEV;
++	}
++	request_flg |= ICCOM_REQUEST_CTA;
++
++	ret = iccom_core_add(iccom);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "[Err]iccom_core_add failed");
++		goto Error;
++	}
++
++	platform_set_drvdata(pdev, iccom);
++	dev_info(iccom->dev, "Probe completed\n");
++
++	return 0;
++
++Error:
++	iccom_drv_release_hw(iccom, request_flg);
++	iccom_core_free(iccom);
++	
++	return ret;
++}
++
++static int32_t iccom_drv_remove(struct platform_device *pdev)
++{
++	int32_t ret = ICCOM_OK;
++	struct iccom *iccom;
++
++	iccom = platform_get_drvdata(pdev);
++	if (iccom != NULL) {
++		iccom_drv_release_hw(iccom, ICCOM_REQUEST_ALL);
++		ret = iccom_core_del(iccom);
++	}
++
++	return ret;
++}
++
++static struct platform_driver iccom_driver = {
++	.probe = &iccom_drv_probe,
++	.remove = __exit_p(iccom_drv_remove),
++	.driver = {
++		   .name = "iccom",
++		   .owner = THIS_MODULE,
++		   .of_match_table = iccom_drv_match,
++		   },
++};
++
++static __init int32_t iccom_drv_init(void)
++{
++	int32_t ret;
++
++	pr_info("%s initialization(R-Car Rev.%s)\n",
++		ICCOM_MODULE_NAME, VERSION_OF_RENESAS);
++
++	ret = platform_driver_register(&iccom_driver);
++
++	pr_info("%s initialization finish\n", ICCOM_MODULE_NAME);
++
++	return ret;
++}
++
++static void __exit iccom_drv_exit(void)
++{
++	pr_info("%s de-initialization\n", ICCOM_MODULE_NAME);
++
++	platform_driver_unregister(&iccom_driver);
++
++	pr_info("%s de-initialization finish\n", ICCOM_MODULE_NAME);
+ }
+ 
+ module_init(iccom_drv_init);
+diff --git a/iccom_driver.h b/iccom_driver.h
+index d78b375..603c1b8 100644
+--- a/iccom_driver.h
++++ b/iccom_driver.h
+@@ -23,91 +23,18 @@
+ 
+ #include "iccom_core.h"
+ 
+-#define ICCOM_WAIT_TIMER_US		(1000U)	/* Unit is "us" */
+-
+-#define ICCOM_CTRL_INT			(0x00000001U)
+-#define ICCOM_CTRL_SND_ACK		(0x00000002U)
+-#define ICCOM_CTRL_SND_BUFF		(0x00000004U)
+-#define ICCOM_CTRL_ACK_BUFF		(0x00000008U)
+-#define ICCOM_CTRL_INIT_END		(0x00000010U)
+-#define ICCOM_CTRL_FATAL		(0x00000020U)
+-#define ICCOM_CTRL_CLEAR_INIT_BIT	(0x000000FEU)
+-#define ICCOM_CTRL_READ_MFIS		(0x0000003FU)
+-
+-#define ICCOM_CANNEL_NO_LEN		(2U)
+-
+-#define ICCOM_FLG_CH_OPEN		(0x00000001U)
+-#define ICCOM_FLG_CH_INIT_END		(0x00000002U)
+-
+-#define ICCOM_CTA_SBUF_NUM		(2)
+-#define ICCOM_CTA_RBUF_NUM		(2U)
+-#define ICCOM_MFIS_LEN			(4U)
+-
+-#define ICCOM_SHIFT_GET_ACK_AREA	(3U)
+-#define ICCOM_SHIFT_GET_RECV_AREA	(2U)
+-#define ICCOM_SHIFT_SET_ACK_AREA	(3U)
+-#define ICCOM_SHIFT_SET_SEND_AREA	(2U)
+-
+-#define ICCOM_REQUEST_IICR		(0x01U)
+-#define ICCOM_REQUEST_EICR		(0x02U)
+-#define ICCOM_REQUEST_IMBR		(0x04U)
+-#define ICCOM_REQUEST_EMBR		(0x08U)
+-#define ICCOM_REQUEST_CTA		(0x10U)
+-#define ICCOM_REQUEST_IRQ		(0x20U)
+-#define ICCOM_REQUEST_ALL		(0x3FU)
+-
+-#define ICCOM_REG_OFFSET_LEN		(16)
+-#define ICCOM_CTA_MEMORY_LEN		(16)
+-
+-#define ICCOM_MODULE_NAME		"ICCOM driver"
+-
+-enum iccom_cta_area {
+-	ICCOM_CTA_UPPER = 0U,
+-	ICCOM_CTA_BOTTOM,
+-
+-	ICCOM_CTA_COUNT
+-};
+-
+-enum iccom_drv_write_status {
+-	ICCOM_WRITE_STATE_NO_OPEN = 0U,
+-	ICCOM_WRITE_STATE_WAIT_WRITE,
+-	ICCOM_WRITE_STATE_RECV_ACK,
+-
+-	ICCOM_WRITE_STATE_COUNT
+-};
+-
+-enum iccom_drv_read_status {
+-	ICCOM_READ_STATE_NO_OPEN = 0U,
+-	ICCOM_READ_STATE_WAIT_READ,
+-	ICCOM_READ_STATE_RECEIVING,
+-	ICCOM_READ_STATE_SEND_ACK,
+-
+-	ICCOM_READ_STATE_COUNT
+-};
+-
+ struct iccom_communication_info {
+-	uint8_t ack_arrive[ICCOM_CTA_COUNT];
+-	uint8_t data_arrive;
+-	enum iccom_drv_write_status write_status[ICCOM_CTA_COUNT];
+-	enum iccom_drv_read_status read_status;
+-	uint8_t cta_flg[ICCOM_CTA_COUNT];
+ 	wait_queue_head_t write_q;
+ 	wait_queue_head_t read_q;
+-	wait_queue_head_t ioctl_q;
+-	uint32_t recv_eicr[ICCOM_CTA_COUNT];
+-	uint32_t recv_embr[ICCOM_CTA_COUNT];
+-	uint32_t ack_embr[ICCOM_CTA_COUNT];
+-	enum iccom_cta_area recv_index[ICCOM_CTA_COUNT];
+-	struct spinlock spinlock_mfis_info;
+-	struct spinlock spinlock_cta_flg;
+-	struct mutex mutex_poll_intbit;
+-	struct semaphore sem_send_cta;
+-	uint8_t close_flg;
+ 	uint32_t *mfis_iicr_addr;
+ 	uint32_t *mfis_eicr_addr;
+ 	uint32_t *mfis_imbr_addr;
+ 	uint32_t *mfis_embr_addr;
++	struct mutex comm_mutex;
+ 	uint8_t *cta_addr;
++	uint8_t *rx_data_buff;
++	size_t valid_rx_data;
++	uint8_t ack_received;
+ };
+ 
+ struct iccom_hardware_info {
+@@ -118,8 +45,9 @@ struct iccom_hardware_info {
+ 	uint32_t mfis_embr_addr;
+ 	uint32_t cta_addr;
+ 	uint32_t cta_size;
+-	uint64_t ack_timeout_jf;	/* convert jiffies */
+-	int32_t trg_timeout;
++	uint64_t read_timeout; // jiffies
++	uint64_t ack_timeout; // jiffies
++	uint64_t int_clear_timeout; // jiffies
+ };
+ 
+ #endif /* ICCOM_DRIVER_H */
+-- 
+2.34.1
+

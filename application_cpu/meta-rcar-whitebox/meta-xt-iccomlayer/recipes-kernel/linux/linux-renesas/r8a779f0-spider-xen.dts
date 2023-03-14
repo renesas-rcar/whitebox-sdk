@@ -1,0 +1,367 @@
+#include "r8a779f0-spider.dts"
+#include "xen-chosen.dtsi"
+
+/ {
+
+	model = "Renesas Spider CPU and Breakout boards based on r8a779f0, running XEN hypervisor";
+
+	/* Workaround U-Boot issue with memory nodes duplication */
+	/delete-node/ memory@48000000;
+	/delete-node/ memory@480000000;
+	memory@48000000 {
+		device_type = "memory";
+		/* first 128MB is reserved for secure area. */
+		reg = <0x0 0x48000000 0x0 0x78000000
+		       0x4 0x80000000 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/* ICCOM CR Shared memory */
+		cr_cta_mem {
+			compatible = "renesas,iccom-memory";
+			no-map;
+			reg = <0x0 0x47fc7000 0x0 0x2000>;
+		};
+
+		/* ICCOM G4MHA Shared memory */
+		g4mh_cta_mem {
+			compatible = "renesas,iccom-memory";
+			no-map;
+			reg = <0x0 0x47fc9000 0x0 0x2000>;
+		};
+
+		/* R-Switch LINKFIX table */
+		rswitch_linkfix_mem@48000000 {
+			compatible = "renesas,rswitch-linkfix";
+			no-map;
+			reg = <0x0 0x48000000 0x0 0x200000>;
+		};
+	};
+};
+
+&ipmmu_mm {
+	status = "okay";
+};
+
+/* Make sure Xen console is enabled. */
+&scif3	{
+	status = "okay";
+};
+
+&gic {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	ranges;
+
+	gic_its: msi-controller@f1040000 {
+		compatible = "arm,gic-v3-its";
+		msi-controller;
+		#msi-cells = <1>;
+		reg = <0x0 0xf1040000 0 0x20000>;
+	};
+};
+
+&pciec0 {
+	reg = <0 0xe65d0000 0 0x3000>,
+	      <0 0xe65d3000 0 0x2000>,
+	      <0 0xe65d5000 0 0x1200>,
+	      <0 0xe65d6200 0 0x0e00>,
+	      <0 0xe65d7000 0 0x1000>,
+	      <0 0xfe000000 0 0x400000>;
+		 /* downstream IO */
+	ranges = <0x81000000 0 0x00000000 0 0xfe000000 0 0x00400000
+		 /* non-prefetchable memory */
+		 0x82000000 0 0x30000000 0 0x30000000 0 0x10000000>;
+	msi-map = <0x0 &gic_its 0x0 0x1000>;
+	interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 2 &gic 0 0 GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 3 &gic 0 0 GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 4 &gic 0 0 GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH>;
+	pinctrl-0 = <&pcie0_pins>, <&pcie1_pins>;
+};
+
+/*
+ * FIXME: Xen also parses disabled nodes: according to device tree specification
+ * such nodes may become available at run-time.
+ */
+&pciec1 {
+	reg = <0 0xe65d8000 0 0x3000>,
+	      <0 0xe65db000 0 0x2000>,
+	      <0 0xe65dd000 0 0x1200>,
+	      <0 0xe65de200 0 0x0e00>,
+	      <0 0xe65df000 0 0x1000>,
+	      <0 0xee900000 0 0x400000>;
+		 /* downstream IO */
+	ranges = <0x81000000 0 0x00000000 0 0xee900000 0 0x00400000
+		 /* non-prefetchable memory */
+		 0x82000000 0 0xc0000000 0 0xc0000000 0 0x10000000>;
+	msi-map = <0x0 &gic_its 0x0 0x1000>;
+	interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 2 &gic 0 0 GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 3 &gic 0 0 GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+			 0 0 0 4 &gic 0 0 GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH>;
+};
+
+/*
+ * Delete PCIEC0 Endpoint node for vPCI to be able to trap
+ * PCI configuration space access.
+ *
+ * PCIe controller 0 may operate in two modes: Root Complex or
+ * Endpoint. The are two corresponding device tree nodes for
+ * that: pciec0 and pciec0_ep. So, when you want the controller
+ * to be in a Root Complex mode then you put status = "disabled"
+ * for the Endpoint entry and vise versa. Please note that both
+ * nodes define the same "reg" and "interrupts" values.
+ *
+ * Xen, when it initializes the trap handlers for PCI
+ * configuration space access, needs the relevant regions to be
+ * NOT mapped into Domain-0's address space, but because of the
+ * current logic implemented it still assumes that the "disabled"
+ * status is valid and maps. So, it doesn't map MMIOs for
+ * the "okay" pciec0, but maps the same regions for pciec0_ep
+ * which is "disabled". for that reason, remove pciec0_ep
+ * node from the tree.
+ */
+/delete-node/ &pciec0_ep;
+
+&ipmmu_ds0{
+	status = "okay";
+};
+
+&ipmmu_hc {
+	status = "okay";
+};
+
+&mmc0 {
+	iommus = <&ipmmu_ds0 32>;
+};
+
+&rswitch {
+	iommus = <&ipmmu_hc 0>, <&ipmmu_hc 16>;
+};
+
+&dmac0 {
+	iommus = <&ipmmu_ds0 0>, <&ipmmu_ds0 1>,
+		 <&ipmmu_ds0 2>, <&ipmmu_ds0 3>,
+		 <&ipmmu_ds0 4>, <&ipmmu_ds0 5>,
+		 <&ipmmu_ds0 6>, <&ipmmu_ds0 7>,
+		 <&ipmmu_ds0 8>, <&ipmmu_ds0 9>,
+		 <&ipmmu_ds0 10>, <&ipmmu_ds0 11>,
+		 <&ipmmu_ds0 12>, <&ipmmu_ds0 13>,
+		 <&ipmmu_ds0 14>, <&ipmmu_ds0 15>;
+};
+
+&dmac1 {
+	iommus = <&ipmmu_ds0 16>, <&ipmmu_ds0 17>,
+		 <&ipmmu_ds0 18>, <&ipmmu_ds0 19>,
+		 <&ipmmu_ds0 20>, <&ipmmu_ds0 21>,
+		 <&ipmmu_ds0 22>, <&ipmmu_ds0 23>,
+		 <&ipmmu_ds0 24>, <&ipmmu_ds0 25>,
+		 <&ipmmu_ds0 26>, <&ipmmu_ds0 27>,
+		 <&ipmmu_ds0 28>, <&ipmmu_ds0 29>,
+		 <&ipmmu_ds0 30>, <&ipmmu_ds0 31>;
+};
+
+&rt_dmac0 {
+	iommus = <&ipmmu_rt1 0>, <&ipmmu_rt1 1>,
+		 <&ipmmu_rt1 2>, <&ipmmu_rt1 3>,
+		 <&ipmmu_rt1 4>, <&ipmmu_rt1 5>,
+		 <&ipmmu_rt1 6>, <&ipmmu_rt1 7>,
+		 <&ipmmu_rt1 8>, <&ipmmu_rt1 9>,
+		 <&ipmmu_rt1 10>, <&ipmmu_rt1 11>,
+		 <&ipmmu_rt1 12>, <&ipmmu_rt1 13>,
+		 <&ipmmu_rt1 14>, <&ipmmu_rt1 15>;
+};
+
+&rt_dmac1 {
+	iommus = <&ipmmu_rt1 16>, <&ipmmu_rt1 17>,
+		 <&ipmmu_rt1 18>, <&ipmmu_rt1 19>,
+		 <&ipmmu_rt1 20>, <&ipmmu_rt1 21>,
+		 <&ipmmu_rt1 22>, <&ipmmu_rt1 23>,
+		 <&ipmmu_rt1 24>, <&ipmmu_rt1 25>,
+		 <&ipmmu_rt1 26>, <&ipmmu_rt1 27>,
+		 <&ipmmu_rt1 28>, <&ipmmu_rt1 29>,
+		 <&ipmmu_rt1 30>, <&ipmmu_rt1 31>;
+};
+
+&rt_dmac2 {
+	iommus = <&ipmmu_rt1 32>, <&ipmmu_rt1 33>,
+		 <&ipmmu_rt1 34>, <&ipmmu_rt1 35>,
+		 <&ipmmu_rt1 36>, <&ipmmu_rt1 37>,
+		 <&ipmmu_rt1 38>, <&ipmmu_rt1 39>,
+		 <&ipmmu_rt1 40>, <&ipmmu_rt1 41>,
+		 <&ipmmu_rt1 42>, <&ipmmu_rt1 43>,
+		 <&ipmmu_rt1 44>, <&ipmmu_rt1 45>,
+		 <&ipmmu_rt1 46>, <&ipmmu_rt1 47>;
+};
+
+&rt_dmac3 {
+	iommus = <&ipmmu_rt1 48>, <&ipmmu_rt1 49>,
+		 <&ipmmu_rt1 50>, <&ipmmu_rt1 51>,
+		 <&ipmmu_rt1 52>, <&ipmmu_rt1 53>,
+		 <&ipmmu_rt1 54>, <&ipmmu_rt1 55>,
+		 <&ipmmu_rt1 56>, <&ipmmu_rt1 57>,
+		 <&ipmmu_rt1 58>, <&ipmmu_rt1 59>,
+		 <&ipmmu_rt1 60>, <&ipmmu_rt1 61>,
+		 <&ipmmu_rt1 62>, <&ipmmu_rt1 63>;
+};
+
+&pciec0 {
+	iommus = <&ipmmu_hc 32>;
+	iommu-map = <0x000 &ipmmu_hc 32 0x1>,
+		    <0x100 &ipmmu_hc 33 0x1>,
+		    <0x101 &ipmmu_hc 34 0x1>,
+		    <0x102 &ipmmu_hc 35 0x10>,
+		    <0x280 &ipmmu_hc 36 0x1>;
+
+};
+
+&pciec1 {
+	iommus = <&ipmmu_hc 48>;
+	iommu-map = <0x0 &ipmmu_hc 48 0x1>,
+		    <0x100 &ipmmu_hc 49 0x1>;
+	iommu-map-mask = <0xff00>;
+};
+
+&dmac0			{ xen,passthrough; };
+&dmac1			{ xen,passthrough; };
+&rt_dmac0		{ xen,passthrough; };
+&rt_dmac1		{ xen,passthrough; };
+&rt_dmac2		{ xen,passthrough; };
+&rt_dmac3		{ xen,passthrough; };
+&gpio0			{ xen,passthrough; };
+&gpio1			{ xen,passthrough; };
+&gpio2			{ xen,passthrough; };
+&gpio3			{ xen,passthrough; };
+&i2c0			{ xen,passthrough; };
+&i2c4			{ xen,passthrough; };
+&mmc0			{ xen,passthrough; };
+&pciec0			{ xen,passthrough; };
+&scif0			{ xen,passthrough; };
+&hscif1			{ xen,passthrough; };
+&rswitch		{ xen,passthrough; };
+&tsc			{ xen,passthrough; };
+&iccom			{ xen,passthrough; };
+&rtdmac_control0_00     { xen,passthrough; };
+&rtdmac_control0_01     { xen,passthrough; };
+&rtdmac_control0_02     { xen,passthrough; };
+&rtdmac_control0_03     { xen,passthrough; };
+&rtdmac_control0_04     { xen,passthrough; };
+&rtdmac_control0_05     { xen,passthrough; };
+&rtdmac_control0_06     { xen,passthrough; };
+&rtdmac_control0_07     { xen,passthrough; };
+&rtdmac_control0_08     { xen,passthrough; };
+&rtdmac_control0_09     { xen,passthrough; };
+&rtdmac_control0_10     { xen,passthrough; };
+&rtdmac_control0_11     { xen,passthrough; };
+&rtdmac_control0_12     { xen,passthrough; };
+&rtdmac_control0_13     { xen,passthrough; };
+&rtdmac_control0_14     { xen,passthrough; };
+&rtdmac_control0_15     { xen,passthrough; };
+&rtdmac_control1_00     { xen,passthrough; };
+&rtdmac_control1_01     { xen,passthrough; };
+&rtdmac_control1_02     { xen,passthrough; };
+&rtdmac_control1_03     { xen,passthrough; };
+&rtdmac_control1_04     { xen,passthrough; };
+&rtdmac_control1_05     { xen,passthrough; };
+&rtdmac_control1_06     { xen,passthrough; };
+&rtdmac_control1_07     { xen,passthrough; };
+&rtdmac_control1_08     { xen,passthrough; };
+&rtdmac_control1_09     { xen,passthrough; };
+&rtdmac_control1_10     { xen,passthrough; };
+&rtdmac_control1_11     { xen,passthrough; };
+&rtdmac_control1_12     { xen,passthrough; };
+&rtdmac_control1_13     { xen,passthrough; };
+&rtdmac_control1_14     { xen,passthrough; };
+&rtdmac_control1_15     { xen,passthrough; };
+&rtdmac_control2_00     { xen,passthrough; };
+&rtdmac_control2_01     { xen,passthrough; };
+&rtdmac_control2_02     { xen,passthrough; };
+&rtdmac_control2_03     { xen,passthrough; };
+&rtdmac_control2_04     { xen,passthrough; };
+&rtdmac_control2_05     { xen,passthrough; };
+&rtdmac_control2_06     { xen,passthrough; };
+&rtdmac_control2_07     { xen,passthrough; };
+&rtdmac_control2_08     { xen,passthrough; };
+&rtdmac_control2_09     { xen,passthrough; };
+&rtdmac_control2_10     { xen,passthrough; };
+&rtdmac_control2_11     { xen,passthrough; };
+&rtdmac_control2_12     { xen,passthrough; };
+&rtdmac_control2_13     { xen,passthrough; };
+&rtdmac_control2_14     { xen,passthrough; };
+&rtdmac_control2_15     { xen,passthrough; };
+&rtdmac_control3_00     { xen,passthrough; };
+&rtdmac_control3_01     { xen,passthrough; };
+&rtdmac_control3_02     { xen,passthrough; };
+&rtdmac_control3_03     { xen,passthrough; };
+&rtdmac_control3_04     { xen,passthrough; };
+&rtdmac_control3_05     { xen,passthrough; };
+&rtdmac_control3_06     { xen,passthrough; };
+&rtdmac_control3_07     { xen,passthrough; };
+&rtdmac_control3_08     { xen,passthrough; };
+&rtdmac_control3_09     { xen,passthrough; };
+&rtdmac_control3_10     { xen,passthrough; };
+&rtdmac_control3_11     { xen,passthrough; };
+&rtdmac_control3_12     { xen,passthrough; };
+&rtdmac_control3_13     { xen,passthrough; };
+&rtdmac_control3_14     { xen,passthrough; };
+&rtdmac_control3_15     { xen,passthrough; };
+
+&soc {
+	rswitch_osid1 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 1>, <&ipmmu_hc 17>;
+	};
+	rswitch_osid2 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 2>, <&ipmmu_hc 18>;
+	};
+	rswitch_osid3 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 3>, <&ipmmu_hc 19>;
+	};
+	rswitch_osid4 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 4>, <&ipmmu_hc 20>;
+	};
+	rswitch_osid5 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 5>, <&ipmmu_hc 21>;
+	};
+	rswitch_osid6 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 6>, <&ipmmu_hc 22>;
+	};
+	rswitch_osid7 {
+		xen,passthrough;
+		iommus = <&ipmmu_hc 7>, <&ipmmu_hc 23>;
+	};
+
+	iccom01		{ xen,passthrough; };
+	iccom02		{ xen,passthrough; };
+	iccom03		{ xen,passthrough; };
+	iccom04		{ xen,passthrough; };
+	iccom05		{ xen,passthrough; };
+	iccom06		{ xen,passthrough; };
+	iccom07		{ xen,passthrough; };
+	iccom08		{ xen,passthrough; };
+	iccom09		{ xen,passthrough; };
+	iccom010	{ xen,passthrough; };
+	iccom011	{ xen,passthrough; };
+	iccom012	{ xen,passthrough; };
+	iccom013	{ xen,passthrough; };
+	iccom014	{ xen,passthrough; };
+	iccom015	{ xen,passthrough; };
+	iccom016	{ xen,passthrough; };
+	iccom017	{ xen,passthrough; };
+	iccom018	{ xen,passthrough; };
+	iccom019	{ xen,passthrough; };
+	iccom020	{ xen,passthrough; };
+	iccom021	{ xen,passthrough; };
+	iccom022	{ xen,passthrough; };
+	iccom023	{ xen,passthrough; };
+};
