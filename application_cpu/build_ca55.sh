@@ -4,7 +4,6 @@ export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 
 AOS_VERSION="v1.0.0"
-WHITEBOX_VERSION="v2.0.0"
 DOMD_OLD_SIZE="1024 MiB"
 DOMD_NEW_SIZE="2048 MiB"
 IMAGE_INSTALL_DOMD="        - [IMAGE_INSTALL_append, \" waii packagegroup-system-monitor iproute2-tc snort docker python3-docker-compose dhrystone whetstone sysbench \"]"
@@ -37,12 +36,12 @@ sed -i "s|\(        - \[XT_DOM_NAME, \"domd\"\]$\)|\1\n${IMAGE_INSTALL_DOMD}|" a
 sed -i "s|\(        - \[XT_DOM_NAME, \"domu\"\]$\)|\1\n${IMAGE_INSTALL_DOMU}|" aos-rcar-gen4.yaml
 
 # Prepare working directory
-rm -rf ./work_${WHITEBOX_VERSION}
-mkdir -p ./work_${WHITEBOX_VERSION}
-cd ./work_${WHITEBOX_VERSION}
+rm -rf ./work
+mkdir -p ./work
+cd ./work
 
 # Prepare additional repo
-mkdir -p ./work_${WHITEBOX_VERSION}/yocto
+mkdir -p ./work/yocto
 git clone https://github.com/xen-troops/meta-xt-prod-devel-rcar-gen4 -b spider-0.8.9 \
     ./yocto/meta-xt-prod-devel-rcar-gen4
 git clone https://github.com/aoscloud/meta-aos-rcar-gen4 \
