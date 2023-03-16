@@ -41,7 +41,7 @@ mkdir -p ./work
 cd ./work
 
 # Prepare additional repo
-mkdir -p ./work/yocto
+mkdir -p ./yocto
 git clone https://github.com/xen-troops/meta-xt-prod-devel-rcar-gen4 -b spider-0.8.9 \
     ./yocto/meta-xt-prod-devel-rcar-gen4
 git clone https://github.com/aoscloud/meta-aos-rcar-gen4 \
