@@ -1,0 +1,216 @@
+From f7c32b5e86180397aabdbeff679e77184369336d Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 24 Mar 2023 19:04:14 +0900
+Subject: [PATCH 22/24] WIP: Add benchmark exmaple
+
+This patch adds only framework.
+Currently, this is almost same as one_task example.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/renesas/benchmark/benchmark.c        | 89 +++++++++++++++++++
+ examples/renesas/benchmark/benchmark.oil      | 26 ++++++
+ examples/renesas/benchmark/build.sh           | 17 ++++
+ .../benchmark/cs_plus_rcar_download_all.py    | 37 ++++++++
+ 4 files changed, 169 insertions(+)
+ create mode 100644 examples/renesas/benchmark/benchmark.c
+ create mode 100644 examples/renesas/benchmark/benchmark.oil
+ create mode 100644 examples/renesas/benchmark/build.sh
+ create mode 100644 examples/renesas/benchmark/cs_plus_rcar_download_all.py
+
+diff --git a/examples/renesas/benchmark/benchmark.c b/examples/renesas/benchmark/benchmark.c
+new file mode 100644
+index 0000000..02cc2d6
+--- /dev/null
++++ b/examples/renesas/benchmark/benchmark.c
+@@ -0,0 +1,89 @@
++#include "tpl_os.h"
++
++#define APP_Task_blink_START_SEC_CODE
++#include "tpl_memmap.h"
++
++uint8 shared_memory[16][16];
++uint8 result_array[4][17];
++
++uint32 g_counter = 0;
++
++extern volatile TickType tpl_time_counter; // 10msec/count 
++#define TICK_TO_MSEC(t)	(t*10)
++#define TICK_TO_SEC(t)	(t/100)
++
++void float_to_char(uint8 input_array[], float input) {
++  uint8 i, n;
++  uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++  float tmp;
++
++  for (i=0; i<16; ++i){
++    tmp = input;
++    if (i < 8) {
++      for(n=i+1; n<8;++n)
++        tmp = tmp / 10;
++    }
++    else {
++      for(n=7; n<i; ++n)
++        tmp = tmp * 10;
++    }
++
++    if((int)tmp%10 != 0 || i == 7)
++      ascii_offset = 0x30; // changed at once
++
++    input_array[i+(i/8)] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++  }
++  input_array[8] = '.';
++  input_array[16] = '\0';
++}
++void int_to_char(uint8 input_array[], int input) {
++  uint8 i, n;
++  uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++  int tmp;
++
++  for (i=0; i<16; ++i){
++    tmp = input;
++      for(n=i+1; n<16;++n)
++        tmp = tmp / 10;
++    if((int)tmp%10 != 0)
++      ascii_offset = 0x30; // changed at once
++
++    input_array[i] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++  }
++}
++
++// return msec
++uint32 ms_time() { return TICK_TO_MSEC(tpl_time_counter); }
++// return sec
++uint32 time() { return TICK_TO_SEC(tpl_time_counter); }
++
++void sec_sleep(int sec)
++{
++	uint32 end;
++	end = time() + sec;
++	while(end > time());
++}
++
++void ms_sleep(int ms)
++{
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
++}
++
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++TASK(benchmark)
++{
++	while(1) {
++		g_counter = time();
++	}
++	TerminateTask();
++}
++
++#define APP_Task_blink_STOP_SEC_CODE
++#include "tpl_memmap.h"
+diff --git a/examples/renesas/benchmark/benchmark.oil b/examples/renesas/benchmark/benchmark.oil
+new file mode 100644
+index 0000000..4889ce6
+--- /dev/null
++++ b/examples/renesas/benchmark/benchmark.oil
+@@ -0,0 +1,26 @@
++OIL_VERSION = "4.2";
++
++CPU only_benchmark {  	
++  OS config {			
++    STATUS = EXTENDED;
++    BUILD = TRUE { 
++      APP_SRC = "benchmark.c";
++      TRAMPOLINE_BASE_PATH = "../../../";
++      LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
++      CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++      CFLAGS=" -Xfloat=soft -Xdbl_size=8 -Xround=nearest";
++      APP_NAME = "benchmark_exe";
++      LINKER = "rlink";
++      SYSTEM = CMAKE;
++    };
++  };
++  
++  APPMODE stdAppmode {}; 
++  
++  TASK benchmark { 
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = stdAppmode; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++};
+diff --git a/examples/renesas/benchmark/build.sh b/examples/renesas/benchmark/build.sh
+new file mode 100644
+index 0000000..5c4edd4
+--- /dev/null
++++ b/examples/renesas/benchmark/build.sh
+@@ -0,0 +1,17 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=renesas/g4mh --templates=../../../goil/templates/ benchmark.oil
++cd _build
++echo "*** Run CMake ***"
++cmake -G "Unix Makefiles" -D CMAKE_TOOLCHAIN_FILE=../benchmark/compiler.cmake ..
++echo "*** Run Make ***"
++make
+diff --git a/examples/renesas/benchmark/cs_plus_rcar_download_all.py b/examples/renesas/benchmark/cs_plus_rcar_download_all.py
+new file mode 100644
+index 0000000..53a785c
+--- /dev/null
++++ b/examples/renesas/benchmark/cs_plus_rcar_download_all.py
+@@ -0,0 +1,37 @@
++﻿
++import time
++ClearConsole()
++print "1PE_ATK2"
++print "Resetting debugger"
++debugger.Reset()
++time.sleep(2)
++print "SYSCTRL 0x0003"
++debugger.Register.SetValue("SYSCTRL.BOOTCTRL", 0x0003)
++time.sleep(2)
++print "CPU Stop"
++debugger.Stop()
++time.sleep(2)
++print "HBG_CS 0x00000003"
++debugger.Register.SetValue("HBG_CS0.HBGPROT0", 0x00000003)
++debugger.Register.SetValue("HBG_CS1.HBGPROT0", 0x00000003)
++debugger.Register.SetValue("HBG_CS2.HBGPROT0", 0x00000003)
++#time.sleep(1)
++print "CSRM 0x12B9B0A0"
++debugger.Register.SetValue("CSRM0.CSRM0CSIFCODE", 0x12B9B0A0)
++debugger.Register.SetValue("CSRM1.CSRM1CSIFCODE", 0x12B9B0A0)
++debugger.Register.SetValue("CSRM2.CSRM2CSIFCODE", 0x12B9B0A0)
++#time.sleep(1)
++print "Download Trampoline/Hello_world"
++debugger.Download.LoadModule("_build/benchmark_exe.abs", downloadOption = DownloadOption.SymbolOnly, append = False, flashErase = False, vendorType = VendorType.Auto)
++print "Download Trampoline/Hello_world (RUN)"
++debugger.Download.Hex("_build/benchmark_exe.run", offset = 0xF0000000, append = True, flashErase = False)
++print "CSRM 0x12B9B0A1"
++debugger.Register.SetValue("CSRM0.CSRM0CSIFCODE", 0x12B9B0A1)
++debugger.Register.SetValue("CSRM1.CSRM1CSIFCODE", 0x12B9B0A1)
++debugger.Register.SetValue("CSRM2.CSRM2CSIFCODE", 0x12B9B0A1)
++#time.sleep(1)
++print "Set Reset PC"
++debugger.Register.SetValue("PC", 0x200)
++#time.sleep(1)
++print "Starting G4"
++debugger.Go()
+-- 
+2.34.1
+

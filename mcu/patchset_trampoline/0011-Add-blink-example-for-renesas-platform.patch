@@ -1,7 +1,7 @@
-From 1f208c7c172393927461ee773466af51560bf24a Mon Sep 17 00:00:00 2001
+From cd505937c4abeac67746ac2a49e8027b81b4e8c0 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 22 Mar 2023 14:47:48 +0100
-Subject: [PATCH 11/21] Add blink example for renesas platform
+Subject: [PATCH 11/24] Add blink example for renesas platform
 
 ---
  examples/renesas/blink/blink.c                | 30 ++++++++

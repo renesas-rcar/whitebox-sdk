@@ -1,0 +1,63 @@
+From 2c97b3ede468eb83de13b796923c1ea4ca5ab77d Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 27 Mar 2023 18:27:46 +0900
+Subject: [PATCH 23/24] WIP: Add Dhrystone benchmark
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/renesas/benchmark/benchmark.c   | 10 ++++++++++
+ examples/renesas/benchmark/benchmark.oil |  4 ++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/examples/renesas/benchmark/benchmark.c b/examples/renesas/benchmark/benchmark.c
+index 02cc2d6..d0cba73 100644
+--- a/examples/renesas/benchmark/benchmark.c
++++ b/examples/renesas/benchmark/benchmark.c
+@@ -12,6 +12,12 @@ extern volatile TickType tpl_time_counter; // 10msec/count
+ #define TICK_TO_MSEC(t)	(t*10)
+ #define TICK_TO_SEC(t)	(t/100)
+ 
++/**
++ * external functions
++ */
++extern void dhrystone_main(void);
++
++
+ void float_to_char(uint8 input_array[], float input) {
+   uint8 i, n;
+   uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
+@@ -79,8 +85,12 @@ FUNC(int, OS_APPL_CODE) main(void)
+ 
+ TASK(benchmark)
+ {
++	dhrystone_main();
++	ms_sleep(100);
++
+ 	while(1) {
+ 		g_counter = time();
++		sec_sleep(1);
+ 	}
+ 	TerminateTask();
+ }
+diff --git a/examples/renesas/benchmark/benchmark.oil b/examples/renesas/benchmark/benchmark.oil
+index 4889ce6..4347bbf 100644
+--- a/examples/renesas/benchmark/benchmark.oil
++++ b/examples/renesas/benchmark/benchmark.oil
+@@ -5,10 +5,14 @@ CPU only_benchmark {
+     STATUS = EXTENDED;
+     BUILD = TRUE { 
+       APP_SRC = "benchmark.c";
++      APP_SRC = "dhrystone/dhry_1.c";
++      APP_SRC = "dhrystone/dhry_2.c";
+       TRAMPOLINE_BASE_PATH = "../../../";
+       LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
+       CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
+       CFLAGS=" -Xfloat=soft -Xdbl_size=8 -Xround=nearest";
++      CFLAGS="-DTIME=TIME";
++      CFLAGS="-Ospeed -Oinline_size";
+       APP_NAME = "benchmark_exe";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+-- 
+2.34.1
+

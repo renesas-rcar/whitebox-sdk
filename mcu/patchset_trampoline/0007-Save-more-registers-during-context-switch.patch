@@ -1,7 +1,7 @@
-From 34abd5b7fdfc37e7ac5a1b96cb80af300cf3cb2a Mon Sep 17 00:00:00 2001
+From f401235c8435bf30bf21b4483da626cf632ec2eb Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 22 Mar 2023 11:54:03 +0100
-Subject: [PATCH 07/21] Save more registers during context switch.
+Subject: [PATCH 07/24] Save more registers during context switch.
 
 It's needed because durring interrupts these registers must be saved,
 so we also need to be able to restore them after a context switch call.

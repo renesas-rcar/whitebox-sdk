@@ -1,0 +1,61 @@
+From 21645c0bc1a441598d250047eb1999f4388e8101 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 28 Mar 2023 12:49:22 +0900
+Subject: [PATCH 24/24] WIP: Add coremark benchmark
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/renesas/benchmark/benchmark.c   | 5 ++++-
+ examples/renesas/benchmark/benchmark.oil | 7 +++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/examples/renesas/benchmark/benchmark.c b/examples/renesas/benchmark/benchmark.c
+index d0cba73..e83808a 100644
+--- a/examples/renesas/benchmark/benchmark.c
++++ b/examples/renesas/benchmark/benchmark.c
+@@ -16,7 +16,7 @@ extern volatile TickType tpl_time_counter; // 10msec/count
+  * external functions
+  */
+ extern void dhrystone_main(void);
+-
++extern void coremark_main(void);
+ 
+ void float_to_char(uint8 input_array[], float input) {
+   uint8 i, n;
+@@ -88,6 +88,9 @@ TASK(benchmark)
+ 	dhrystone_main();
+ 	ms_sleep(100);
+ 
++	coremark_main();
++	sec_sleep(1);
++
+ 	while(1) {
+ 		g_counter = time();
+ 		sec_sleep(1);
+diff --git a/examples/renesas/benchmark/benchmark.oil b/examples/renesas/benchmark/benchmark.oil
+index 4347bbf..debf0be 100644
+--- a/examples/renesas/benchmark/benchmark.oil
++++ b/examples/renesas/benchmark/benchmark.oil
+@@ -7,12 +7,19 @@ CPU only_benchmark {
+       APP_SRC = "benchmark.c";
+       APP_SRC = "dhrystone/dhry_1.c";
+       APP_SRC = "dhrystone/dhry_2.c";
++      APP_SRC = "coremark/barebones/core_portme.c";
++      APP_SRC = "coremark/core_list_join.c";
++      APP_SRC = "coremark/core_main.c";
++      APP_SRC = "coremark/core_matrix.c";
++      APP_SRC = "coremark/core_state.c";
++      APP_SRC = "coremark/core_util.c";
+       TRAMPOLINE_BASE_PATH = "../../../";
+       LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
+       CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
+       CFLAGS=" -Xfloat=soft -Xdbl_size=8 -Xround=nearest";
+       CFLAGS="-DTIME=TIME";
+       CFLAGS="-Ospeed -Oinline_size";
++      CFLAGS="-I../coremark -I../coremark/barebones -DITERATIONS=30000";
+       APP_NAME = "benchmark_exe";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+-- 
+2.34.1
+

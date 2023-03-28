@@ -1,7 +1,7 @@
-From b7244a04b7b408b5a563391e12be638e158fa56c Mon Sep 17 00:00:00 2001
+From 0a73a9260929b8426daed3f651935742af13e0e7 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 14 Dec 2022 17:07:35 +0100
-Subject: [PATCH 01/21] remove compilation warnings when compiled without error
+Subject: [PATCH 01/24] remove compilation warnings when compiled without error
  check
 
 If TrampolineOS is compiled without WITH_ERROR_HOOK and without WITH_ORTI,

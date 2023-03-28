@@ -25,15 +25,39 @@ if [[ "${HLNK_DIR:-""}" == "" ]]; then
     export HLNK_DIR="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00"
 fi
 
-# all make
+# build onetask
 cd ${SOURCE_DIR}/examples/renesas/one_task
 chmod +x ./build.sh
 ./build.sh
-
-# Generate IPL
 cd ${SOURCE_DIR}
-rm -f G4MH.srec
+rm -f G4MH_onetask.srec
 objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/renesas/one_task/_build/one_task_exe.abs one_task_exe.s3
-rlink ../G4MH_Head.srec one_task_exe.s3 -fo=Stype -ou=G4MH.srec
+rlink ../G4MH_Head.srec one_task_exe.s3 -fo=Stype -ou=G4MH_onetask.srec
 rm -f one_task_exe.s3
+
+# build benchmark
+## Setup source code
+### Dhrystone
+cd ${SOURCE_DIR}/examples/renesas/benchmark
+rm -rf ./dhrystone
+wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz
+mkdir -p ./dhrystone && tar xf dhrystone-2.1.tar.gz -C ./dhrystone
+cp ./dhrystone/dhry_1.c{,.org}
+cd ./dhrystone && patch -p0 < ${SCRIPT_DIR}/patchset_trampoline/dhry_1.c.diff
+### Coremark
+if [ ! -e ${SOURCE_DIR}/examples/renesas/benchmark/coremark ]; then
+    git clone https://github.com/eembc/coremark ${SOURCE_DIR}/examples/renesas/benchmark/coremark
+fi
+cd ${SOURCE_DIR}/examples/renesas/benchmark/coremark
+git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
+git apply ${SCRIPT_DIR}/patchset_trampoline/coremark.diff
+## Build
+cd ${SOURCE_DIR}/examples/renesas/benchmark
+chmod +x ./build.sh
+./build.sh
+cd ${SOURCE_DIR}
+rm -f G4MH_bench.srec
+objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/renesas/benchmark/_build/benchmark_exe.abs tmp.s3
+rlink ../G4MH_Head.srec tmp.s3 -fo=Stype -ou=G4MH_bench.srec
+rm -f tmp.s3
 

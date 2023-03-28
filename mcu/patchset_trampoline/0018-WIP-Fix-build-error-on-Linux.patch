@@ -1,7 +1,7 @@
-From ced950fab5d1aab0e097585cac7c43ad9d8c3255 Mon Sep 17 00:00:00 2001
+From 1c82b0d3985cbcd29734d2fd3797fcf21764830a Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Thu, 2 Mar 2023 16:20:19 +0900
-Subject: [PATCH 18/21] WIP: Fix build error on Linux
+Subject: [PATCH 18/24] WIP: Fix build error on Linux
 
 Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---

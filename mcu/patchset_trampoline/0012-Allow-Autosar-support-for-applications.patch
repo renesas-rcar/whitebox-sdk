@@ -1,7 +1,7 @@
-From 4d4641ee3796cac2c4938534e5d9c5e9a66da0af Mon Sep 17 00:00:00 2001
+From 50b028e5af43bf6619231808cc2e165f31b73346 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 22 Mar 2023 14:48:42 +0100
-Subject: [PATCH 12/21] Allow Autosar support for applications
+Subject: [PATCH 12/24] Allow Autosar support for applications
 
 ---
  goil/templates/build/renesas/g4mh/cmakelists_txt.goilTemplate | 1 +

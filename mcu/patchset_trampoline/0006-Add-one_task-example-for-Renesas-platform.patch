@@ -1,7 +1,7 @@
-From 66badd0f340ece219eef02d2377ce1d200a740ff Mon Sep 17 00:00:00 2001
+From bf851a412069600a5e8449c8848005e8b82e0473 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 16 Dec 2022 13:33:59 +0100
-Subject: [PATCH 06/21] Add one_task example for Renesas platform
+Subject: [PATCH 06/24] Add one_task example for Renesas platform
 
 ---
  examples/renesas/one_task/build.sh            | 17 +++++++++

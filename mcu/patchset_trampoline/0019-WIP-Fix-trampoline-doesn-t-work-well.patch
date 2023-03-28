@@ -1,7 +1,7 @@
-From aa162f9483061821c371ee4c900670dba7425de9 Mon Sep 17 00:00:00 2001
+From 61d3c2c0d6370135ca410fdde6f5bd241f067556 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Thu, 2 Mar 2023 16:23:24 +0900
-Subject: [PATCH 19/21] WIP: Fix trampoline doesn't work well.
+Subject: [PATCH 19/24] WIP: Fix trampoline doesn't work well.
 
 Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---

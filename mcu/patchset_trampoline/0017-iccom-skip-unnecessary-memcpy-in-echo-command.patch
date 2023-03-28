@@ -1,7 +1,7 @@
-From f9179a804c707fe443f958cff672d64bb1e00ab7 Mon Sep 17 00:00:00 2001
+From 61a29f30e74d6d58ef93902bbf7e68d5e0cbff0d Mon Sep 17 00:00:00 2001
 From: Valerio Setti <vsetti@baylibre.com>
 Date: Tue, 7 Mar 2023 16:49:25 +0100
-Subject: [PATCH 17/21] iccom: skip unnecessary memcpy in echo command
+Subject: [PATCH 17/24] iccom: skip unnecessary memcpy in echo command
 
 ---
  examples/renesas/iccom/iccom.c    | 25 +++++++++++++------------

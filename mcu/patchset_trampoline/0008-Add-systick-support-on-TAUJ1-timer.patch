@@ -1,7 +1,7 @@
-From 3b0e13e27f68fa67255795db3815a78be2d12833 Mon Sep 17 00:00:00 2001
+From e7b477f6a8fde60f5325427e702931f4c5fe2644 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 22 Mar 2023 14:21:53 +0100
-Subject: [PATCH 08/21] Add systick support on TAUJ1 timer
+Subject: [PATCH 08/24] Add systick support on TAUJ1 timer
 
 ---
  machines/renesas/tpl_machine_renesas.c | 50 ++++++++++++++++++++++++--
