@@ -25,15 +25,15 @@ if [[ "${HLNK_DIR:-""}" == "" ]]; then
     export HLNK_DIR="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00"
 fi
 
-# build onetask
-cd ${SOURCE_DIR}/examples/renesas/one_task
+# build iccom
+cd ${SOURCE_DIR}/examples/renesas/iccom
 chmod +x ./build.sh
 ./build.sh
 cd ${SOURCE_DIR}
-rm -f G4MH_onetask.srec
-objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/renesas/one_task/_build/one_task_exe.abs one_task_exe.s3
-rlink ../G4MH_Head.srec one_task_exe.s3 -fo=Stype -ou=G4MH_onetask.srec
-rm -f one_task_exe.s3
+rm -f G4MH_iccom.srec
+objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/renesas/iccom/_build/iccom_exe.abs iccom_exe.s3
+rlink ../G4MH_Head.srec iccom_exe.s3 -fo=Stype -ou=G4MH_iccom.srec
+rm -f iccom_exe.s3
 
 # build benchmark
 ## Setup source code

@@ -5,4 +5,5 @@
 ./setup_ca55.sh
 ./setup_cr52.sh
 ./setup_safeg.sh
+./setup_trampoline.sh
 
