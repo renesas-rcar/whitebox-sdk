@@ -2,7 +2,7 @@
 Execute the following command:
 
 	sudo apt install git	
-	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v2.x
+	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v3.x
 
 # Tool setup
 Since GUI operation is required during installation, it must be run on an Ubuntu PC.
@@ -20,7 +20,7 @@ Save the downloaded file (CSPlus_CC_Package_V80900-doc-e.zip) in the "tool" fold
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v2.1.sh
+	./build_whitebox_v3.0.sh
 
 #You can check the generated image with the following command:
 
