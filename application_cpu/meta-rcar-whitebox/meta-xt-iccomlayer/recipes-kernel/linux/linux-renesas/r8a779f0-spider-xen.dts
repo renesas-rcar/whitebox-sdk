@@ -20,18 +20,19 @@
 		#size-cells = <2>;
 		ranges;
 
-		/* ICCOM CR Shared memory */
+/*
+		* ICCOM CR Shared memory *
 		cr_cta_mem {
 			compatible = "renesas,iccom-memory";
 			no-map;
 			reg = <0x0 0x47fc7000 0x0 0x2000>;
 		};
-
+*/
 		/* ICCOM G4MHA Shared memory */
 		g4mh_cta_mem {
 			compatible = "renesas,iccom-memory";
 			no-map;
-			reg = <0x0 0x47fc9000 0x0 0x2000>;
+			reg = <0x0 0x47fc7000 0x0 0x4000>;
 		};
 
 		/* R-Switch LINKFIX table */

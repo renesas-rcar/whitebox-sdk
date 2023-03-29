@@ -1,0 +1,47 @@
+From 67b779234320abe35abf7d8b4a4739441dae421c Mon Sep 17 00:00:00 2001
+From: OpenEmbedded <oe.patch@oe>
+Date: Tue, 7 Mar 2023 17:44:42 +0100
+Subject: [PATCH] dts: iccom: increase CTA size for iccom00 and remove iccom01
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index eb432d1d44cf..9089bd814e9f 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -1152,22 +1152,22 @@ iccom: iccom00@e6260000 {
+ 			interrupts = <GIC_SPI 336 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0x0 0xe6260000 0x0 0x1000>;
+ 			iccom,reg-offset = <0x1480 0xa484 0x14c0 0xa4e0>;
+-			iccom,cta-memory = <0x0 0x37fc9000 0x0 0x2000>;
++			iccom,cta-memory = <0x0 0x37fc7000 0x0 0x4000>;
+ 			iccom,ack-timeout = <250>;
+ 			iccom,int-clear-timeout = <250>;
+ 			iccom,read-timeout = <1000>;
+ 		};
+ 
+-		iccom01 {
+-			compatible = "renesas,iccom-rcar";
+-			interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
+-			reg = <0x0 0xe6260000 0x0 0x10000>;
+-			iccom,reg-offset = <0x1580 0xb484 0x15c0 0xb4e0>;
+-			iccom,cta-memory = <0x0 0x37fc7000 0x0 0x2000>;
+-			iccom,ack-timeout = <250>;
+-			iccom,int-clear-timeout = <250>;
+-			iccom,read-timeout = <1000>;
+-		};
++		//iccom01 {
++		//	compatible = "renesas,iccom-rcar";
++		//	interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
++		//	reg = <0x0 0xe6260000 0x0 0x10000>;
++		//	iccom,reg-offset = <0x1580 0xb484 0x15c0 0xb4e0>;
++		//	iccom,cta-memory = <0x0 0x37fc7000 0x0 0x2000>;
++		//	iccom,ack-timeout = <250>;
++		//	iccom,int-clear-timeout = <250>;
++		//	iccom,read-timeout = <1000>;
++		//};
+ 
+ 		caiplite0 {
+ 			compatible = "generic-uio";

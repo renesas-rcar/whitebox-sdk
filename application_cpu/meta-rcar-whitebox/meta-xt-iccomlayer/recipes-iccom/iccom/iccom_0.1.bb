@@ -15,3 +15,10 @@ SRC_URI_append = "\
 "
 S = "${WORKDIR}/git"
 
+FILES_${PN} += "${includedir}/iccom_ioctl.h"
+
+do_install_append() {
+	install -d ${D}${includedir}
+	install -m 0755 ${S}/iccom_ioctl.h ${D}${includedir}/
+}
+
