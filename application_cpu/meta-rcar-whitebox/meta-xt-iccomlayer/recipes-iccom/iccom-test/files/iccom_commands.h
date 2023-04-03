@@ -20,7 +20,8 @@
 #endif
 
 enum iccom_command {
-	ECHO = 0,
+	NONE = 0,
+	ECHO,
 };
 
 #define TOTAL_CTA_SIZE		0x4000

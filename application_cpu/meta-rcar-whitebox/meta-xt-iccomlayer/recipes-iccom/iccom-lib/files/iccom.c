@@ -15,7 +15,7 @@
 
 #define ICCOM_DEV		"/dev/iccom0"
 
-#define TOTAL_CTA_SIZE		0x4000
+#define TOTAL_CTA_SIZE		0x2000
 #define ICCOM_BUF_MAX_SIZE	(TOTAL_CTA_SIZE/2) // Max size of each transaction (read/write)
 
 static uint8_t tx_buff[ICCOM_BUF_MAX_SIZE];

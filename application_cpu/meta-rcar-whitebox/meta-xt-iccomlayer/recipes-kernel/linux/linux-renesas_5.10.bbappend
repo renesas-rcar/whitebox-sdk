@@ -6,7 +6,6 @@ SRCREV = "e74fea0be1d2553617f13344babdfbeb0cee4eeb"
 
 SRC_URI_append = " \
      file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio.patch \
-     file://0002-dts-iccom-increase-CTA-size-for-iccom00-and-remove-i.patch \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"

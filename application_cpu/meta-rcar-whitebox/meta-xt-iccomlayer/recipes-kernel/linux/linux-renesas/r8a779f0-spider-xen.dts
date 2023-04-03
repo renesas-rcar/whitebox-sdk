@@ -32,7 +32,7 @@
 		g4mh_cta_mem {
 			compatible = "renesas,iccom-memory";
 			no-map;
-			reg = <0x0 0x47fc7000 0x0 0x4000>;
+			reg = <0x0 0x47fc9000 0x0 0x2000>;
 		};
 
 		/* R-Switch LINKFIX table */
