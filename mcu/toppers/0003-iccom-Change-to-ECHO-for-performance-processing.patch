@@ -1,0 +1,205 @@
+From 16a194cf3a038a0c502023c4fb3e7f50cceb6b3a Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Mon, 3 Apr 2023 16:59:50 +0900
+Subject: [PATCH 3/3] iccom: Change to ECHO for performance processing
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ vm_atk2/vm1_atk2/iccom/iccom_cdd.c      | 67 ++++++++++---------------
+ vm_atk2/vm1_atk2/iccom/iccom_commands.h | 16 ++++--
+ vm_atk2/vm1_atk2/iccom/iccom_ll.c       |  9 ++++
+ vm_atk2/vm1_atk2/iccom/iccom_ll.h       |  3 ++
+ 4 files changed, 51 insertions(+), 44 deletions(-)
+
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+index 1696dd5..b00a973 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+@@ -4,6 +4,7 @@
+ #include "iccom_ll.h"
+ #include "qspi_flash_writer.h"
+ #include "iccom_commands.h"
++#include <string.h>
+ 
+ /* ICCOM protocol */
+ enum ICCOM_MSG {
+@@ -13,7 +14,7 @@ enum ICCOM_MSG {
+     ICCOM_MSG_ACK
+ };
+ 
+-#define ICCOM_BUF_MAX_SIZE		2048
++#define ICCOM_BUF_MAX_SIZE		(TOTAL_CTA_SIZE/2)
+ #define TIMER_TICK_INTERVAL_NS		(125U)
+ #define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
+@@ -21,6 +22,7 @@ enum ICCOM_MSG {
+ uint8 iccom_initalized = 0;
+ uint8 rx_buffer[ICCOM_BUF_MAX_SIZE];
+ uint8 tx_buffer[ICCOM_BUF_MAX_SIZE];
++struct echo_command recv_pkt;
+ 
+ static void iccom_notify_tx_data(size_t message)
+ {
+@@ -62,9 +64,13 @@ static sint32 iccom_wait_for_out_interrupt_clear(uint32_t timeout_ms)
+ 	return 0;
+ }
+ 
+-static void iccom_send(uint8* data, size_t size)
++static void iccom_send(uint8* data, size_t size, uint8_t copy_to_out_cta)
+ {
+-	iccom_cta_write(data, size);
++	// If this function is called with data already on the CTA buffer,
++	// then there is no need to update it
++	if (copy_to_out_cta) {
++		iccom_cta_write(data, size);
++	}
+ 	iccom_notify_tx_data(size);
+ }
+ 
+@@ -72,8 +78,13 @@ static void iccom_handle_rx_msg(size_t size)
+ {
+ 	struct command_header* in_pkt;
+ 	sint32 ret;
+-	
+-	iccom_cta_read(rx_buffer, size);
++
++	// Casting to the most simple structure in order to get the "cmd_id".
++	// Later the proper casting will be done
++	in_pkt = (struct command_header*) iccom_get_read_cta_ptr();
++	// copy packet before sending ACK
++	memcpy(&recv_pkt, in_pkt, size);
++	//recv_pkt.cmd_id = in_pkt->cmd_id;
+ 	iccom_send_rx_data_ack((uint32)size);
+ 	ret = iccom_wait_for_out_interrupt_clear(HOST_INT_CLEAR_TIMEOUT_MS);
+ 	if (ret < 0) {
+@@ -82,45 +93,21 @@ static void iccom_handle_rx_msg(size_t size)
+ 		goto Exit;
+ 	}
+ 
+-	// Casting to the most simple structure in order to get the "cmd_id".
+-	// Later the proper casting will be done
+-	in_pkt = (struct command_header*) rx_buffer;
+ 	switch (in_pkt->cmd_id) {
+-		case READ_FLASH_ID: {
+-			struct read_flash_id_command* cmd_pkt = (struct read_flash_id_command*) rx_buffer;
+-			struct simple_reply_uint32 reply_pkt;
+-			uint32 chip_id = flash_read_chip_id();
+-			reply_pkt.cmd_id = cmd_pkt->cmd_id;
+-			reply_pkt.ret_val = chip_id;
+-			iccom_send((uint8*)&reply_pkt, sizeof(struct simple_reply_uint32));
++		case NONE: {
++			// Nothing to do
+ 			break;
+ 		}
+-		case ERASE_AREA: {
+-			struct erase_area_command* cmd_pkt = (struct erase_area_command*) rx_buffer;
+-			struct simple_reply_int32 reply_pkt;
+-			reply_pkt.cmd_id = cmd_pkt->cmd_id;
+-			reply_pkt.ret_val = flash_erase(cmd_pkt->start_address, cmd_pkt->size);
+-			iccom_send((uint8*)&reply_pkt, sizeof(struct simple_reply_int32));
+-			break;
+-		}
+-		case FLASH_CHUNK: {
+-			struct flash_chunk_command* cmd_pkt = (struct flash_chunk_command*) rx_buffer;
+-			struct simple_reply_int32 reply_pkt;
+-			reply_pkt.cmd_id = cmd_pkt->cmd_id;
+-			reply_pkt.ret_val = flash_write_chunk(cmd_pkt->start_address,
+-								cmd_pkt->data, cmd_pkt->size);
+-			iccom_send((uint8*)&reply_pkt, sizeof(struct simple_reply_int32));
+-			break;
+-		}
+-		case READ_CHUNK: {
+-			struct read_chunk_command* cmd_pkt = (struct read_chunk_command*) rx_buffer;
+-			struct read_chunk_reply* reply_pkt = (struct read_chunk_reply*) tx_buffer;
+-			reply_pkt->cmd_id = cmd_pkt->cmd_id;
+-			reply_pkt->ret_val = flash_read_chunk(cmd_pkt->start_address,
+-										cmd_pkt->size, reply_pkt->data);
+-			iccom_send((uint8*)reply_pkt, sizeof(struct read_chunk_reply));
++
++		case ECHO: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++
++			// Just copy the data back
++			memcpy(reply_pkt, &recv_pkt, size);
++			iccom_send((uint8*)reply_pkt, size, 0);
+ 			break;
+ 		}
++
+ 		default:
+ 			break;
+ 	}
+@@ -205,4 +192,4 @@ ISR(ICCOM_INT)
+ 	// trigger the managing task
+ 	ActivateTask(ICCOM_CDD_TASK);
+ }
+-#endif
+\ No newline at end of file
++#endif
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_commands.h b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+index bd98093..90f1a40 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_commands.h
++++ b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+@@ -18,19 +18,27 @@
+ #endif
+ 
+ enum iccom_command {
+-	READ_FLASH_ID = 0,
+-	ERASE_AREA,
+-	FLASH_CHUNK,
+-	READ_CHUNK,
++	NONE = 0,
++	ECHO,
+ };
+ 
+ #define FLASH_PAGE_SIZE			0x100	// 256 bytes
+ #define FLASH_PAGE_SIZE_MASK	0xFFFFFF00U
++#define TOTAL_CTA_SIZE		0x2000
++#define ICCOM_BUF_MAX_SIZE	(TOTAL_CTA_SIZE/2) // Max size of each transaction (read/write)
+ 
+ // this is the common header shared between all commands
+ #define CMD_HEADER		\
+ 		uint8_t cmd_id;
+ 
++#define MAX_ECHO_DATA_SIZE		((TOTAL_CTA_SIZE/2) - sizeof(uint8_t))
++
++#pragma pack(1)
++struct echo_command {
++	CMD_HEADER
++	uint8_t data[MAX_ECHO_DATA_SIZE];
++};
++
+ #pragma pack(1)
+ struct command_header {
+ 	CMD_HEADER
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_ll.c b/vm_atk2/vm1_atk2/iccom/iccom_ll.c
+index e44988d..4e6bddb 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_ll.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_ll.c
+@@ -156,3 +156,12 @@ void iccom_cta_read(uint8 * buff, size_t size)
+ 
+ 	memcpy(buff, ctaPtr, size);
+ }
++uint8* iccom_get_read_cta_ptr()
++{
++	return (uint8*)ICCOM_CTA_MEMORY_CH0;
++}
++
++uint8* iccom_cta_write_cta_ptr()
++{
++	return (uint8*)ICCOM_CTA_MEMORY_CH1;
++}
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_ll.h b/vm_atk2/vm1_atk2/iccom/iccom_ll.h
+index 64bd6bd..a435a13 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_ll.h
++++ b/vm_atk2/vm1_atk2/iccom/iccom_ll.h
+@@ -38,4 +38,7 @@ void iccom_clear_interrupt_locked(void);
+ void iccom_cta_read(uint8 * buff, size_t size);
+ void iccom_cta_write(uint8 * buff, size_t size);
+ 
++uint8* iccom_get_read_cta_ptr(void);
++uint8* iccom_cta_write_cta_ptr(void);
++
+ #endif //__ICCOM_LL_H__
+-- 
+2.25.1
+

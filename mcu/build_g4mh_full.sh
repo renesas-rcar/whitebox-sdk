@@ -19,6 +19,7 @@ git reset --hard tags/v1.0.0; git clean -df
 
 git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0001-iccom.flash.rte-ADD-iccom-flash-driver-and-rte.patch
 git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0002-iccom-Update-protocol-and-change-CTA-address.patch
+git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0003-iccom-Change-to-ECHO-for-performance-processing.patch
 wget https://www.toppers.jp/download.cgi/a-rtegen-1.4.0.src.tar.gz
 mkdir vm_atk2/vm1_atk2/common/tool
 tar zxvf a-rtegen-1.4.0.src.tar.gz -C vm_atk2/vm1_atk2/common/tool/
