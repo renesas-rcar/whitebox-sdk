@@ -1,7 +1,7 @@
-From 55a6343fe96c2f221b515f9e94d39a0d5d961f6e Mon Sep 17 00:00:00 2001
+From 8a03da37bc49c79afa3b1c9b505a46858aca114c Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 22 Mar 2023 14:37:24 +0100
-Subject: [PATCH 10/24] Add interrupt/counter support for Renesas G4MH: both
+Subject: [PATCH 10/27] Add interrupt/counter support for Renesas G4MH: both
  category 1 and 2 are supported.
 
 ---

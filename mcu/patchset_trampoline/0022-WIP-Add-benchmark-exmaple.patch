@@ -1,7 +1,7 @@
-From f7c32b5e86180397aabdbeff679e77184369336d Mon Sep 17 00:00:00 2001
+From c8c54295f2bf9007d5da6adf4690090b3c471443 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Fri, 24 Mar 2023 19:04:14 +0900
-Subject: [PATCH 22/24] WIP: Add benchmark exmaple
+Subject: [PATCH 22/27] WIP: Add benchmark exmaple
 
 This patch adds only framework.
 Currently, this is almost same as one_task example.

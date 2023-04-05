@@ -1,7 +1,7 @@
-From 71fa2d51ea785d5be06a993bab43b1867b016b19 Mon Sep 17 00:00:00 2001
+From d93623f0a1d75807bc9262c3dbc7a05516c736e5 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Mon, 27 Mar 2023 18:43:06 +0900
-Subject: [PATCH 21/24] WIP: Change to not use FPU
+Subject: [PATCH 21/27] WIP: Change to not use FPU
 
 If using FPU, cast to float doesn't work well.
 This patch makes using software instead of hardware.

@@ -1,7 +1,7 @@
-From 21645c0bc1a441598d250047eb1999f4388e8101 Mon Sep 17 00:00:00 2001
+From 84e05434a80c457e2d3de18fb4a2893c4d40a1a3 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Tue, 28 Mar 2023 12:49:22 +0900
-Subject: [PATCH 24/24] WIP: Add coremark benchmark
+Subject: [PATCH 24/27] WIP: Add coremark benchmark
 
 Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---

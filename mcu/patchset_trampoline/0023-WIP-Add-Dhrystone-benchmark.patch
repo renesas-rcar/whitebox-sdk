@@ -1,7 +1,7 @@
-From 2c97b3ede468eb83de13b796923c1ea4ca5ab77d Mon Sep 17 00:00:00 2001
+From f25df0ea044ce22c1aa36825854ef1b89e965419 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Mon, 27 Mar 2023 18:27:46 +0900
-Subject: [PATCH 23/24] WIP: Add Dhrystone benchmark
+Subject: [PATCH 23/27] WIP: Add Dhrystone benchmark
 
 Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---

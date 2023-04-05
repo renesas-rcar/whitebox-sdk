@@ -1,0 +1,48 @@
+From 68d4036862d40e25283695b3808c915277d0727d Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 31 Mar 2023 18:19:27 +0900
+Subject: [PATCH 27/27] examples: iccom: Add memcpy before sending ACK
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/renesas/iccom/iccom.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/examples/renesas/iccom/iccom.c b/examples/renesas/iccom/iccom.c
+index 50f98a9..2997ce3 100644
+--- a/examples/renesas/iccom/iccom.c
++++ b/examples/renesas/iccom/iccom.c
+@@ -24,6 +24,7 @@ enum ICCOM_MSG {
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
+ 
+ uint8 iccom_initalized = 0;
++struct echo_command recv_pkt;
+ 
+ static void iccom_notify_tx_data(size_t message)
+ {
+@@ -84,6 +85,9 @@ static void iccom_handle_rx_msg(size_t size)
+ 	// Casting to the most simple structure in order to get the "cmd_id".
+ 	// Later the proper casting will be done
+ 	in_pkt = (struct command_header*) iccom_get_read_cta_ptr();
++	// copy packet before sending ACK
++	memcpy(&recv_pkt, in_pkt, size);
++	//recv_pkt.cmd_id = in_pkt->cmd_id;
+ 	iccom_send_rx_data_ack((uint32)size);
+ 	ret = iccom_wait_for_out_interrupt_clear(HOST_INT_CLEAR_TIMEOUT_MS);
+ 	if (ret < 0) {
+@@ -99,11 +103,10 @@ static void iccom_handle_rx_msg(size_t size)
+ 		}
+ 
+ 		case ECHO: {
+-			struct echo_command* cmd_pkt = in_pkt;
+ 			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
+ 
+ 			// Just copy the data back
+-			memcpy(reply_pkt, cmd_pkt, size);
++			memcpy(reply_pkt, &recv_pkt, size);
+ 			iccom_send((uint8*)reply_pkt, size, 0);
+ 			break;
+ 		}
+-- 
+2.34.1
+

@@ -1,7 +1,7 @@
-From 9a73b9d2b0a0b5eab28689a133f85f2481d6ae75 Mon Sep 17 00:00:00 2001
+From b0f74c58af72b7f56c386dca2c53acdee7f52521 Mon Sep 17 00:00:00 2001
 From: Valerio Setti <vsetti@baylibre.com>
 Date: Tue, 7 Mar 2023 16:21:04 +0100
-Subject: [PATCH 16/24] iccom: increased CTA size to 16kB
+Subject: [PATCH 16/27] iccom: increased CTA size to 16kB
 
 ---
  examples/renesas/iccom/iccom.c          |  2 +-

@@ -1,7 +1,7 @@
-From 4477bc21d67e8d3af03f0149a739b42ccd726b84 Mon Sep 17 00:00:00 2001
+From 185f460e8231b94e744835d95527fe2598fbc233 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 14 Dec 2022 17:41:56 +0100
-Subject: [PATCH 02/24] update goil templates to take into account tpl_invoque
+Subject: [PATCH 02/27] update goil templates to take into account tpl_invoque
  extension
 
 Use tpl_invoque EXTENSION declared in 'code' directory in other goil templates.

@@ -1,7 +1,7 @@
-From 69f0b6c3380760ba3e56bf7393643494a9478261 Mon Sep 17 00:00:00 2001
+From 82cf76daaa5833b33c9dbd41b01f19bfd0abc1ec Mon Sep 17 00:00:00 2001
 From: Valerio Setti <vsetti@baylibre.com>
 Date: Tue, 7 Mar 2023 16:19:56 +0100
-Subject: [PATCH 15/24] iccom: Removed useless comments
+Subject: [PATCH 15/27] iccom: Removed useless comments
 
 ---
  examples/renesas/iccom/iccom.c | 46 ----------------------------------

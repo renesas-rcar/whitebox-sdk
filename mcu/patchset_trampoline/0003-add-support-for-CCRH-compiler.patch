@@ -1,7 +1,7 @@
-From 8efc5f892fa44760acbc8e531b8177b5326bdab2 Mon Sep 17 00:00:00 2001
+From 570b977f47ed62a5b520b864875971be851e9cc5 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 16 Dec 2022 13:18:58 +0100
-Subject: [PATCH 03/24] add support for CCRH compiler
+Subject: [PATCH 03/27] add support for CCRH compiler
 
 ---
  .../compiler/ccrh/Compiler_Cfg_h.goilTemplate | 480 ++++++++++++++++++

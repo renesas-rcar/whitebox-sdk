@@ -1,7 +1,7 @@
-From a37df95d04fd73651fa247e7c8d31e2acf1e0a67 Mon Sep 17 00:00:00 2001
+From 934535644b6a6549286c3969196100b9fe0871e2 Mon Sep 17 00:00:00 2001
 From: Valerio Setti <vsetti@baylibre.com>
 Date: Fri, 3 Mar 2023 11:05:57 +0100
-Subject: [PATCH 14/24] iccom: added echo command
+Subject: [PATCH 14/27] iccom: added echo command
 
 ---
  examples/renesas/iccom/iccom.c          | 10 ++++++++++

@@ -1,7 +1,7 @@
-From 1d864e64992e856102d3d350db57eb40576b4034 Mon Sep 17 00:00:00 2001
+From 3cda65e41a49d4aabf3b2004ba2839009235d75e Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Thu, 2 Mar 2023 13:01:42 +0100
-Subject: [PATCH 13/24] Add initial iccom porting from Toppers ATK Autosar
+Subject: [PATCH 13/27] Add initial iccom porting from Toppers ATK Autosar
  version.
 
 ---

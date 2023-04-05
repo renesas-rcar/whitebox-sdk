@@ -1,7 +1,7 @@
-From 535706b7be5cb379fdff76f811a9902e55c568f7 Mon Sep 17 00:00:00 2001
+From 62b8ab7a5bb98fbb9c621ce92030655c548769c3 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 16 Dec 2022 13:21:00 +0100
-Subject: [PATCH 04/24] add cmake/makefile specifics for renesas/G4MH platform
+Subject: [PATCH 04/27] add cmake/makefile specifics for renesas/G4MH platform
 
 ---
  .../g4mh/Makefile_specific.goilTemplate       |  11 +
