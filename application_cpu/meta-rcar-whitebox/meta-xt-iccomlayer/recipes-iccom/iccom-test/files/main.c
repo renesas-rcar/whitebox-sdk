@@ -4,37 +4,38 @@
  * iccom-test application(main.c)
  *
  * Copyright (c) 2023 Renesas Electronics Corporation
- * 
+ *
  * Benchmark scheme
  * ------------------------------------------------------------------------------
- * 
- *                   Cortex-A55                            G4MH
- *   ┌──────────────┐         ┌────────────┐          ┌────────────┐
- *   │iccom-test App│         │ICCOM Driver│          │ICCOM-driver│
- *   └───────┬──────┘         └──────┬─────┘          └──────┬─────┘
- *           ├───┐                   │                       │
- *           │   │start Timer        │                       │
- *           ◄───┘                   │                       │
- *           │                       │                       │
- *       ┌──►│                       │                       │
- *       │   │ Write Request         │                       │
- *       │   ├──────────────────────►│                       │
- *       │   │                       │  Send packet          │
- * Loop  │   │                       ├──────────────────────►│
- *       │   │                       │                       ├─────┐
- *       │   │                       │                       │     │ Read Data
- *       │   │                       │                       │◄────┘
- *       │   │                       │  Send ACK             │
- *       │   │                       │◄──────────────────────┤
- *       │   │  Send Result          │                       │
- *       │   │◄──────────────────────┤                       │
- *       └───┤                       │                       │
- *           ├────┐                  │                       │
- *           │    │Stop Timer        │                       │
- *           │◄───┘                  │                       │
- *           │                       │                       │
- *           ▼                       ▼                       ▼
- * 
+ *
+ *                     Cortex-A55                                     G4MH
+ *   +----------------+         +----------------+             +----------------+
+ *   | iccom-test     |         | ICCOM driver   |             | ICCOM driver   |
+ *   +----------------+         +----------------+             +----------------+
+ *           |                          |                               |
+ *           +--+                       |                               |
+ *           |  | Start Timer           |                               |
+ *           |<-+                       |                               |
+ *           |                          |                               |
+ *       +-->|                          |                               |
+ *       |   | Write Request            |                               |
+ *       |   +------------------------->|                               |
+ *       |   |                          | Send packet                   |
+ *       |   |                          |------------------------------>|
+ *       |   |                          |                               |--+
+ *  Loop |   |                          |                               |  | Read Packet
+ *       |   |                          |                               |<-+
+ *       |   |                          |                      Send ACK |
+ *       |   |                          |<------------------------------|
+ *       |   |              Send Result |                               |
+ *       |   |<-------------------------|                               |
+ *       +---|                          |                               |
+ *           |--+                       |                               |
+ *           |  | Stop TImer            |                               |
+ *           |<--                       |                               |
+ *           |                          |                               |
+ *           v                          v                               v
+ *
  * Throughput: = (Packet Size * LoopNum) / elappsed_time
  * ------------------------------------------------------------------------------
  */
@@ -61,18 +62,19 @@ static int cpu_type = 0;
 
 void print_help(int argc, char **argv)
 {
-	printf("Usage: %s [-s|-c|-b|-r]\n", argv[0]);
+	printf("Usage: %s [-s|-c|-b|-r|-h]\n", argv[0]);
 	printf("	-b: enable benchmark mode(default is test mode)\n");
 	printf("	-c: number of iterations to test\n");
 	printf("	-s: size of each iteration\n");
 	printf("	-r: enable iccom channel CR-52(default is G4MH) \n");
+	printf("	-h: show this help\n");
 }
 
 static int parse_input_args(int argc, char **argv)
 {
 	int c;
 	
-	while ((c = getopt(argc, argv, "c:s:br")) != -1) {
+	while ((c = getopt(argc, argv, "c:s:brh")) != -1) {
 		switch (c) {
 		case 'r':
 			cpu_type = 1;
@@ -86,6 +88,7 @@ static int parse_input_args(int argc, char **argv)
 		case 'b':
 			bench_flag = 1;
 			break;
+		case 'h':
 		case '?':
 			print_help(argc, argv);
 			return -1;
@@ -101,7 +104,7 @@ static int parse_input_args(int argc, char **argv)
 				size_flag, 1, MAX_ECHO_DATA_SIZE);
 		return -1;
 	}
-	
+
 	return 0;
 }
 
