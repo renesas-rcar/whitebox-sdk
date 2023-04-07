@@ -19,11 +19,13 @@
                 - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
                 - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
                 - [IMAGE_INSTALL_append, " waii packagegroup-system-monitor"]
+                - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
               layers:
                 - "../../../meta-rcar-whitebox/meta-rcar-common"
                 - "../../../meta-rcar-whitebox/meta-xt-iccomlayer"
               target_images:
                 - "tmp/work/spider-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                - "tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
           domu:
             builder:
               conf:
@@ -37,5 +39,6 @@
                 size: 1024 MiB
                 files:
                   "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                  "boot-emmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
               domd_aos:
                 size: 2048 MiB

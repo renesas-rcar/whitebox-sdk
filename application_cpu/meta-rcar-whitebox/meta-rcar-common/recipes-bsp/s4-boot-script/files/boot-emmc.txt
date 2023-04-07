@@ -1,0 +1,23 @@
+env delete bootargs
+
+setenv set_pcie 'i2c dev 0; i2c mw 0x6c 0x26 5; i2c mw 0x6c 0x254.2 0x1e; i2c mw 0x6c 0x258.2 0x1e'
+setenv bootcmd_mmc0 'run mmc0_xen_load; run mmc0_dtb_load; run mmc0_kernel_load; run mmc0_xenpolicy_load; run mmc0_initramfs_load; bootm 0x48080000 0x84000000 0x48000000'
+setenv mmc0_dtb_load 'ext2load mmc 0:1 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device mmcblk0'
+setenv mmc0_initramfs_load 'ext2load mmc 0:1 0x84000000 uInitramfs'
+setenv mmc0_kernel_load 'ext2load mmc 0:1 0x7a000000 Image'
+setenv mmc0_xen_load 'ext2load mmc 0:1 0x48080000 xen'
+setenv mmc0_xenpolicy_load 'ext2load mmc 0:1 0x7c000000 xenpolicy'
+setenv mmc0_dtb_load 'ext2load mmc 0:${aos_boot_slot} 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device mmcblk0; fdt set /boot_dev domd_ip ${domd_ip};'
+setenv mmc0_initramfs_load 'ext2load mmc 0:${aos_boot_slot} 0x84000000 uInitramfs'
+setenv mmc0_kernel_load 'ext2load mmc 0:${aos_boot_slot} 0x7a000000 Image'
+setenv mmc0_xen_load 'ext2load mmc 0:${aos_boot_slot} 0x48080000 xen'
+setenv mmc0_xenpolicy_load 'ext2load mmc 0:${aos_boot_slot} 0x7c000000 xenpolicy'
+setenv aos_default_vars 'setenv aos_boot_main 0; setenv aos_boot1_ok 1; setenv aos_boot2_ok 1; setenv aos_boot_part 0'
+setenv aos_save_vars 'env export -t ${loadaddr} aos_boot_main aos_boot_part aos_boot1_ok aos_boot2_ok; fatwrite mmc 0:3 ${loadaddr} uboot.env 0x3E'
+setenv aos_load_vars 'run aos_default_vars; if load mmc 0:3 ${loadaddr} uboot.env; then env import -t ${loadaddr} ${filesize}; else run aos_save_vars; fi'
+setenv aos_boot1 'if test ${aos_boot1_ok} -eq 1; then setenv aos_boot1_ok 0; setenv aos_boot2_ok 1; setenv aos_boot_part 0; setenv aos_boot_slot 1; echo "==== Boot from part 1"; run aos_save_vars; run bootcmd_mmc0; fi'
+setenv aos_boot2 'if test ${aos_boot2_ok} -eq 1; then setenv aos_boot2_ok 0; setenv aos_boot1_ok 1; setenv aos_boot_part 1; setenv aos_boot_slot 2; echo "==== Boot from part 2"; run aos_save_vars; run bootcmd_mmc0; fi'
+setenv bootcmd_aos 'run aos_load_vars; if test ${aos_boot_main} -eq 0; then run aos_boot1; run aos_boot2; else run aos_boot2; run aos_boot1; fi'
+setenv bootcmd 'run bootcmd_aos'
+boot
+
