@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
-
 #include "iccom.h"
 #include "iccom_commands.h"
 #include "util.h"
@@ -15,25 +14,30 @@
 
 static int iteration_count_flag = 1;
 static int size_flag = 1;
+static int cpu_type = 0;
 
 void print_help(int argc, char **argv)
 {
-	printf("Usage: %s [-s|-c]\n", argv[0]);
+	printf("Usage: %s [-s|-c|-t]\n", argv[0]);
 	printf("	-c: number of iterations to test\n");
 	printf("	-s: size of each iteration (command + reply)\n");
+	printf("        -t: iccom channel no set(default 0) 0:G4MH 1:CR-52 \n");
 }
 
 static int parse_input_args(int argc, char **argv)
 {
 	int c;
 	
-	while ((c = getopt(argc, argv, "c:s:")) != -1) {
+	while ((c = getopt(argc, argv, "c:s:t:")) != -1) {
 		switch (c) {
 		case 'c':
 			iteration_count_flag = strtoul(optarg, NULL, 10);
 			break;
 		case 's':
 			size_flag = strtoul(optarg, NULL, 10);
+			break;
+		case 't':
+			cpu_type = strtoul(optarg, NULL, 10);
 			break;
 		case '?':
 			print_help(argc, argv);
@@ -66,14 +70,17 @@ int main(int argc, char **argv)
 	struct timespec start_time, end_time;
 	uint64_t elapsed_ms;
 	uint64_t transferred_data;
-	
+	st_iccom_send_param_t send_param;
+	st_iccom_recive_param_t recive_param;
+	int32_t ret_iccom;
 
 	ret = parse_input_args(argc, argv);
 	if (ret) {
 		return ret;
 	}
 
-	ret = iccom_init();
+	ret = R_ICCOM_Init(NULL, cpu_type, NULL, NULL, NULL);
+	err_printf("## MURO ## cpu_type = %d \n",cpu_type);
 	if (ret != 0 ) {
 		err_printf("iccom_init error\n");
 		return ret;
@@ -82,6 +89,7 @@ int main(int argc, char **argv)
 	ret = clock_gettime(CLOCK_MONOTONIC, &start_time);
 	if (ret < 0) {
 		err_printf("clock_gettime failed at start\n");
+		R_ICCOM_Close();
 		return ret;
 	}
 
@@ -92,19 +100,25 @@ int main(int argc, char **argv)
 		memset(cmd.data, (curr_iter & 0xFF), size_flag);
 		// always take "cmd_id" into account for the size
 		pkt_size = size_flag + sizeof(uint8_t);
-
-		ret = iccom_send_data(&cmd, pkt_size);
+		send_param.send_buf = (uint8_t *)&cmd;
+		send_param.send_size = pkt_size;
+		ret = R_ICCOM_Send(&send_param);
 		if (ret < 0) {
 			err_printf("iccom_send_data failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
 			return ret;
 		}
-		ret = iccom_read_reply(&reply, pkt_size);
+		recive_param.recive_buf = (uint8_t *)&reply;
+		recive_param.recive_size = pkt_size;
+		ret = R_ICCOM_Recive(&recive_param);
 		if (ret < 0) {
 			err_printf("iccom_wait_for_reply_with_timeout failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
 			return ret;
 		}
 		if (memcmp(&cmd, &reply, pkt_size) != 0) {
 			err_printf("memcmp failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
 			return ret;
 		}
 	}
@@ -112,10 +126,11 @@ int main(int argc, char **argv)
 	ret = clock_gettime(CLOCK_MONOTONIC, &end_time);
 	if (ret < 0) {
 		err_printf("clock_gettime failed at end\n");
+		R_ICCOM_Close();
 		return ret;
 	}
 
-	iccom_close();
+	R_ICCOM_Close();
 
 	if (end_time.tv_nsec >= start_time.tv_nsec) {
 		elapsed_ms = (end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;

@@ -12,8 +12,10 @@
 #include <sys/ioctl.h>
 #include "util.h"
 #include "iccom_ioctl.h"
+#include "iccom.h"
 
-#define ICCOM_DEV		"/dev/iccom0"
+#define ICCOM_DEV0		"/dev/iccom0"
+#define ICCOM_DEV1		"/dev/iccom1"
 
 #define TOTAL_CTA_SIZE		0x2000
 #define ICCOM_BUF_MAX_SIZE	(TOTAL_CTA_SIZE/2) // Max size of each transaction (read/write)
@@ -23,7 +25,8 @@ static uint8_t rx_buff[ICCOM_BUF_MAX_SIZE];
 static int fd = -1;
 
 #if defined(USE_IOCTL)
-int32_t iccom_read_reply(void* output_buff, size_t size)
+int32_t R_ICCOM_Recive(
+        const st_iccom_recive_param_t *pIccomRecive)
 {
 	int ret;
 	struct iccom_ioctl_pkt ioctl_pkt;
@@ -33,14 +36,13 @@ int32_t iccom_read_reply(void* output_buff, size_t size)
 		return -1;
 	}
 
-	if (size > ICCOM_BUF_MAX_SIZE) {
+	if (pIccomRecive->recive_size > ICCOM_BUF_MAX_SIZE) {
 		err_printf("Read buffer exceeds max allowed length\n");
 		return -1;
 	}
 
-	ioctl_pkt.length = size;
-	ioctl_pkt.data = output_buff;
-
+	ioctl_pkt.length = pIccomRecive->recive_size;
+	ioctl_pkt.data = pIccomRecive->recive_buf;
 	ret = ioctl(fd, ICCOM_IOCTL_READ, &ioctl_pkt);
 	if (ret < 0) {
 		err_printf("Ioctl failed in reading (%d)\n", ret);
@@ -50,7 +52,7 @@ int32_t iccom_read_reply(void* output_buff, size_t size)
 	return 0;
 }
 
-int32_t iccom_send_data(void* in_buff, size_t size)
+int32_t R_ICCOM_Send(const st_iccom_send_param_t *pIccomSend)
 {
 	int ret;
 	struct iccom_ioctl_pkt ioctl_pkt;
@@ -60,14 +62,13 @@ int32_t iccom_send_data(void* in_buff, size_t size)
 		return -1;
 	}
 
-	if (size > ICCOM_BUF_MAX_SIZE) {
+	if (pIccomSend->send_size > ICCOM_BUF_MAX_SIZE) {
 		err_printf("Write buffer exceeds max allowed length\n");
 		return -1;
 	}
 
-	ioctl_pkt.length = size;
-	ioctl_pkt.data = in_buff;
-
+	ioctl_pkt.length = pIccomSend->send_size;
+	ioctl_pkt.data = pIccomSend->send_buf;
 	ret = ioctl(fd, ICCOM_IOCTL_WRITE, &ioctl_pkt);
 	if (ret < 0) {
 		err_printf("Ioctl failed in writing (%d)\n", ret);
@@ -79,8 +80,8 @@ int32_t iccom_send_data(void* in_buff, size_t size)
 
 #else //USE_IOCTL
 
-int32_t iccom_read_reply(uint64_t timeout_ms,
-					void* output_buff, size_t size)
+int32_t R_ICCOM_Recive(
+        const st_iccom_recive_param_t *pIccomRecive)
 {
 	ssize_t read_data = 0;
 	int ret;
@@ -95,7 +96,7 @@ int32_t iccom_read_reply(uint64_t timeout_ms,
 		return -1;
 	}
 
-	read_data = read(fd, output_buff, size);
+	read_data = read(fd, pIccomRecive->recive_buf, pIccomRecive->recive_size);
 	if (read_data <= 0) {
 		err_printf("No data read\n");
 		return -1;
@@ -104,7 +105,7 @@ int32_t iccom_read_reply(uint64_t timeout_ms,
 	return 0;
 }
 
-int32_t iccom_send_data(void* in_buff, size_t size)
+int32_t R_ICCOM_Send(const st_iccom_send_param_t *pIccomSend)
 {
 	ssize_t written_data = 0;
 
@@ -118,7 +119,7 @@ int32_t iccom_send_data(void* in_buff, size_t size)
 		return -1;
 	}
 
-	written_data = write(fd, in_buff, size);
+	written_data = write(fd, pIccomSend->send_buf, pIccomSend->send_size);
 	if (written_data <= 0) {
 		err_printf("No data written\n");
 		return -1;
@@ -133,18 +134,33 @@ int32_t iccom_send_data(void* in_buff, size_t size)
 }
 #endif //USE_IOCTL
 
-int32_t iccom_init()
+int32_t R_ICCOM_Init(
+        const st_iccom_usr_cfg_t* pusr_cfg,
+        uint8_t num_of_channel,
+        const st_iccom_usr_cfg_ch_t usr_cfg_ch[],
+        const st_iccom_dev_settings_t dev_info[],
+        Iccom_api_error_callback_t api_error_drv_cb)
 {
-	fd = open(ICCOM_DEV, O_RDWR);
-	if (fd < 0) {
-		err_printf("Initialization failed: unable to open %s\n", ICCOM_DEV);
+	if (num_of_channel == 0) {
+		fd = open(ICCOM_DEV0, O_RDWR);
+		if (fd < 0) {
+			err_printf("Initialization failed: unable to open %s\n", ICCOM_DEV0);
+			return -1;
+		}
+	} else if (num_of_channel == 1) {
+		fd = open(ICCOM_DEV1, O_RDWR);
+		if (fd < 0) {
+			err_printf("Initialization failed: unable to open %s\n", ICCOM_DEV1);
+			return -1;
+		}
+	} else {
 		return -1;
 	}
 
 	return 0;
 }
 
-int32_t iccom_close(void)
+int32_t R_ICCOM_Close(void)
 {
 	if (fd > 0) {
 		close(fd);
