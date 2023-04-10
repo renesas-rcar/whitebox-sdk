@@ -1,0 +1,190 @@
+From 9e31a0fc19dadc1f3d0d16a5922c7de4d9785c95 Mon Sep 17 00:00:00 2001
+Message-Id: <9e31a0fc19dadc1f3d0d16a5922c7de4d9785c95.1681138931.git.oleksii_moisieiev@epam.com>
+In-Reply-To: <f89c0d3837aa6b22effb3134362f940fb7b2bba5.1681138931.git.oleksii_moisieiev@epam.com>
+References: <f89c0d3837aa6b22effb3134362f940fb7b2bba5.1681138931.git.oleksii_moisieiev@epam.com>
+From: Henry Wang <Henry.Wang@arm.com>
+Date: Mon, 6 Jun 2022 06:17:28 +0000
+Subject: [PATCH 3/4] xen/arm: Construct the P2M pages pool for guests
+
+This commit constructs the p2m pages pool for guests from the
+data structure and helper perspective.
+
+This is implemented by:
+
+- Adding a `struct paging_domain` which contains a freelist, a
+counter variable and a spinlock to `struct arch_domain` to
+indicate the free p2m pages and the number of p2m total pages in
+the p2m pages pool.
+
+- Adding a helper `p2m_get_allocation` to get the p2m pool size.
+
+- Adding a helper `p2m_set_allocation` to set the p2m pages pool
+size. This helper should be called before allocating memory for
+a guest.
+
+- Adding a helper `p2m_teardown_allocation` to free the p2m pages
+pool. This helper should be called during the xl domain destory.
+
+This is part of CVE-2022-33747 / XSA-409.
+
+Signed-off-by: Henry Wang <Henry.Wang@arm.com>
+Reviewed-by: Stefano Stabellini <sstabellini@kernel.org>
+---
+ xen/arch/arm/include/asm/domain.h | 10 ++++
+ xen/arch/arm/include/asm/p2m.h    |  4 ++
+ xen/arch/arm/p2m.c                | 88 +++++++++++++++++++++++++++++++
+ 3 files changed, 102 insertions(+)
+
+diff --git a/xen/arch/arm/include/asm/domain.h b/xen/arch/arm/include/asm/domain.h
+index 10e803cb52..eddaca1a51 100644
+--- a/xen/arch/arm/include/asm/domain.h
++++ b/xen/arch/arm/include/asm/domain.h
+@@ -53,6 +53,14 @@ struct vtimer {
+     uint64_t cval;
+ };
+ 
++struct paging_domain {
++    spinlock_t lock;
++    /* Free P2M pages from the pre-allocated P2M pool */
++    struct page_list_head p2m_freelist;
++    /* Number of pages from the pre-allocated P2M pool */
++    unsigned long p2m_total_pages;
++};
++
+ struct arch_domain
+ {
+ #ifdef CONFIG_ARM_64
+@@ -64,6 +72,8 @@ struct arch_domain
+ 
+     struct hvm_domain hvm;
+ 
++    struct paging_domain paging;
++
+     struct vmmio vmmio;
+ 
+     /* Continuable domain_relinquish_resources(). */
+diff --git a/xen/arch/arm/include/asm/p2m.h b/xen/arch/arm/include/asm/p2m.h
+index 8cce459b67..fab9bea801 100644
+--- a/xen/arch/arm/include/asm/p2m.h
++++ b/xen/arch/arm/include/asm/p2m.h
+@@ -209,6 +209,10 @@ void p2m_restore_state(struct vcpu *n);
+ /* Print debugging/statistial info about a domain's p2m */
+ void p2m_dump_info(struct domain *d);
+ 
++unsigned int p2m_get_allocation(struct domain *d);
++int p2m_set_allocation(struct domain *d, unsigned long pages, bool *preempted);
++int p2m_teardown_allocation(struct domain *d);
++
+ static inline void p2m_write_lock(struct p2m_domain *p2m)
+ {
+     write_lock(&p2m->lock);
+diff --git a/xen/arch/arm/p2m.c b/xen/arch/arm/p2m.c
+index 02cf852d4c..796d11bfea 100644
+--- a/xen/arch/arm/p2m.c
++++ b/xen/arch/arm/p2m.c
+@@ -50,6 +50,92 @@ static uint64_t generate_vttbr(uint16_t vmid, mfn_t root_mfn)
+     return (mfn_to_maddr(root_mfn) | ((uint64_t)vmid << 48));
+ }
+ 
++/* Return the size of the pool, rounded up to the nearest MB */
++unsigned int p2m_get_allocation(struct domain *d)
++{
++    unsigned long nr_pages = ACCESS_ONCE(d->arch.paging.p2m_total_pages);
++
++    return ROUNDUP(nr_pages, 1 << (20 - PAGE_SHIFT)) >> (20 - PAGE_SHIFT);
++}
++
++/*
++ * Set the pool of pages to the required number of pages.
++ * Returns 0 for success, non-zero for failure.
++ * Call with d->arch.paging.lock held.
++ */
++int p2m_set_allocation(struct domain *d, unsigned long pages, bool *preempted)
++{
++    struct page_info *pg;
++
++    ASSERT(spin_is_locked(&d->arch.paging.lock));
++
++    for ( ; ; )
++    {
++        if ( d->arch.paging.p2m_total_pages < pages )
++        {
++            /* Need to allocate more memory from domheap */
++            pg = alloc_domheap_page(NULL, 0);
++            if ( pg == NULL )
++            {
++                printk(XENLOG_ERR "Failed to allocate P2M pages.\n");
++                return -ENOMEM;
++            }
++            ACCESS_ONCE(d->arch.paging.p2m_total_pages) =
++                d->arch.paging.p2m_total_pages + 1;
++            page_list_add_tail(pg, &d->arch.paging.p2m_freelist);
++        }
++        else if ( d->arch.paging.p2m_total_pages > pages )
++        {
++            /* Need to return memory to domheap */
++            pg = page_list_remove_head(&d->arch.paging.p2m_freelist);
++            if( pg )
++            {
++                ACCESS_ONCE(d->arch.paging.p2m_total_pages) =
++                    d->arch.paging.p2m_total_pages - 1;
++                free_domheap_page(pg);
++            }
++            else
++            {
++                printk(XENLOG_ERR
++                       "Failed to free P2M pages, P2M freelist is empty.\n");
++                return -ENOMEM;
++            }
++        }
++        else
++            break;
++
++        /* Check to see if we need to yield and try again */
++        if ( preempted && general_preempt_check() )
++        {
++            *preempted = true;
++            return -ERESTART;
++        }
++    }
++
++    return 0;
++}
++
++int p2m_teardown_allocation(struct domain *d)
++{
++    int ret = 0;
++    bool preempted = false;
++
++    spin_lock(&d->arch.paging.lock);
++    if ( d->arch.paging.p2m_total_pages != 0 )
++    {
++        ret = p2m_set_allocation(d, 0, &preempted);
++        if ( preempted )
++        {
++            spin_unlock(&d->arch.paging.lock);
++            return -ERESTART;
++        }
++        ASSERT(d->arch.paging.p2m_total_pages == 0);
++    }
++    spin_unlock(&d->arch.paging.lock);
++
++    return ret;
++}
++
+ /* Unlock the flush and do a P2M TLB flush if necessary */
+ void p2m_write_unlock(struct p2m_domain *p2m)
+ {
+@@ -1546,7 +1632,9 @@ int p2m_init(struct domain *d)
+     unsigned int cpu;
+ 
+     rwlock_init(&p2m->lock);
++    spin_lock_init(&d->arch.paging.lock);
+     INIT_PAGE_LIST_HEAD(&p2m->pages);
++    INIT_PAGE_LIST_HEAD(&d->arch.paging.p2m_freelist);
+ 
+     p2m->vmid = INVALID_VMID;
+ 
+-- 
+2.25.1
+

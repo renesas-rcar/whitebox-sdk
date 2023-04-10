@@ -1,0 +1,378 @@
+From e89ed20127c4640804f353bdcbd65c897a0f146a Mon Sep 17 00:00:00 2001
+Message-Id: <e89ed20127c4640804f353bdcbd65c897a0f146a.1681138931.git.oleksii_moisieiev@epam.com>
+In-Reply-To: <f89c0d3837aa6b22effb3134362f940fb7b2bba5.1681138931.git.oleksii_moisieiev@epam.com>
+References: <f89c0d3837aa6b22effb3134362f940fb7b2bba5.1681138931.git.oleksii_moisieiev@epam.com>
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+Date: Fri, 21 Oct 2022 14:13:00 +0100
+Subject: [PATCH 4/4] xen: Introduce non-broken hypercalls for the paging
+ mempool size
+
+The existing XEN_DOMCTL_SHADOW_OP_{GET,SET}_ALLOCATION have problems:
+
+ * All set_allocation() flavours have an overflow-before-widen bug when
+   calculating "sc->mb << (20 - PAGE_SHIFT)".
+ * All flavours have a granularity of 1M.  This was tolerable when the size of
+   the pool could only be set at the same granularity, but is broken now that
+   ARM has a 16-page stopgap allocation in use.
+ * All get_allocation() flavours round up, and in particular turn 0 into 1,
+   meaning the get op returns junk before a successful set op.
+ * The x86 flavours reject the hypercalls before the VM has vCPUs allocated,
+   despite the pool size being a domain property.
+ * Even the hypercall names are long-obsolete.
+
+Implement a better interface, which can be first used to unit test the
+behaviour, and subsequently correct a broken implementation.  The old
+interface will be retired in due course.
+
+The unit of bytes (as opposed pages) is a deliberate API/ABI improvement to
+more easily support multiple page granularities.
+
+This is part of XSA-409 / CVE-2022-33747.
+
+Signed-off-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Reviewed-by: Stefano Stabellini <sstabellini@kernel.org>
+Reviewed-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Anthony PERARD <anthony.perard@citrix.com>
+Release-acked-by: Henry Wang <Henry.Wang@arm.com>
+---
+ tools/include/xenctrl.h           |  3 +++
+ tools/libs/ctrl/xc_domain.c       | 29 +++++++++++++++++++++
+ xen/arch/arm/p2m.c                | 26 +++++++++++++++++++
+ xen/arch/x86/include/asm/hap.h    |  1 +
+ xen/arch/x86/include/asm/shadow.h |  4 +++
+ xen/arch/x86/mm/hap/hap.c         | 11 ++++++++
+ xen/arch/x86/mm/paging.c          | 43 +++++++++++++++++++++++++++++++
+ xen/arch/x86/mm/shadow/common.c   | 11 ++++++++
+ xen/common/domctl.c               | 14 ++++++++++
+ xen/include/public/domctl.h       | 24 ++++++++++++++++-
+ xen/include/xen/domain.h          |  3 +++
+ 11 files changed, 168 insertions(+), 1 deletion(-)
+
+diff --git a/tools/include/xenctrl.h b/tools/include/xenctrl.h
+index 95bd5eca67..873bacde20 100644
+--- a/tools/include/xenctrl.h
++++ b/tools/include/xenctrl.h
+@@ -893,6 +893,9 @@ long long xc_logdirty_control(xc_interface *xch,
+                               unsigned int mode,
+                               xc_shadow_op_stats_t *stats);
+ 
++int xc_get_paging_mempool_size(xc_interface *xch, uint32_t domid, uint64_t *size);
++int xc_set_paging_mempool_size(xc_interface *xch, uint32_t domid, uint64_t size);
++
+ int xc_sched_credit_domain_set(xc_interface *xch,
+                                uint32_t domid,
+                                struct xen_domctl_sched_credit *sdom);
+diff --git a/tools/libs/ctrl/xc_domain.c b/tools/libs/ctrl/xc_domain.c
+index ef62f66009..ee616c2ec4 100644
+--- a/tools/libs/ctrl/xc_domain.c
++++ b/tools/libs/ctrl/xc_domain.c
+@@ -706,6 +706,35 @@ long long xc_logdirty_control(xc_interface *xch,
+     return (rc == 0) ? domctl.u.shadow_op.pages : rc;
+ }
+ 
++int xc_get_paging_mempool_size(xc_interface *xch, uint32_t domid, uint64_t *size)
++{
++    int rc;
++    struct xen_domctl domctl = {
++        .cmd         = XEN_DOMCTL_get_paging_mempool_size,
++        .domain      = domid,
++    };
++
++    rc = do_domctl(xch, &domctl);
++    if ( rc )
++        return rc;
++
++    *size = domctl.u.paging_mempool.size;
++    return 0;
++}
++
++int xc_set_paging_mempool_size(xc_interface *xch, uint32_t domid, uint64_t size)
++{
++    struct xen_domctl domctl = {
++        .cmd         = XEN_DOMCTL_set_paging_mempool_size,
++        .domain      = domid,
++        .u.paging_mempool = {
++            .size = size,
++        },
++    };
++
++    return do_domctl(xch, &domctl);
++}
++
+ int xc_domain_setmaxmem(xc_interface *xch,
+                         uint32_t domid,
+                         uint64_t max_memkb)
+diff --git a/xen/arch/arm/p2m.c b/xen/arch/arm/p2m.c
+index 796d11bfea..7822324a8d 100644
+--- a/xen/arch/arm/p2m.c
++++ b/xen/arch/arm/p2m.c
+@@ -58,6 +58,13 @@ unsigned int p2m_get_allocation(struct domain *d)
+     return ROUNDUP(nr_pages, 1 << (20 - PAGE_SHIFT)) >> (20 - PAGE_SHIFT);
+ }
+ 
++/* Return the size of the pool, in bytes. */
++int arch_get_paging_mempool_size(struct domain *d, uint64_t *size)
++{
++    *size = (uint64_t)ACCESS_ONCE(d->arch.paging.p2m_total_pages) << PAGE_SHIFT;
++    return 0;
++}
++
+ /*
+  * Set the pool of pages to the required number of pages.
+  * Returns 0 for success, non-zero for failure.
+@@ -115,6 +122,25 @@ int p2m_set_allocation(struct domain *d, unsigned long pages, bool *preempted)
+     return 0;
+ }
+ 
++int arch_set_paging_mempool_size(struct domain *d, uint64_t size)
++{
++    unsigned long pages = size >> PAGE_SHIFT;
++    bool preempted = false;
++    int rc;
++
++    if ( (size & ~PAGE_MASK) ||          /* Non page-sized request? */
++         pages != (size >> PAGE_SHIFT) ) /* 32-bit overflow? */
++        return -EINVAL;
++
++    spin_lock(&d->arch.paging.lock);
++    rc = p2m_set_allocation(d, pages, &preempted);
++    spin_unlock(&d->arch.paging.lock);
++
++    ASSERT(preempted == (rc == -ERESTART));
++
++    return rc;
++}
++
+ int p2m_teardown_allocation(struct domain *d)
+ {
+     int ret = 0;
+diff --git a/xen/arch/x86/include/asm/hap.h b/xen/arch/x86/include/asm/hap.h
+index 90dece29de..14d2f212da 100644
+--- a/xen/arch/x86/include/asm/hap.h
++++ b/xen/arch/x86/include/asm/hap.h
+@@ -47,6 +47,7 @@ int   hap_track_dirty_vram(struct domain *d,
+ extern const struct paging_mode *hap_paging_get_mode(struct vcpu *);
+ int hap_set_allocation(struct domain *d, unsigned int pages, bool *preempted);
+ unsigned int hap_get_allocation(struct domain *d);
++int hap_get_allocation_bytes(struct domain *d, uint64_t *size);
+ 
+ #endif /* XEN_HAP_H */
+ 
+diff --git a/xen/arch/x86/include/asm/shadow.h b/xen/arch/x86/include/asm/shadow.h
+index e25f9604d8..b7e4eea035 100644
+--- a/xen/arch/x86/include/asm/shadow.h
++++ b/xen/arch/x86/include/asm/shadow.h
+@@ -97,6 +97,8 @@ void shadow_blow_tables_per_domain(struct domain *d);
+ int shadow_set_allocation(struct domain *d, unsigned int pages,
+                           bool *preempted);
+ 
++int shadow_get_allocation_bytes(struct domain *d, uint64_t *size);
++
+ #else /* !CONFIG_SHADOW_PAGING */
+ 
+ #define shadow_vcpu_teardown(v) ASSERT(is_pv_vcpu(v))
+@@ -108,6 +110,8 @@ int shadow_set_allocation(struct domain *d, unsigned int pages,
+     ({ ASSERT_UNREACHABLE(); -EOPNOTSUPP; })
+ #define shadow_set_allocation(d, pages, preempted) \
+     ({ ASSERT_UNREACHABLE(); -EOPNOTSUPP; })
++#define shadow_get_allocation_bytes(d, size) \
++    ({ ASSERT_UNREACHABLE(); -EOPNOTSUPP; })
+ 
+ static inline void sh_remove_shadows(struct domain *d, mfn_t gmfn,
+                                      int fast, int all) {}
+diff --git a/xen/arch/x86/mm/hap/hap.c b/xen/arch/x86/mm/hap/hap.c
+index de4b13565a..ee5629a265 100644
+--- a/xen/arch/x86/mm/hap/hap.c
++++ b/xen/arch/x86/mm/hap/hap.c
+@@ -331,6 +331,17 @@ unsigned int hap_get_allocation(struct domain *d)
+             + ((pg & ((1 << (20 - PAGE_SHIFT)) - 1)) ? 1 : 0));
+ }
+ 
++int hap_get_allocation_bytes(struct domain *d, uint64_t *size)
++{
++    unsigned long pages = d->arch.paging.hap.total_pages;
++
++    pages += d->arch.paging.hap.p2m_pages;
++
++    *size = pages << PAGE_SHIFT;
++
++    return 0;
++}
++
+ /* Set the pool of pages to the required number of pages.
+  * Returns 0 for success, non-zero for failure. */
+ int hap_set_allocation(struct domain *d, unsigned int pages, bool *preempted)
+diff --git a/xen/arch/x86/mm/paging.c b/xen/arch/x86/mm/paging.c
+index dc3a4a0b4b..050e2632aa 100644
+--- a/xen/arch/x86/mm/paging.c
++++ b/xen/arch/x86/mm/paging.c
+@@ -975,6 +975,49 @@ int __init paging_set_allocation(struct domain *d, unsigned int pages,
+ }
+ #endif
+ 
++int arch_get_paging_mempool_size(struct domain *d, uint64_t *size)
++{
++    int rc;
++
++    if ( is_pv_domain(d) )                 /* TODO: Relax in due course */
++        return -EOPNOTSUPP;
++
++    if ( hap_enabled(d) )
++        rc = hap_get_allocation_bytes(d, size);
++    else
++        rc = shadow_get_allocation_bytes(d, size);
++
++    return rc;
++}
++
++int arch_set_paging_mempool_size(struct domain *d, uint64_t size)
++{
++    unsigned long pages = size >> PAGE_SHIFT;
++    bool preempted = false;
++    int rc;
++
++    if ( is_pv_domain(d) )                 /* TODO: Relax in due course */
++        return -EOPNOTSUPP;
++
++    if ( size & ~PAGE_MASK ||              /* Non page-sized request? */
++         pages != (unsigned int)pages )    /* Overflow $X_set_allocation()? */
++        return -EINVAL;
++
++    paging_lock(d);
++    if ( hap_enabled(d) )
++        rc = hap_set_allocation(d, pages, &preempted);
++    else
++        rc = shadow_set_allocation(d, pages, &preempted);
++    paging_unlock(d);
++
++    /*
++     * TODO: Adjust $X_set_allocation() so this is true.
++    ASSERT(preempted == (rc == -ERESTART));
++     */
++
++    return preempted ? -ERESTART : rc;
++}
++
+ /*
+  * Local variables:
+  * mode: C
+diff --git a/xen/arch/x86/mm/shadow/common.c b/xen/arch/x86/mm/shadow/common.c
+index 6221630fc2..8a41800aed 100644
+--- a/xen/arch/x86/mm/shadow/common.c
++++ b/xen/arch/x86/mm/shadow/common.c
+@@ -1371,6 +1371,17 @@ static unsigned int shadow_get_allocation(struct domain *d)
+             + ((pg & ((1 << (20 - PAGE_SHIFT)) - 1)) ? 1 : 0));
+ }
+ 
++int shadow_get_allocation_bytes(struct domain *d, uint64_t *size)
++{
++    unsigned long pages = d->arch.paging.shadow.total_pages;
++
++    pages += d->arch.paging.shadow.p2m_pages;
++
++    *size = pages << PAGE_SHIFT;
++
++    return 0;
++}
++
+ /**************************************************************************/
+ /* Hash table for storing the guest->shadow mappings.
+  * The table itself is an array of pointers to shadows; the shadows are then
+diff --git a/xen/common/domctl.c b/xen/common/domctl.c
+index d7042eb7ab..5f41e1a8ea 100644
+--- a/xen/common/domctl.c
++++ b/xen/common/domctl.c
+@@ -868,6 +868,20 @@ long do_domctl(XEN_GUEST_HANDLE_PARAM(xen_domctl_t) u_domctl)
+             copyback = 1;
+         break;
+ 
++    case XEN_DOMCTL_get_paging_mempool_size:
++        ret = arch_get_paging_mempool_size(d, &op->u.paging_mempool.size);
++        if ( !ret )
++            copyback = 1;
++        break;
++
++    case XEN_DOMCTL_set_paging_mempool_size:
++        ret = arch_set_paging_mempool_size(d, op->u.paging_mempool.size);
++
++        if ( ret == -ERESTART )
++            ret = hypercall_create_continuation(
++                __HYPERVISOR_domctl, "h", u_domctl);
++        break;
++
+     default:
+         ret = arch_do_domctl(op, d, u_domctl);
+         break;
+diff --git a/xen/include/public/domctl.h b/xen/include/public/domctl.h
+index 84e75829b9..e0a1b6d3ab 100644
+--- a/xen/include/public/domctl.h
++++ b/xen/include/public/domctl.h
+@@ -214,7 +214,10 @@ struct xen_domctl_getpageframeinfo3 {
+  /* Return the bitmap but do not modify internal copy. */
+ #define XEN_DOMCTL_SHADOW_OP_PEEK        12
+ 
+-/* Memory allocation accessors. */
++/*
++ * Memory allocation accessors.  These APIs are broken and will be removed.
++ * Use XEN_DOMCTL_{get,set}_paging_mempool_size instead.
++ */
+ #define XEN_DOMCTL_SHADOW_OP_GET_ALLOCATION   30
+ #define XEN_DOMCTL_SHADOW_OP_SET_ALLOCATION   31
+ 
+@@ -946,6 +949,22 @@ struct xen_domctl_cacheflush {
+     xen_pfn_t start_pfn, nr_pfns;
+ };
+ 
++/*
++ * XEN_DOMCTL_get_paging_mempool_size / XEN_DOMCTL_set_paging_mempool_size.
++ *
++ * Get or set the paging memory pool size.  The size is in bytes.
++ *
++ * This is a dedicated pool of memory for Xen to use while managing the guest,
++ * typically containing pagetables.  As such, there is an implementation
++ * specific minimum granularity.
++ *
++ * The set operation can fail mid-way through the request (e.g. Xen running
++ * out of memory, no free memory to reclaim from the pool, etc.).
++ */
++struct xen_domctl_paging_mempool {
++    uint64_aligned_t size; /* Size in bytes. */
++};
++
+ #if defined(__i386__) || defined(__x86_64__)
+ struct xen_domctl_vcpu_msr {
+     uint32_t         index;
+@@ -1268,6 +1287,8 @@ struct xen_domctl {
+ #define XEN_DOMCTL_get_cpu_policy                82
+ #define XEN_DOMCTL_set_cpu_policy                83
+ #define XEN_DOMCTL_vmtrace_op                    84
++#define XEN_DOMCTL_get_paging_mempool_size       85
++#define XEN_DOMCTL_set_paging_mempool_size       86
+ #define XEN_DOMCTL_gdbsx_guestmemio            1000
+ #define XEN_DOMCTL_gdbsx_pausevcpu             1001
+ #define XEN_DOMCTL_gdbsx_unpausevcpu           1002
+@@ -1329,6 +1350,7 @@ struct xen_domctl {
+         struct xen_domctl_psr_alloc         psr_alloc;
+         struct xen_domctl_vuart_op          vuart_op;
+         struct xen_domctl_vmtrace_op        vmtrace_op;
++        struct xen_domctl_paging_mempool    paging_mempool;
+         uint8_t                             pad[128];
+     } u;
+ };
+diff --git a/xen/include/xen/domain.h b/xen/include/xen/domain.h
+index 24eb4cc7d3..7355123642 100644
+--- a/xen/include/xen/domain.h
++++ b/xen/include/xen/domain.h
+@@ -90,6 +90,9 @@ void arch_get_info_guest(struct vcpu *, vcpu_guest_context_u);
+ int arch_initialise_vcpu(struct vcpu *v, XEN_GUEST_HANDLE_PARAM(void) arg);
+ int default_initialise_vcpu(struct vcpu *v, XEN_GUEST_HANDLE_PARAM(void) arg);
+ 
++int arch_get_paging_mempool_size(struct domain *d, uint64_t *size /* bytes */);
++int arch_set_paging_mempool_size(struct domain *d, uint64_t size /* bytes */);
++
+ int domain_relinquish_resources(struct domain *d);
+ 
+ void dump_pageframe_info(struct domain *d);
+-- 
+2.25.1
+
