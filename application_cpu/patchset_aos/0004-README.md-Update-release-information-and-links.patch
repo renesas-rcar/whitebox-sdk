@@ -1,0 +1,29 @@
+From a29047027007460111006137385d275ee417c605 Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Mon, 20 Mar 2023 18:59:42 +0200
+Subject: [PATCH 4/4] [README.md] Update release information and links
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+---
+ README.md | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/README.md b/README.md
+index 6fcaf81..1ff2490 100644
+--- a/README.md
++++ b/README.md
+@@ -14,9 +14,9 @@ as Moulin-based project files provide correct entries in local.conf.
+ This is a release 1.0.0 of AosEdge development product for the
+ S4 Spider board.
+ 
+-This release is based on meta-xt-prod-devel-rcar-gen4 release 0.8.5 and has the
++This release is based on meta-xt-prod-devel-rcar-gen4 release 1.0 and has the
+ same HW features, dependencies and requirements
+-(see https://github.com/xen-troops/meta-xt-prod-devel-rcar-gen4/tree/spider-0.8.5#readme).
++(see https://github.com/xen-troops/meta-xt-prod-devel-rcar-gen4/tree/spider-1.0#readme).
+ In addition, it has the following Aos functionality:
+ 
+ - all Aos components are hosted on DomD;
+-- 
+2.25.1
+

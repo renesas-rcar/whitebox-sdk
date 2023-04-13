@@ -42,23 +42,15 @@ cd ./work
 
 # Prepare additional repo
 mkdir -p ./yocto
-git clone https://github.com/xen-troops/meta-xt-prod-devel-rcar-gen4 -b spider-0.8.9 \
-    ./yocto/meta-xt-prod-devel-rcar-gen4
 git clone https://github.com/aoscloud/meta-aos-rcar-gen4 \
     ./yocto/meta-aos-rcar-gen4
 cd ./yocto/meta-aos-rcar-gen4
 git checkout ${AOS_VERSION}
 cd ../../
 
-cp -f ./yocto/meta-xt-prod-devel-rcar-gen4/meta-xt-domd-gen4/recipes-kernel/linux/linux-renesas/l3offload.cfg \
-    ./yocto/meta-xt-prod-devel-rcar-gen4/meta-xt-domd-gen4/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts \
-    -t ./yocto/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/
-sed -i "s|${OLD_COMMIT}|${NEW_COMMIT}|" \
-    ./yocto/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
-sed -i "s|${OLD_COMMIT}|${NEW_COMMIT}|" \
-    ./yocto/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domu/recipes-kernel/linux/linux-renesas_%.bbappend
-sed -i "s|\(file://gpio.cfg .*$\)|\1\n    file://l3offload.cfg \\\\|" \
-    ./yocto/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+cd ./yocto/meta-aos-rcar-gen4
+git am ../../../patchset_aos/*
+cd ../../
 
 moulin ../aos-rcar-gen4.yaml
 ninja

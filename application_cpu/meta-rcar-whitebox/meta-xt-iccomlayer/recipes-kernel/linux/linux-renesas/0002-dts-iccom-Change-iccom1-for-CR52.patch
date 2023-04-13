@@ -1,0 +1,28 @@
+From dbb7a769d50910d616d3b7a193aceb3151beb986 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Tue, 11 Apr 2023 09:46:40 +0900
+Subject: [PATCH] dts: iccom: Change iccom1 for CR52
+
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index da40321c2eab..01541d7af390 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -1277,9 +1277,9 @@ iccom: iccom00@e6260000 {
+ 
+ 		iccom01 {
+ 			compatible = "renesas,iccom-rcar";
+-			interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
+ 			reg = <0x0 0xe6260000 0x0 0x10000>;
+-			iccom,reg-offset = <0x1580 0xb484 0x15c0 0xb4e0>;
++			iccom,reg-offset = <0x1400 0x9404 0x1440 0x9460>;
+ 			iccom,cta-memory = <0x0 0x37fc7000 0x0 0x2000>;
+ 			iccom,ack-timeout = <250>;
+ 			iccom,int-clear-timeout = <250>;
+-- 
+2.25.1
+

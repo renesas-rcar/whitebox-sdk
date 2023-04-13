@@ -1,0 +1,522 @@
+From 0a556b8a65b72b64edef5a3e22ae7be5545e7ee9 Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Mon, 20 Mar 2023 09:16:51 +0200
+Subject: [PATCH 1/4] [domd] Update Linux Kernel to latest
+ v5.10.41/rcar-5.1.7.rc6-xt release
+
+The latest version contains tc offload and L3 HW offload.
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+---
+ ...bile-Hide-clock-for-scif3-and-hscif0.patch | 29 ++++----
+ ...port.patch => 0002-PCIe-MSI-support.patch} | 70 ++++++++-----------
+ ...w-compiling-on-other-archs-than-x86.patch} |  6 +-
+ ...CK-Allow-DomD-enumerate-PCI-devices.patch} |  6 +-
+ ...-emulate-reading-from-ECAM-under-Xe.patch} | 21 +++---
+ .../linux/linux-renesas/ixgbe.cfg             |  2 +
+ .../linux/linux-renesas/l3offload.cfg         | 32 +++++++++
+ .../linux-renesas/r8a779f0-spider-domd.dts    |  5 ++
+ .../linux-renesas/r8a779f0-spider-xen.dts     | 19 +++--
+ .../linux/linux-renesas/ufs.cfg               |  1 +
+ .../linux/linux-renesas_%.bbappend            | 18 +++--
+ 11 files changed, 120 insertions(+), 89 deletions(-)
+ rename meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/{0001-PCIe-MSI-support.patch => 0002-PCIe-MSI-support.patch} (82%)
+ rename meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/{0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch => 0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch} (99%)
+ rename meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/{0003-HACK-Allow-DomD-enumerate-PCI-devices.patch => 0004-HACK-Allow-DomD-enumerate-PCI-devices.patch} (82%)
+ rename meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/{0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch => 0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch} (78%)
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ixgbe.cfg
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/l3offload.cfg
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ufs.cfg
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-clk-shmobile-Hide-clock-for-scif3-and-hscif0.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-clk-shmobile-Hide-clock-for-scif3-and-hscif0.patch
+index 689ae19..8c7e85c 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-clk-shmobile-Hide-clock-for-scif3-and-hscif0.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-clk-shmobile-Hide-clock-for-scif3-and-hscif0.patch
+@@ -1,42 +1,41 @@
+-From 7933e99643e394fe597c788404b527916add74be Mon Sep 17 00:00:00 2001
++From 7684b9f669db345e6db050f57e25eb714002772d Mon Sep 17 00:00:00 2001
+ From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ Date: Tue, 19 Oct 2021 13:59:39 +0300
+-Subject: [PATCH] clk:shmobile: Hide clock for scif3 and hscif0
++Subject: [PATCH 1/5] clk:shmobile: Hide clock for scif3 and hscif0
+ 
+ Either scif3 or hscif0 serial port is used by Xen, so do
+ not let the kernel to manage it.
+ 
+ Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+-
+ ---
+  drivers/clk/renesas/r8a779f0-cpg-mssr.c | 4 ++++
+  1 file changed, 4 insertions(+)
+ 
+ diff --git a/drivers/clk/renesas/r8a779f0-cpg-mssr.c b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+-index d34a39c3f7f7..084cd5ee4e47 100644
++index 14bb80d3e15a..87cb6ea1f745 100644
+ --- a/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+ +++ b/drivers/clk/renesas/r8a779f0-cpg-mssr.c
+-@@ -120,7 +120,9 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
++@@ -123,7 +123,9 @@ static const struct cpg_core_clk r8a779f0_core_clks[] __initconst = {
+  };
+  
+  static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
+ +#ifndef CONFIG_XEN
+- 	DEF_MOD("hscif0",	514,	R8A779F0_CLK_S0D3),
++ 	DEF_MOD("hscif0",	514,	R8A779F0_CLK_SASYNCPERD1),
+ +#endif
+- 	DEF_MOD("hscif1",	515,	R8A779F0_CLK_S0D3),
+- 	DEF_MOD("hscif2",	516,	R8A779F0_CLK_S0D3),
+- 	DEF_MOD("hscif3",	517,	R8A779F0_CLK_S0D3),
+-@@ -143,7 +145,9 @@ static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
++ 	DEF_MOD("hscif1",	515,	R8A779F0_CLK_SASYNCPERD1),
++ 	DEF_MOD("hscif2",	516,	R8A779F0_CLK_SASYNCPERD1),
++ 	DEF_MOD("hscif3",	517,	R8A779F0_CLK_SASYNCPERD1),
++@@ -145,7 +147,9 @@ static const struct mssr_mod_clk r8a779f0_mod_clks[] __initconst = {
+  	DEF_MOD("rtdm3",	701,	R8A779F0_CLK_S0D2),
+- 	DEF_MOD("scif0",	702,	R8A779F0_CLK_S0D12_PER),
+- 	DEF_MOD("scif1",	703,	R8A779F0_CLK_S0D12_PER),
++ 	DEF_MOD("scif0",	702,	R8A779F0_CLK_SASYNCPERD4),
++ 	DEF_MOD("scif1",	703,	R8A779F0_CLK_SASYNCPERD4),
+ +#ifndef CONFIG_XEN
+- 	DEF_MOD("scif3",	704,	R8A779F0_CLK_S0D12_PER),
++ 	DEF_MOD("scif3",	704,	R8A779F0_CLK_SASYNCPERD4),
+ +#endif
+- 	DEF_MOD("scif4",	705,	R8A779F0_CLK_S0D12_PER),
++ 	DEF_MOD("scif4",	705,	R8A779F0_CLK_SASYNCPERD4),
+  	DEF_MOD("sdhi0",	706,	R8A779F0_CLK_SD0),
+  	DEF_MOD("sydm1",	709,	R8A779F0_CLK_S0D3),
+ -- 
+-2.17.1
++2.38.1
+ 
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-PCIe-MSI-support.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-PCIe-MSI-support.patch
+similarity index 82%
+rename from meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-PCIe-MSI-support.patch
+rename to meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-PCIe-MSI-support.patch
+index dc6b8b6..196e100 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-PCIe-MSI-support.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-PCIe-MSI-support.patch
+@@ -1,7 +1,7 @@
+-From 06941ebb2ecaefebb858940d7681afc45ddf2460 Mon Sep 17 00:00:00 2001
++From 93a939e32bcc9dd09c04bf9633935cb25a0d844c Mon Sep 17 00:00:00 2001
+ From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ Date: Wed, 19 Jan 2022 08:54:46 +0200
+-Subject: [PATCH] PCIe/MSI support
++Subject: [PATCH 2/5] PCIe/MSI support
+ 
+ ITS part is left untouched as ITS is handled by Xen.
+ 
+@@ -9,15 +9,15 @@ Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+ Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ ---
+  .../boot/dts/renesas/r8a779f0-spider.dts      |  2 +-
+- arch/arm64/boot/dts/renesas/r8a779f0.dtsi     | 21 +++++++++++++----
++ arch/arm64/boot/dts/renesas/r8a779f0.dtsi     | 21 ++++++++++++++-----
+  arch/arm64/configs/defconfig                  |  1 +
+- drivers/misc/pci_endpoint_test.c              |  6 +++++
+- .../pci/controller/dwc/pcie-designware-host.c | 12 +++++++++-
+- drivers/pci/controller/dwc/pcie-renesas.c     | 23 +++++++++++++++++++
+- 6 files changed, 58 insertions(+), 7 deletions(-)
++ drivers/misc/pci_endpoint_test.c              |  6 ++++++
++ .../pci/controller/dwc/pcie-designware-host.c | 12 ++++++++++-
++ drivers/pci/controller/dwc/pcie-renesas.c     | 16 ++++++++++++++
++ 6 files changed, 51 insertions(+), 7 deletions(-)
+ 
+ diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+-index 04909efdfb75..064cc13d517a 100644
++index 2f0d6bdb1061..da4c47ec3029 100644
+ --- a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+ +++ b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+ @@ -138,7 +138,7 @@ &pcie_bus_clk {
+@@ -27,10 +27,10 @@ index 04909efdfb75..064cc13d517a 100644
+ -	pinctrl-0 = <&pcie0_pins>;
+ +	pinctrl-0 = <&pcie0_pins>, <&pcie1_pins>;
+  	pinctrl-names = "default";
++ 	clkreq-gpios = <&gpio2 15 GPIO_ACTIVE_LOW>;
+  };
+- 
+ diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+-index 4583fb1d87e2..1a3d5dc63540 100644
++index 3982ec780143..b0fae511026c 100644
+ --- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+ +++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+ @@ -853,12 +853,21 @@ mmc0: mmc@ee140000 {
+@@ -56,7 +56,7 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  		};
+  
+  		prr: chipid@fff00044 {
+-@@ -1062,7 +1071,7 @@ pciec0: pcie@e65d0000 {
++@@ -1064,7 +1073,7 @@ pciec0: pcie@e65d0000 {
+  			      <0 0xe65d5000 0 0x1200>,
+  			      <0 0xe65d6200 0 0x0e00>,
+  			      <0 0xe65d7000 0 0x1000>,
+@@ -65,7 +65,7 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  			reg-names = "dbi",
+  				    "atu",
+  				    "dma",
+-@@ -1074,7 +1083,7 @@ pciec0: pcie@e65d0000 {
++@@ -1076,7 +1085,7 @@ pciec0: pcie@e65d0000 {
+  			bus-range = <0x00 0xff>;
+  			device_type = "pci";
+  				 /* downstream IO */
+@@ -74,7 +74,7 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  				 /* non-prefetchable memory */
+  				  0x82000000 0 0x30000000 0 0x30000000 0 0x10000000>;
+  				     /* Map all possible DDR as inbound ranges */
+-@@ -1089,6 +1098,7 @@ pciec0: pcie@e65d0000 {
++@@ -1091,6 +1100,7 @@ pciec0: pcie@e65d0000 {
+  			interrupt-names = "msi", "dma", "err", "fatal",
+  					  "nonfatal", "lp", "vndmsg";
+  			#interrupt-cells = <1>;
+@@ -82,16 +82,16 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  			interrupt-map-mask = <0 0 0 7>;
+  			interrupt-map = <0 0 0 1 &gic GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+  					 0 0 0 2 &gic GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH
+-@@ -1145,7 +1155,7 @@ pciec1: pcie@e65d8000 {
++@@ -1147,7 +1157,7 @@ pciec1: pcie@e65d8000 {
+  			      <0 0xe65dd000 0 0x1200>,
+  			      <0 0xe65de200 0 0x0e00>,
+  			      <0 0xe65df000 0 0x1000>,
+--			      <0 0xee900000 0 0x10000>;
+-+			      <0 0xee900000 0 0x400000>;
++-			      <0 0xee900000 0 0x10000>,
+++			      <0 0xee900000 0 0x400000>,
++ 			      <0 0xe65d6200 0 0x0e00>;
+  			reg-names = "dbi",
+  				    "atu",
+- 				    "dma",
+-@@ -1157,7 +1167,7 @@ pciec1: pcie@e65d8000 {
++@@ -1161,7 +1171,7 @@ pciec1: pcie@e65d8000 {
+  			bus-range = <0x00 0xff>;
+  			device_type = "pci";
+  				 /* downstream IO */
+@@ -100,7 +100,7 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  				 /* non-prefetchable memory */
+  				 0x82000000 0 0xc0000000 0 0xc0000000 0 0x10000000>;
+  				     /* Map all possible DDR as inbound ranges */
+-@@ -1172,6 +1182,7 @@ pciec1: pcie@e65d8000 {
++@@ -1176,6 +1186,7 @@ pciec1: pcie@e65d8000 {
+  			interrupt-names = "msi", "dma", "err", "fatal",
+  					  "nonfatal", "lp", "vndmsg";
+  			#interrupt-cells = <1>;
+@@ -109,7 +109,7 @@ index 4583fb1d87e2..1a3d5dc63540 100644
+  			interrupt-map = <0 0 0 1 &gic GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+  					 0 0 0 2 &gic GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH
+ diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
+-index 5a5a39a64389..3e021519f050 100644
++index 4109cbff3f2a..a2de61f9c22b 100644
+ --- a/arch/arm64/configs/defconfig
+ +++ b/arch/arm64/configs/defconfig
+ @@ -239,6 +239,7 @@ CONFIG_PCIE_RENESAS_EP=n
+@@ -189,12 +189,12 @@ index 44c2a6572199..c7b4516b225c 100644
+  
+  			ret = dw_pcie_allocate_domains(pp);
+ diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+-index bf19c671f169..c06a7a9a3781 100644
++index ad0b43ec0a16..12bc8b5cf559 100644
+ --- a/drivers/pci/controller/dwc/pcie-renesas.c
+ +++ b/drivers/pci/controller/dwc/pcie-renesas.c
+-@@ -54,6 +54,18 @@
+- #define PRTLGC5			0x0714
+- #define INSERT_LANE_SKEW	BIT(6)
++@@ -83,6 +83,18 @@
++ #define CFG_SYS_ERR_RC          GENMASK(10, 9)
++ #define CFG_SAFETY_UNCORR_CORR  GENMASK(5, 4)
+  
+ +#define AXIINTCADDR		0x0a00	/* 0x6c00 */
+ +#define AXIINTCADDR_VAL		0xf1050040	/* FIXME */
+@@ -211,23 +211,9 @@ index bf19c671f169..c06a7a9a3781 100644
+  /* PCI Shadow offset */
+  #define SHADOW_REG(x)		(0x2000 + (x))
+  /* BAR Mask registers */
+-@@ -179,6 +191,13 @@ static int renesas_pcie_host_init(struct pcie_port *pp)
+- 	return 0;
+- }
+- 
+-+static int renesas_pcie_msi_host_init(struct pcie_port *pp)
+-+{
+-+	printk("%s: ============ dummy msi host init\n", __func__);
+-+	pp->msi_data = 0xf1040000 + 0x10040; /* FIXME */
+-+	return 0;
+-+}
+-+
+- static void renesas_pcie_set_num_vectors(struct pcie_port *pp)
+- {
+- 	pp->num_vectors = MAX_MSI_IRQS;
+-@@ -230,6 +249,10 @@ static void renesas_pcie_init_rc(struct renesas_pcie *pcie)
+- 	val |= DEVICE_TYPE_RC;
+- 	renesas_pcie_writel(pcie, PCIEMSR0, val);
++@@ -331,6 +343,10 @@ static void renesas_pcie_init_rc(struct renesas_pcie *pcie)
++ 	val |= CLK_REG | CLK_PM;
++ 	renesas_pcie_writel(pcie, PCIEPWRMNGCTRL, val);
+  
+ +	printk("%s: ----------- set for INTC 64bit\n", __func__);
+ +	renesas_pcie_writel(pcie, AXIINTCADDR, AXIINTCADDR_VAL);
+@@ -237,5 +223,5 @@ index bf19c671f169..c06a7a9a3781 100644
+  	dw_pcie_dbi_ro_wr_en(pci);
+  
+ -- 
+-2.36.1
++2.38.1
+ 
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch
+similarity index 99%
+rename from meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch
+rename to meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch
+index 695eb2c..7bb9e91 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch
+@@ -1,7 +1,7 @@
+-From b6694322b2ee9f7d5467b249a1de109d56dbd7e7 Mon Sep 17 00:00:00 2001
++From d85cbdb541fe5904b97ed111937acb9239d6a59a Mon Sep 17 00:00:00 2001
+ From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ Date: Thu, 28 Oct 2021 17:36:20 +0300
+-Subject: [PATCH 2/4] xen-pciback: allow compiling on other archs than x86
++Subject: [PATCH 3/5] xen-pciback: allow compiling on other archs than x86
+ 
+ Xen-pciback driver was designed to be built for x86 only. But it
+ can also be used by other architectures, e.g. Arm.
+@@ -445,5 +445,5 @@ index 000000000000..b8337cf85fd1
+ +
+ +#endif
+ -- 
+-2.36.1
++2.38.1
+ 
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-HACK-Allow-DomD-enumerate-PCI-devices.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-Allow-DomD-enumerate-PCI-devices.patch
+similarity index 82%
+rename from meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-HACK-Allow-DomD-enumerate-PCI-devices.patch
+rename to meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-Allow-DomD-enumerate-PCI-devices.patch
+index 4faea13..9130fec 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-HACK-Allow-DomD-enumerate-PCI-devices.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-Allow-DomD-enumerate-PCI-devices.patch
+@@ -1,7 +1,7 @@
+-From f5c0c6cb71bbc2bc21d10cf03e8fb1183e526f33 Mon Sep 17 00:00:00 2001
++From 19c66a954cd9a0d8eabfb66b9dd02483d417cfeb Mon Sep 17 00:00:00 2001
+ From: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ Date: Tue, 9 Nov 2021 15:25:44 +0200
+-Subject: [PATCH 3/4] HACK: Allow DomD enumerate PCI devices
++Subject: [PATCH 4/5] HACK: Allow DomD enumerate PCI devices
+ 
+ Signed-off-by: Oleksandr Andrushchenko <oleksandr_andrushchenko@epam.com>
+ ---
+@@ -24,5 +24,5 @@ index 2c890f4f2cbc..5fbb8f40dc04 100644
+  	return bus_register_notifier(&pci_bus_type, &device_nb);
+  }
+ -- 
+-2.36.1
++2.38.1
+ 
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch
+similarity index 78%
+rename from meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch
+rename to meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch
+index 80aa8ac..4d5288f 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch
+@@ -1,7 +1,7 @@
+-From 88462ad413f47dbe66b8c45c0edfe8e206330f61 Mon Sep 17 00:00:00 2001
++From 4f68709ffd64c14ac960670aa2891b34a0ea026c Mon Sep 17 00:00:00 2001
+ From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+-Date: Wed, 25 May 2022 20:18:06 +0300
+-Subject: [PATCH 4/4] [HACK] pcie: renesas; emulate reading from ECAM under Xen
++Date: Fri, 16 Dec 2022 02:15:48 +0200
++Subject: [PATCH 5/5] [HACK] pcie: renesas; emulate reading from ECAM under Xen
+ 
+ If kernel is running as Xen guest, hypervisor will emulate ECAM
+ spaces for us. Thus, we need to replace child_ops with ops
+@@ -9,25 +9,26 @@ that access ECAM address space.
+ 
+ Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+ ---
+- drivers/pci/controller/dwc/pcie-renesas.c | 27 +++++++++++++++++++++++
+- 1 file changed, 27 insertions(+)
++ drivers/pci/controller/dwc/pcie-renesas.c | 28 +++++++++++++++++++++++
++ 1 file changed, 28 insertions(+)
+ 
+ diff --git a/drivers/pci/controller/dwc/pcie-renesas.c b/drivers/pci/controller/dwc/pcie-renesas.c
+-index dda55696627f..d3f7d87e0c26 100644
++index 12bc8b5cf559..c2ea20fde7b9 100644
+ --- a/drivers/pci/controller/dwc/pcie-renesas.c
+ +++ b/drivers/pci/controller/dwc/pcie-renesas.c
+-@@ -21,6 +21,7 @@
+- #include <linux/platform_device.h>
++@@ -22,6 +22,7 @@
+  #include <linux/pm_runtime.h>
+  #include <linux/reset.h>
++ #include <linux/gpio/consumer.h>
+ +#include <xen/xen.h>
+  
+  #include "../../pci.h"
+  #include "pcie-designware.h"
+-@@ -151,12 +152,38 @@ static const struct dw_pcie_ops dw_pcie_ops = {
++@@ -210,12 +211,39 @@ static const struct dw_pcie_ops dw_pcie_ops = {
+  	.link_up = renesas_pcie_link_up,
+  };
+  
+++
+ +void __iomem *renesas_xen_map_bus(struct pci_bus *bus, unsigned int devfn,
+ +			       int where)
+ +{
+@@ -64,5 +65,5 @@ index dda55696627f..d3f7d87e0c26 100644
+  
+  	dw_pcie_dbi_ro_wr_en(pci);
+ -- 
+-2.36.1
++2.38.1
+ 
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ixgbe.cfg b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ixgbe.cfg
+new file mode 100644
+index 0000000..4059b5b
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ixgbe.cfg
+@@ -0,0 +1,2 @@
++CONFIG_IXGBE=m
++CONFIG_IXGBEVF=n
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/l3offload.cfg b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/l3offload.cfg
+new file mode 100644
+index 0000000..5d4e6b5
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/l3offload.cfg
+@@ -0,0 +1,32 @@
++CONFIG_IPV6=y
++CONFIG_VLAN_8021Q=y
++CONFIG_NET_SCH_CBQ=y
++CONFIG_NET_SCH_HTB=y
++CONFIG_NET_SCH_HFSC=y
++CONFIG_NET_SCH_PRIO=y
++CONFIG_NET_SCH_MULTIQ=y
++CONFIG_NET_SCH_RED=y
++CONFIG_NET_SCH_SFB=y
++CONFIG_NET_SCH_SFQ=y
++CONFIG_NET_SCH_TEQL=y
++CONFIG_NET_SCH_TBF=y
++CONFIG_NET_SCH_CBS=y
++CONFIG_NET_SCH_ETF=y
++CONFIG_NET_SCH_TAPRIO=y
++CONFIG_NET_SCH_GRED=y
++CONFIG_NET_SCH_DSMARK=y
++CONFIG_NET_SCH_NETEM=y
++CONFIG_NET_SCH_MQPRIO=y
++CONFIG_NET_SCH_INGRESS=y
++CONFIG_NET_CLS_BASIC=y
++CONFIG_NET_CLS_ROUTE4=y
++CONFIG_NET_CLS_FW=y
++CONFIG_NET_CLS_U32=y
++CONFIG_NET_CLS_FLOWER=y
++CONFIG_NET_CLS_MATCHALL=y
++CONFIG_NET_ACT_GACT=y
++CONFIG_NET_ACT_MIRRED=y
++CONFIG_NET_ACT_PEDIT=y
++CONFIG_NET_ACT_VLAN=y
++CONFIG_NET_ACT_SKBMOD=y
++CONFIG_NET_ACT_GATE=y
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-domd.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-domd.dts
+index adc5c49..24245b3 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-domd.dts
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-domd.dts
+@@ -122,3 +122,8 @@
+ &ipmmu_hc {
+ 	status = "disabled";
+ };
++
++/* Force enable UFS */
++&ufs {
++        status = "okay";
++};
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
+index f01de03..06319d6 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
+@@ -47,14 +47,6 @@
+ 	status = "okay";
+ };
+ 
+-&ipmmu_rt0 {
+-	status = "okay";
+-};
+-
+-&ipmmu_rt1 {
+-	status = "okay";
+-};
+-
+ /* Make sure Xen console is enabled. */
+ &scif3	{
+ 	status = "okay";
+@@ -222,8 +214,9 @@
+ 	iommus = <&ipmmu_hc 32>;
+ 	iommu-map = <0x000 &ipmmu_hc 32 0x1>,
+ 		    <0x100 &ipmmu_hc 33 0x1>,
+-		    <0x102 &ipmmu_hc 34 0x10>,
+-		    <0x280 &ipmmu_hc 35 0x1>;
++		    <0x101 &ipmmu_hc 34 0x1>,
++		    <0x102 &ipmmu_hc 35 0x10>,
++		    <0x280 &ipmmu_hc 36 0x1>;
+ 
+ };
+ 
+@@ -234,6 +227,12 @@
+ 	iommu-map-mask = <0xff00>;
+ };
+ 
++&ufs {
++	status = "okay";
++        iommus = <&ipmmu_hc 15>;
++	xen,passthrough;
++};
++
+ &dmac0			{ xen,passthrough; };
+ &dmac1			{ xen,passthrough; };
+ &rt_dmac0		{ xen,passthrough; };
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ufs.cfg b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ufs.cfg
+new file mode 100644
+index 0000000..9a09051
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/ufs.cfg
+@@ -0,0 +1 @@
++CONFIG_SCSI_UFS_RENESAS=y
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+index efeaa08..db59b09 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+@@ -1,8 +1,8 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+ 
+ RENESAS_BSP_URL = "git://github.com/xen-troops/linux.git"
+-BRANCH = "v5.10.41/rcar-5.1.7.rc3-xt"
+-SRCREV = "d1e67027b82143bd56cc8a881e11e4d475dcffb9"
++BRANCH = "v5.10.41/rcar-5.1.7.rc6-xt"
++SRCREV = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
+ 
+ SRC_URI_append = "\
+     file://defconfig \
+@@ -14,12 +14,15 @@ SRC_URI_append = " \
+     file://dmatest.cfg \
+     file://aos.cfg \
+     file://gpio.cfg \
++    file://l3offload.cfg \
++    file://ixgbe.cfg \
++    file://ufs.cfg \
+     file://xen-chosen.dtsi;subdir=git/arch/arm64/boot/dts/renesas \
+     file://0001-clk-shmobile-Hide-clock-for-scif3-and-hscif0.patch \
+-    file://0001-PCIe-MSI-support.patch \
+-    file://0002-xen-pciback-allow-compiling-on-other-archs-than-x86.patch \
+-    file://0003-HACK-Allow-DomD-enumerate-PCI-devices.patch \
+-    file://0004-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch \
++    file://0002-PCIe-MSI-support.patch \
++    file://0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch \
++    file://0004-HACK-Allow-DomD-enumerate-PCI-devices.patch \
++    file://0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch \
+ "
+ 
+ ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
+@@ -38,3 +41,6 @@ python __anonymous () {
+         dtb = fname[:-3] + "dtb"
+         d.appendVar("KERNEL_DEVICETREE", " renesas/%s"%dtb)
+ }
++
++KERNEL_MODULE_PROBECONF += "ixgbevf"
++module_conf_ixgbevf = "blacklist ixgbevf"
+-- 
+2.25.1
+

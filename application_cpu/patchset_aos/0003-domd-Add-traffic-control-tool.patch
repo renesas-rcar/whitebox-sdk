@@ -1,0 +1,26 @@
+From 7b683df3977a9cb88af60b08a7af8e8800d06242 Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Mon, 20 Mar 2023 18:03:44 +0200
+Subject: [PATCH 3/4] [domd] Add traffic control tool
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+---
+ aos-rcar-gen4.yaml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/aos-rcar-gen4.yaml b/aos-rcar-gen4.yaml
+index c87e448..b512deb 100644
+--- a/aos-rcar-gen4.yaml
++++ b/aos-rcar-gen4.yaml
+@@ -192,6 +192,8 @@ components:
+         - [XT_DEVICE_TREES, "%{XT_DOMD_DTB_NAME} %{XT_XEN_DTB_NAME}"]
+         - [IMAGE_INSTALL_append, " iperf3"]
+         - [IMAGE_INSTALL_append, " snort"]
++        - [IMAGE_INSTALL_append, " iproute2"]
++        - [IMAGE_INSTALL_append, " iproute2-tc"]
+ 
+         # Enable seccomp for crun
+         - [DISTRO_FEATURES_append, " seccomp"]
+-- 
+2.25.1
+
