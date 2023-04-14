@@ -1,0 +1,41 @@
+# parameters:
+  ENABLE_WHITEBOX_SDK:
+    desc: "Add Whitebox-sdk features"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        components:
+          dom0:
+            builder:
+              layers:
+                - "../../../meta-rcar-whitebox/meta-aos-iccom"
+          domd:
+            builder:
+              conf:
+                - [IMAGE_INSTALL_append, " iproute2-tc snort"]
+                - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
+                - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
+                - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
+                - [IMAGE_INSTALL_append, " waii packagegroup-system-monitor"]
+              layers:
+                - "../../../meta-rcar-whitebox/meta-rcar-common"
+                - "../../../meta-rcar-whitebox/meta-xt-iccomlayer"
+              target_images:
+                - "tmp/work/spider-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+          domu:
+            builder:
+              conf:
+                - [IMAGE_INSTALL_append, " iproute2 iproute2-tc"]
+        images:
+          full:
+            partitions:
+              domd_rootfs:
+                size: 2048 MiB
+              domd_var:
+                size: 1024 MiB
+                files:
+                  "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+              domd_aos:
+                size: 2048 MiB
