@@ -1,7 +1,9 @@
 #!/bin/bash -eu
 
-mkdir -p zephyrproject
-cd zephyrproject
+SCRIPT_DIR=$(cd `dirname $0` && pwd)
+
+mkdir -p ${SCRIPT_DIR}/zephyrproject
+cd ${SCRIPT_DIR}/zephyrproject
 export ZEPHYR_DIR=$(pwd)
 
 python3 -m venv ${ZEPHYR_DIR}/.venv
@@ -30,3 +32,5 @@ cd ${ZEPHYR_DIR}/zephyr
 west build -p always -b rcar_spider_cr52 samples/basic/blinky
 ${ZEPHYR_DIR}/zephyr-sdk-0.15.2/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3  build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
+mkdir -p ${SCRIPT_DIR}/deploy
+cp -f ./build/zephyr/zephyr.srec ${SCRIPT_DIR}/deploy/cr52.srec

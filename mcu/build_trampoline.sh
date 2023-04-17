@@ -34,6 +34,8 @@ rm -f G4MH_iccom.srec
 objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/renesas/iccom/_build/iccom_exe.abs iccom_exe.s3
 rlink ../G4MH_Head.srec iccom_exe.s3 -fo=Stype -ou=G4MH_iccom.srec
 rm -f iccom_exe.s3
+mkdir -p ${SCRIPT_DIR}/deploy
+cp -f G4MH_iccom.srec ${SCRIPT_DIR}/deploy/g4mh.srec
 
 # build benchmark
 ## Setup source code
