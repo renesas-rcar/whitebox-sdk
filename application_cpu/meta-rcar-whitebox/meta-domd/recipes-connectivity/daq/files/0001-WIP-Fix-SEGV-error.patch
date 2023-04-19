@@ -1,0 +1,43 @@
+From 9735451e8de3aa26004779bd225181fe9a718bb7 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 19 Apr 2023 14:35:08 +0900
+Subject: [PATCH] WIP: Fix SEGV error
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ os-daq-modules/daq_rswitch_offload.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/os-daq-modules/daq_rswitch_offload.c b/os-daq-modules/daq_rswitch_offload.c
+index 8a06792..85daeb4 100644
+--- a/os-daq-modules/daq_rswitch_offload.c
++++ b/os-daq-modules/daq_rswitch_offload.c
+@@ -1770,6 +1770,7 @@ static void blacklist_traffic(struct ip_v4_hdr *ip_hdr, struct rswitch_context *
+ 
+ static void pcap_process_loop(u_char *user, const struct pcap_pkthdr *pkth, const u_char *data)
+ {
++	static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+ 	struct rswitch_context *context = (struct rswitch_context *) user;
+ 	DAQ_PktHdr_t hdr = { 0 };
+ 	DAQ_Verdict verdict;
+@@ -1786,6 +1787,8 @@ static void pcap_process_loop(u_char *user, const struct pcap_pkthdr *pkth, cons
+ 	hdr.address_space_id = 0;
+ 	ip_hdr = (struct ip_v4_hdr *)data;
+ 
++	while(pthread_mutex_lock(&m));
++
+ 	/* Increment the current acquire loop's packet counter. */
+ 	context->packets++;
+ 	/* ...and then the module instance's packet counter. */
+@@ -1797,6 +1800,8 @@ static void pcap_process_loop(u_char *user, const struct pcap_pkthdr *pkth, cons
+ 	if (verdict == DAQ_VERDICT_BLACKLIST)
+ 		blacklist_traffic(ip_hdr, context);
+ 	context->stats.verdicts[verdict]++;
++
++	pthread_mutex_unlock(&m);
+ }
+ 
+ static void *rswitch_daq_acquire_mon(void* handle)
+-- 
+2.34.1
+
