@@ -10,7 +10,7 @@
           dom0:
             builder:
               layers:
-                - "../../../meta-rcar-whitebox/meta-aos-iccom"
+                - "../../../meta-rcar-whitebox/meta-dom0"
           domd:
             builder:
               conf:
@@ -22,7 +22,7 @@
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
               layers:
                 - "../../../meta-rcar-whitebox/meta-rcar-common"
-                - "../../../meta-rcar-whitebox/meta-xt-iccomlayer"
+                - "../../../meta-rcar-whitebox/meta-domd"
               target_images:
                 - "tmp/work/spider-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
                 - "tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
