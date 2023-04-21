@@ -14,6 +14,7 @@ SRC_URI_append = "\
     file://0001-Cleanup-and-improve-performance.patch \
     file://0002-Fix-to-store-timeout-value-into-correct-variable.patch \
     file://0003-Fix-recv-function.patch \
+    file://0004-Fix-occuring-write-operation-error-when-sending-data.patch \
 "
 S = "${WORKDIR}/git"
 

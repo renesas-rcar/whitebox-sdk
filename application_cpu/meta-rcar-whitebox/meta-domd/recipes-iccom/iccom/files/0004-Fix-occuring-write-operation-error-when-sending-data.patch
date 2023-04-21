@@ -1,0 +1,36 @@
+From ef4df2eed6a66bde643f1ea4c8aea3087bd8f0fc Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 21 Apr 2023 16:01:32 +0900
+Subject: [PATCH 4/4] Fix occuring "write operation error" when sending data
+ continuously
+
+This patch makes "wake_up_interruptible" function called
+after resetting registers.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ iccom_driver.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/iccom_driver.c b/iccom_driver.c
+index da03f0c..1b0f20b 100644
+--- a/iccom_driver.c
++++ b/iccom_driver.c
+@@ -456,11 +456,11 @@ static irqreturn_t iccom_drv_isr(int irq, void *iccom_ptr)
+ 	if (mfis_eicr & ICCOM_CTRL_ACK) {
+ 		dev_dbg(iccom->dev, "Received Ack\n");
+ 
+-		iccom_comm->ack_received = 1;
+-		wake_up_interruptible(&iccom_comm->write_q);
+-
+ 		iccom_drv_write_iicr_imbr(iccom_comm, 0x00, 0x00);
+ 		iccom_drv_clear_eicr(iccom_comm);
++
++		iccom_comm->ack_received = 1;
++		wake_up_interruptible(&iccom_comm->write_q);
+ 	} else if (mfis_eicr & ICCOM_CTRL_DATA) {
+ 		dev_dbg(iccom->dev, "Received message\n");
+ 
+-- 
+2.34.1
+
