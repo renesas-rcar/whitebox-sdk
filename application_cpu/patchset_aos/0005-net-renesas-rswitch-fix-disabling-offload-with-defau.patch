@@ -1,0 +1,73 @@
+From 69c2657801163a3177d6e2bd67229740237a3a57 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 21 Apr 2023 13:35:32 +0900
+Subject: [PATCH 5/5] net: renesas: rswitch: fix disabling offload with default
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ ...tch-fix-disabling-offload-with-defau.patch | 40 +++++++++++++++++++
+ .../linux/linux-renesas_%.bbappend            |  1 +
+ 2 files changed, 41 insertions(+)
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+new file mode 100644
+index 0000000..cb2ff4d
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+@@ -0,0 +1,40 @@
++From c502262747c06a4156af8af9dd66fc0b1464113f Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Wed, 19 Apr 2023 17:17:23 +0300
++Subject: [PATCH] net: renesas: rswitch: fix disabling offload with default
++ route
++
++In case default route is set, nh structure needed for disabling offload
++is left uninitialized which leads to null pointer dereference. This patch
++adds initialization of nh in case of setting default route and fixes
++the issue.
++
++Reviewed-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ drivers/net/ethernet/renesas/rswitch.c | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
++index a70e8994bc8b..777ca5eca356 100644
++--- a/drivers/net/ethernet/renesas/rswitch.c
+++++ b/drivers/net/ethernet/renesas/rswitch.c
++@@ -2729,6 +2729,7 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
++ 	new_routing_list->mask = be32_to_cpu(inet_make_mask(fen.dst_len));
++ 	new_routing_list->subnet = fen.dst;
++ 	new_routing_list->rdev = rdev;
+++	new_routing_list->nh = nh;
++ 	INIT_LIST_HEAD(&new_routing_list->param_list);
++ 
++ 	mutex_lock(&rdev->priv->ipv4_forward_lock);
++@@ -2744,7 +2745,6 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
++ 
++ 	if (!rswitch_add_ipv4_dst_route(new_routing_list, rdev, be32_to_cpu(nh->nh_saddr)))
++ 		nh->fib_nh_flags |= RTNH_F_OFFLOAD;
++-	new_routing_list->nh = nh;
++ }
++ 
++ static void rswitch_fib_event_remove(struct rswitch_fib_event_work *fib_work)
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+index db59b09..5f3f651 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+@@ -23,6 +23,7 @@ SRC_URI_append = " \
+     file://0003-xen-pciback-allow-compiling-on-other-archs-than-x86.patch \
+     file://0004-HACK-Allow-DomD-enumerate-PCI-devices.patch \
+     file://0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch \
++    file://0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch \
+ "
+ 
+ ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
+-- 
+2.25.1
+
