@@ -34,11 +34,11 @@
           full:
             partitions:
               domd_rootfs:
-                size: 2048 MiB
+                size: 3072 MiB
               domd_var:
                 size: 1024 MiB
                 files:
                   "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
                   "boot-emmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
               domd_aos:
-                size: 2048 MiB
+                size: 3072 MiB
