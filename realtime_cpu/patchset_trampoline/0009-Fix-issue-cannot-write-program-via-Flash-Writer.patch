@@ -1,0 +1,36 @@
+From f9100f83b1254e557894b7d3103f0b5a4d194ef2 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 26 Apr 2023 16:39:56 +0900
+Subject: [PATCH 09/10] Fix issue cannot write program via Flash Writer
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../linker/gnu_ld/cortex-a/armv8/spider/script.goilTemplate | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/goil/templates/linker/gnu_ld/cortex-a/armv8/spider/script.goilTemplate b/goil/templates/linker/gnu_ld/cortex-a/armv8/spider/script.goilTemplate
+index 427f28ad..ebe9b816 100644
+--- a/goil/templates/linker/gnu_ld/cortex-a/armv8/spider/script.goilTemplate
++++ b/goil/templates/linker/gnu_ld/cortex-a/armv8/spider/script.goilTemplate
+@@ -5,15 +5,15 @@ ENTRY (_start)
+ 
+ MEMORY
+ {
+-    FLASH (rx) : ORIGIN = 0x40040000, LENGTH = (0*1K - 0x0)
+-    RAM (wx) : ORIGIN = 0x40040000, LENGTH = (32512 * 1K - 16 * 1K)
++    FLASH (rx) : ORIGIN = 0x0, LENGTH = (0*1K - 0x0)
++    RAM (wx) : ORIGIN = 0x0, LENGTH = (32512 * 1K - 16 * 1K)
+    
+     IDT_LIST (wx) : ORIGIN = 0xFFFFF7FF, LENGTH = 2K
+ }
+ 
+ SECTIONS
+ {
+-  __rom_region_start = 0x40040000;
++  __rom_region_start = 0x0;
+   rom_start :
+   {
+     *(.vectbl)
+-- 
+2.34.1
+

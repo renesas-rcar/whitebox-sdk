@@ -8,6 +8,8 @@
 /mcu/trampoline/
 G4MH.srec
 realtime_cpu/zephyrproject
+realtime_cpu/trampoline
+realtime_cpu/arm-gnu-toolchain-*
 application_cpu/work
 application_cpu/aos-rcar-gen4.yaml
 application_cpu/common_data/

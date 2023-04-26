@@ -1,0 +1,141 @@
+From 8f4ad7d0947ee7a23c750629912e43e7bf101350 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Tue, 25 Apr 2023 16:16:23 +0200
+Subject: [PATCH 06/10] add 'blink' example for Spider platform
+
+---
+ examples/cortex-a/armv8/spider/blink/blink.c  | 21 ++++++
+ .../cortex-a/armv8/spider/blink/blink.oil     | 70 +++++++++++++++++++
+ examples/cortex-a/armv8/spider/blink/build.sh | 15 ++++
+ 3 files changed, 106 insertions(+)
+ create mode 100755 examples/cortex-a/armv8/spider/blink/blink.c
+ create mode 100755 examples/cortex-a/armv8/spider/blink/blink.oil
+ create mode 100755 examples/cortex-a/armv8/spider/blink/build.sh
+
+diff --git a/examples/cortex-a/armv8/spider/blink/blink.c b/examples/cortex-a/armv8/spider/blink/blink.c
+new file mode 100755
+index 00000000..87e0e207
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/blink/blink.c
+@@ -0,0 +1,21 @@
++#include "tpl_os.h"
++
++#define APP_Task_blink_START_SEC_CODE
++#include "tpl_memmap.h"
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++TASK(my_only_task)
++{
++  TerminateTask();
++}
++
++TASK(blink)
++{
++	TerminateTask();
++}
++#define APP_Task_blink_STOP_SEC_CODE
++#include "tpl_memmap.h"
+diff --git a/examples/cortex-a/armv8/spider/blink/blink.oil b/examples/cortex-a/armv8/spider/blink/blink.oil
+new file mode 100755
+index 00000000..9a417a9d
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/blink/blink.oil
+@@ -0,0 +1,70 @@
++OIL_VERSION = "4.2";
++
++IMPLEMENTATION trampoline {
++
++    /* This fix the default STACKSIZE of tasks */
++    TASK {
++        UINT32 STACKSIZE = 1000 ;
++    } ;
++
++    /* This fix the default STACKSIZE of ISRs */
++    ISR {
++        UINT32 STACKSIZE = 1000 ;
++    } ;
++};
++
++CPU blink {
++  OS config {
++    STATUS = EXTENDED;
++
++    BUILD = TRUE {
++      TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "blink.c";
++      APP_NAME = "blink_exe.elf";
++      CFLAGS  = "-O0";
++      LDFLAGS = "-Map=blink.map";
++      COMPILER = "arm-none-eabi-gcc";
++      CPPCOMPILER = "arm-none-eabi-g++";
++      ASSEMBLER = "arm-none-eabi-as";
++      LINKER = "arm-none-eabi-ld";
++      COPIER = "arm-none-eabi-objcopy";
++      SYSTEM = PYTHON;
++    };
++    SYSTEM_CALL = TRUE;
++    MEMMAP = TRUE {
++      COMPILER = gcc;
++      LINKER = gnu_ld { SCRIPT = "script.ld"; };
++      ASSEMBLER = gnu_as;
++      MEMORY_PROTECTION = FALSE;
++    };
++  };
++
++  APPMODE std {};
++
++  TASK my_only_task { 
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK blink {
++    PRIORITY = 1;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  ALARM blink_blink {
++    COUNTER = SystemCounter;
++    ACTION = ACTIVATETASK {
++      TASK = blink;
++    };
++    AUTOSTART = TRUE {
++      APPMODE = std;
++      ALARMTIME = 100;
++      CYCLETIME = 100;
++    };
++  };
++};
++
+diff --git a/examples/cortex-a/armv8/spider/blink/build.sh b/examples/cortex-a/armv8/spider/blink/build.sh
+new file mode 100755
+index 00000000..68b2dc9c
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/blink/build.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ blink.oil
++
++echo "*** Run Make ***"
++./make.py
+-- 
+2.34.1
+

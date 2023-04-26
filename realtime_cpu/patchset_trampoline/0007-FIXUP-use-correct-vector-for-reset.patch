@@ -1,0 +1,25 @@
+From 24e4020f65bfafc33edf82954ac3f5fa381339cd Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Wed, 26 Apr 2023 10:12:49 +0200
+Subject: [PATCH 07/10] FIXUP: use correct vector for reset
+
+---
+ machines/cortex-a/armv8/spider/tpl_vector_table_ns.s | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/machines/cortex-a/armv8/spider/tpl_vector_table_ns.s b/machines/cortex-a/armv8/spider/tpl_vector_table_ns.s
+index f0b46188..ce9b7e25 100644
+--- a/machines/cortex-a/armv8/spider/tpl_vector_table_ns.s
++++ b/machines/cortex-a/armv8/spider/tpl_vector_table_ns.s
+@@ -17,7 +17,7 @@ vectors:
+   ldr pc,vectors_reserved_address
+   ldr pc,vectors_irq_address
+   ldr pc,vectors_undefined_address
+-vectors_reset_address:      .word reset_handler
++vectors_reset_address:      .word _start
+ vectors_undefined_address:  .word undefined_handler
+ vectors_svc_address:        .word tpl_primary_syscall_handler
+ vectors_prefetch_address:   .word prefetch_handler
+-- 
+2.34.1
+
