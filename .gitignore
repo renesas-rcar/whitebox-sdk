@@ -2,17 +2,27 @@
 # .gitignore
 #
 
-/tool/CSPlus_CC_Package_V80900-doc-e*
-/mcu/safeg-auto/
-/mcu/safeg-auto-bench/
-/mcu/trampoline/
-G4MH.srec
+# all part
+deploy
+
+# tool
+tool/CSPlus_CC_Package_V80900-doc-e*
+tool/tmp
+tool/kitware-archive.sh
+
+
+# mcu
+mcu/safeg-auto/
+mcu/safeg-auto-bench/
+mcu/trampoline/
+
+# realtime_cpu
 realtime_cpu/zephyrproject
 realtime_cpu/trampoline
 realtime_cpu/arm-gnu-toolchain-*
+
+# application_cpu
 application_cpu/work
 application_cpu/aos-rcar-gen4.yaml
 application_cpu/common_data/
-tool/tmp
-tool/kitware-archive.sh
 
