@@ -25,6 +25,15 @@ if [[ "${HLNK_DIR:-""}" == "" ]]; then
     export HLNK_DIR="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00"
 fi
 
+# Setup python build env for building goil
+python3 -m venv ${SOURCE_DIR}/.venv
+source ${SOURCE_DIR}/.venv/bin/activate
+
+# build goil binary
+cd ${SOURCE_DIR}/goil/makefile-unix
+./build.py
+export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
+
 # build iccom
 cd ${SOURCE_DIR}/examples/renesas/iccom
 chmod +x ./build.sh

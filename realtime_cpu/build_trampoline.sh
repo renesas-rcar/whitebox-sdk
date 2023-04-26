@@ -49,6 +49,11 @@ fi
 python3 -m venv ${SOURCE_DIR}/.venv
 source ${SOURCE_DIR}/.venv/bin/activate
 
+# build goil binary
+cd ${SOURCE_DIR}/goil/makefile-unix
+./build.py
+export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
+
 # build project
 cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/one_task
 bash ./build.sh
