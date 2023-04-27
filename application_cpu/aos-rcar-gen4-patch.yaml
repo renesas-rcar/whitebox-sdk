@@ -6,11 +6,13 @@
     "yes":
       default: true
       overrides:
+        variables:
+          META_WB_LAYER_PATH: "../../../"
         components:
           dom0:
             builder:
               layers:
-                - "../../../meta-rcar-whitebox/meta-dom0"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-dom0"
           domd:
             builder:
               conf:
@@ -21,10 +23,10 @@
                 - [IMAGE_INSTALL_append, " waii packagegroup-system-monitor"]
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
               layers:
-                - "../../../meta-rcar-whitebox/meta-rcar-common"
-                - "../../../meta-rcar-whitebox/meta-domd"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
               target_images:
-                - "tmp/work/spider-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                - "tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
                 - "tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
           domu:
             builder:
@@ -42,3 +44,18 @@
                   "boot-emmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
               domd_aos:
                 size: 3072 MiB
+
+#   USING_REMOTE_META_WHITEBOX_LAYER:
+#     desc: "Using remote repository instead of local meta layer"
+#     "no":
+#       default: true
+#     "yes":
+#       overrides:
+#         variables:
+#           META_WB_LAYER_PATH: "../whitebox-sdk/application_cpu/"
+#         common_data:
+#           sources:
+#             - type: git
+#               url: "https://github.com/renesas-rcar/whitebox-sdk.git"
+#               rev: "vX.Y"
+
