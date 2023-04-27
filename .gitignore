@@ -18,6 +18,7 @@ mcu/trampoline/
 
 # realtime_cpu
 realtime_cpu/zephyrproject
+realtime_cpu/zephyr-sdk-*
 realtime_cpu/trampoline
 realtime_cpu/arm-gnu-toolchain-*
 
