@@ -8,6 +8,7 @@
       overrides:
         variables:
           META_WB_LAYER_PATH: "../../../"
+          BUILD_DOMD_SDK: "0"
         components:
           dom0:
             builder:
@@ -16,6 +17,7 @@
           domd:
             builder:
               conf:
+                - [BUILD_SDK, "%{BUILD_DOMD_SDK}"]
                 - [IMAGE_INSTALL_append, " iproute2-tc snort"]
                 - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
                 - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
@@ -58,4 +60,14 @@
 #             - type: git
 #               url: "https://github.com/renesas-rcar/whitebox-sdk.git"
 #               rev: "vX.Y"
+
+  BUILD_DOMD_SDK:
+    desc: "Switch build DomD SDK or not"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        variables:
+          BUILD_DOMD_SDK: "1"
 

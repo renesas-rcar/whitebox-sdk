@@ -45,4 +45,7 @@ moulin ./aos-rcar-gen4-wb.yaml
 ninja
 ninja image-full
 gzip full.img
+if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
+    find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work/
+fi
 echo "Build finished !"
