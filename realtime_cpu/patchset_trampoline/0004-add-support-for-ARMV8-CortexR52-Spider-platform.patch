@@ -1,7 +1,7 @@
-From 99f6ab6c0ce0a11e0dfff31abdb6cb2d26e67257 Mon Sep 17 00:00:00 2001
+From 8b850b6f7b41e877ea5ade46d11ecef3f828b208 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 15:51:15 +0200
-Subject: [PATCH 04/10] add support for ARMV8-CortexR52-Spider platform
+Subject: [PATCH 04/13] add support for ARMV8-CortexR52-Spider platform
 
 Basic support for Spider platform: without interrupt support
 ---

@@ -55,11 +55,11 @@ cd ${SOURCE_DIR}/goil/makefile-unix
 export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
 
 # build project
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/one_task
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/iccom
 bash ./build.sh
 
 # deploy
 rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
-arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 one_task_exe.elf $SCRIPT_DIR/deploy/cr52.srec
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 iccom_exe.elf $SCRIPT_DIR/deploy/cr52.srec
 

@@ -1,7 +1,7 @@
-From 2777431e9c04a325d0a1dc25ebb6b3c147246cf2 Mon Sep 17 00:00:00 2001
+From 23d8fbf825273bccc309ec5b569552ffa75e5d52 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 15:03:36 +0200
-Subject: [PATCH 02/10] machines: cortex-a: Add helpers to access cp15
+Subject: [PATCH 02/13] machines: cortex-a: Add helpers to access cp15
  registers.
 
 ---

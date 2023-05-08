@@ -1,7 +1,7 @@
-From 24e4020f65bfafc33edf82954ac3f5fa381339cd Mon Sep 17 00:00:00 2001
+From cdd8cf8f677158bd4618ef5e3abe429284bfe2de Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Wed, 26 Apr 2023 10:12:49 +0200
-Subject: [PATCH 07/10] FIXUP: use correct vector for reset
+Subject: [PATCH 07/13] FIXUP: use correct vector for reset
 
 ---
  machines/cortex-a/armv8/spider/tpl_vector_table_ns.s | 2 +-

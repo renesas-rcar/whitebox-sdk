@@ -1,7 +1,7 @@
-From 8f4ad7d0947ee7a23c750629912e43e7bf101350 Mon Sep 17 00:00:00 2001
+From b643e4024e60b8dc1242286f0e24bd16021e1dae Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 16:16:23 +0200
-Subject: [PATCH 06/10] add 'blink' example for Spider platform
+Subject: [PATCH 06/13] add 'blink' example for Spider platform
 
 ---
  examples/cortex-a/armv8/spider/blink/blink.c  | 21 ++++++
