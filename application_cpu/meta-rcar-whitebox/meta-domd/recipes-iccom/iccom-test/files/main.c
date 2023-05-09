@@ -200,10 +200,11 @@ int main(int argc, char **argv)
 			err_printf("clock_gettime failed at end\n");
 			return ret;
 		}
-		if (end_time.tv_nsec >= start_time.tv_nsec) {
-			elapsed_ms = (end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;
+		if (end_time.tv_sec > start_time.tv_sec) {
+			elapsed_ms = (NS_IN_S + end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;
+			end_time.tv_sec--;
 		} else {
-			elapsed_ms = (NS_IN_S + start_time.tv_nsec - end_time.tv_nsec) / NS_IN_MS;
+			elapsed_ms = (end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;
 		}
 		elapsed_ms += (end_time.tv_sec - start_time.tv_sec) * MS_IN_S;
 		transferred_data = (1+size_flag) * iteration_count_flag; // packet contains command-part(1byte)
