@@ -49,21 +49,21 @@ CA55=${BUILD_PATTERNS[$((3*${BUILD_PATTERN}+2))]}
 # Build G4MH
 cd ${BASE_DIR}/mcu
 case $G4MH in
-    "Trampoline") ./build_trampoline.sh ;;
-    "SafeG-Auto") ./build_safegauto.sh ;;
+    "Trampoline") ./build_trampoline.sh -c;;
+    "SafeG-Auto") ./build_safegauto.sh -c;;
 esac
 
 # Build CR52
 cd ${BASE_DIR}/realtime_cpu
 case $CR52 in
-    "Trampoline") ./build_trampoline.sh ;;
-    "Zephyr")     ./build_zephyr.sh ;;
+    "Trampoline") ./build_trampoline.sh -c;;
+    "Zephyr")     ./build_zephyr.sh -c;;
 esac
 
 # Build CA55
 cd ${BASE_DIR}/application_cpu
 case $CA55 in
-    "Linux") ./build_ca55.sh ;;
+    "Linux") ./build_ca55.sh -c;;
 esac
 
 # deploy images
