@@ -1,0 +1,53 @@
+From 80e170502558136dc6e31b47df6b9c8bd140ad98 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Tue, 16 May 2023 09:43:06 +0900
+Subject: [PATCH] iccom: Add get OS mode
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/renesas/iccom/iccom.c          | 9 +++++++++
+ examples/renesas/iccom/iccom_commands.h | 1 +
+ 2 files changed, 10 insertions(+)
+
+diff --git a/examples/renesas/iccom/iccom.c b/examples/renesas/iccom/iccom.c
+index 2997ce3c..cb879f9e 100644
+--- a/examples/renesas/iccom/iccom.c
++++ b/examples/renesas/iccom/iccom.c
+@@ -22,6 +22,8 @@ enum ICCOM_MSG {
+ #define TIMER_TICK_INTERVAL_NS		(125U)
+ #define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
++#define OS_NAME				"Trampoline"
++#define OS_NAME_SIZE			10
+ 
+ uint8 iccom_initalized = 0;
+ struct echo_command recv_pkt;
+@@ -111,6 +113,13 @@ static void iccom_handle_rx_msg(size_t size)
+ 			break;
+ 		}
+ 
++		case OS: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++			memcpy(reply_pkt, OS_NAME, OS_NAME_SIZE);
++			iccom_send((uint8*)reply_pkt, OS_NAME_SIZE, 0);
++			break;
++		}
++
+ 		default:
+ 			break;
+ 	}
+diff --git a/examples/renesas/iccom/iccom_commands.h b/examples/renesas/iccom/iccom_commands.h
+index a443ecce..a7f387eb 100644
+--- a/examples/renesas/iccom/iccom_commands.h
++++ b/examples/renesas/iccom/iccom_commands.h
+@@ -22,6 +22,7 @@
+ enum iccom_command {
+ 	NONE = 0,
+ 	ECHO,
++	OS,
+ };
+ 
+ #define TOTAL_CTA_SIZE		0x2000
+-- 
+2.25.1
+

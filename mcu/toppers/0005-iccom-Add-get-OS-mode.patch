@@ -1,0 +1,53 @@
+From eae9d003112239ea6d0325eb4b0f0c79c3ed0fa2 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Tue, 16 May 2023 09:38:30 +0900
+Subject: [PATCH] iccom: Add get OS mode
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ vm_atk2/vm1_atk2/iccom/iccom_cdd.c      | 9 +++++++++
+ vm_atk2/vm1_atk2/iccom/iccom_commands.h | 1 +
+ 2 files changed, 10 insertions(+)
+
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+index b00a973..d2922fc 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+@@ -18,6 +18,8 @@ enum ICCOM_MSG {
+ #define TIMER_TICK_INTERVAL_NS		(125U)
+ #define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
++#define OS_NAME				"SafeG-Auto"
++#define OS_NAME_SIZE			10
+ 
+ uint8 iccom_initalized = 0;
+ uint8 rx_buffer[ICCOM_BUF_MAX_SIZE];
+@@ -108,6 +110,13 @@ static void iccom_handle_rx_msg(size_t size)
+ 			break;
+ 		}
+ 
++		case OS: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++			memcpy(reply_pkt, OS_NAME, OS_NAME_SIZE);
++			iccom_send((uint8*)reply_pkt, OS_NAME_SIZE, 0);
++			break;
++		}
++
+ 		default:
+ 			break;
+ 	}
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_commands.h b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+index 90f1a40..f6cb33d 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_commands.h
++++ b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+@@ -20,6 +20,7 @@
+ enum iccom_command {
+ 	NONE = 0,
+ 	ECHO,
++	OS,
+ };
+ 
+ #define FLASH_PAGE_SIZE			0x100	// 256 bytes
+-- 
+2.25.1
+
