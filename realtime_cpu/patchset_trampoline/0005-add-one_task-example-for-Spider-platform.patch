@@ -1,7 +1,7 @@
-From cffa3294bcdaa87e1559014b1ab30e8e9feb45fe Mon Sep 17 00:00:00 2001
+From 4827b86908917a37a6b9a6f74de02a061b7b403e Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 16:14:33 +0200
-Subject: [PATCH 05/13] add 'one_task' example for Spider platform
+Subject: [PATCH 05/20] add 'one_task' example for Spider platform
 
 ---
  .../cortex-a/armv8/spider/one_task/build.sh   | 15 ++++++

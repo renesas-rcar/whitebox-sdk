@@ -1,7 +1,7 @@
-From 0d3cf56c1513f190620d1b4fe89764255ec3e192 Mon Sep 17 00:00:00 2001
+From 01ba1db73c0623714e9119d2ea753aa5e4dbdebb Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 5 May 2023 18:48:37 +0200
-Subject: [PATCH 11/13] CR52: add interrupts support
+Subject: [PATCH 11/20] CR52: add interrupts support
 
 ---
  machines/cortex-a/armv8/spider/tpl_irq.c      | 26 +++----
@@ -81,8 +81,9 @@ index 602e071b..0d4f7060 100644
  
  //interrupt id #27
  FUNC(void, OS_CODE) tpl_set_systick_timer(void) {
--    enable_systick_timer(0);
--
++
+     enable_systick_timer(0);
+ 
 -    writeToAddress(0xf0110180, 0xffffffff); // Clear pending interrupts
 -    writeToAddress(0xf0110080, 0xffffffff); // GICR_IGROUPR0: set to group 1=IRQ (group0=FIQ)
 -    writeToAddress(0xf0110100, 0xffffffff); // GICR_ISENABLER0: enable forwarding int to cpu
@@ -90,10 +91,9 @@ index 602e071b..0d4f7060 100644
 -
 -    cp15_write32(0, 12, 12, 6, 1); // Write 1 to ICC_IGRPEN0
 -    cp15_write32(0, 12, 12, 7, 1); // Write 1 to ICC_IGRPEN1
- 
+-
 -    __asm__ volatile ("CPSIE IF");
-+    enable_systick_timer(0);
- 
+-
      CNTV_VAL_write(get_systick_timer() + NB_TICK); // can set CNTV_TVAL
 +
      enable_systick_timer(1);

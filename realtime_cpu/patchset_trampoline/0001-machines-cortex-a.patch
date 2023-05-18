@@ -1,7 +1,7 @@
-From 58c67f7c35688a323d7acb6ce0d7a4a159db0a3c Mon Sep 17 00:00:00 2001
+From 052791474e3d4aed8062064d2ac94be6f0169ede Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 15:00:10 +0200
-Subject: [PATCH 01/13] machines: cortex-a:
+Subject: [PATCH 01/20] machines: cortex-a:
 
 * Remove unused rpi dependent header from common cortex-a file
 * Cleanup inclusion of 'CallTerminateISR2' and 'CallTerminateTask' depending of their existence

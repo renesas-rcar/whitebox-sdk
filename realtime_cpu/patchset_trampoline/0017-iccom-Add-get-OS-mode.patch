@@ -1,7 +1,7 @@
-From 8aca920c302686d1365afa14cdbb0e3b836f1715 Mon Sep 17 00:00:00 2001
+From eeb90a6bef79d769f5069759679eb15d2d4dd7d2 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 16 May 2023 09:34:29 +0900
-Subject: [PATCH] iccom: Add get OS mode
+Subject: [PATCH 17/20] iccom: Add get OS mode
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -49,5 +49,5 @@ index a443ecce..a7f387eb 100644
  
  #define TOTAL_CTA_SIZE		0x2000
 -- 
-2.25.1
+2.34.1
 

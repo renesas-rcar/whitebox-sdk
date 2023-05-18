@@ -1,7 +1,7 @@
-From ab03c72ba5a11d6ed99f40b43e94365a66ccb867 Mon Sep 17 00:00:00 2001
+From fb6bdd9a436c37cd2bae3aacec3290755886f28b Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Mon, 8 May 2023 17:30:47 +0900
-Subject: [PATCH] iccom: Change CTA size to 8kB
+Subject: [PATCH 16/20] iccom: Change CTA size to 8kB
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -83,5 +83,5 @@ index 01eea05b..af2ba8b3 100644
  #define GICD_ISENABLER     (0xf0000100)
  
 -- 
-2.25.1
+2.34.1
 

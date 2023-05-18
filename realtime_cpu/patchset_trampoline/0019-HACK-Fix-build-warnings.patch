@@ -1,15 +1,33 @@
-From c19e0307aa0a9063e9e504bdc991473c9398a8a0 Mon Sep 17 00:00:00 2001
+From 40e98184c89c1ff364bd83dee0d1c7f0863bfcec Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Wed, 26 Apr 2023 16:45:25 +0900
-Subject: [PATCH 10/10] WIP: HACK: Avoid -Wunused-but-set-variable warning
+Subject: [PATCH 19/20] HACK: Fix build warnings
+
+this patch fixes following warnings;
+- -Wunused-but-set-variable
+- -Wimplicit-function-declaration
 
 Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---
- os/tpl_os_action.c    | 2 ++
- os/tpl_os_kernel.c    | 4 ++++
- os/tpl_os_os_kernel.c | 2 ++
- 3 files changed, 8 insertions(+)
+ examples/cortex-a/armv8/spider/iccom/iccom.c | 2 ++
+ os/tpl_os_action.c                           | 2 ++
+ os/tpl_os_kernel.c                           | 4 ++++
+ os/tpl_os_os_kernel.c                        | 2 ++
+ 4 files changed, 10 insertions(+)
 
+diff --git a/examples/cortex-a/armv8/spider/iccom/iccom.c b/examples/cortex-a/armv8/spider/iccom/iccom.c
+index 2513499c..ccc68c2b 100644
+--- a/examples/cortex-a/armv8/spider/iccom/iccom.c
++++ b/examples/cortex-a/armv8/spider/iccom/iccom.c
+@@ -29,6 +29,8 @@ enum ICCOM_MSG {
+ uint8 iccom_initalized = 0;
+ struct echo_command recv_pkt;
+ 
++void CallTerminateISR2(void);
++
+ static void iccom_notify_tx_data(size_t message)
+ {
+ 	iccom_set_out_msg_reg((uint32)message);
 diff --git a/os/tpl_os_action.c b/os/tpl_os_action.c
 index 5154cf06..3c060acc 100644
 --- a/os/tpl_os_action.c

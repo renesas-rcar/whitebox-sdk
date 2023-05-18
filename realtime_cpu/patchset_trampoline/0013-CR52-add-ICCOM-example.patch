@@ -1,7 +1,7 @@
-From 2329e31c1f34693f37f8cc792d71c6e62d6a2371 Mon Sep 17 00:00:00 2001
+From d469d280294a8af28299aaf599f7a53109797e8f Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 5 May 2023 18:55:20 +0200
-Subject: [PATCH 13/13] CR52: add ICCOM example
+Subject: [PATCH 13/20] CR52: add ICCOM example
 
 ---
  examples/cortex-a/armv8/spider/iccom/build.sh |  15 +

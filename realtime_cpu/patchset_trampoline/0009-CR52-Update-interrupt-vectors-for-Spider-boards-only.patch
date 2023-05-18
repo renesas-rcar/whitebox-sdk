@@ -1,7 +1,7 @@
-From 813d432102fe5e813b9ca380f4b7110ae3a8bb2f Mon Sep 17 00:00:00 2001
+From 5e8a661422012def8aecd8c8ec06da62200e48c7 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 5 May 2023 18:46:14 +0200
-Subject: [PATCH 09/13] CR52: Update interrupt vectors for Spider boards (only
+Subject: [PATCH 09/20] CR52: Update interrupt vectors for Spider boards (only
  ARM timer and ICCOM support)
 
 ---

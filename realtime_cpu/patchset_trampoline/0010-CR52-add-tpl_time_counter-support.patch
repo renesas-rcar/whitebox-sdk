@@ -1,7 +1,7 @@
-From 32f8dcec5891e1d6959730504c4226883fce68db Mon Sep 17 00:00:00 2001
+From bfe1bffe40f91c29bc9d79a20d867279f880d2e7 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Fri, 5 May 2023 18:47:00 +0200
-Subject: [PATCH 10/13] CR52: add 'tpl_time_counter' support
+Subject: [PATCH 10/20] CR52: add 'tpl_time_counter' support
 
 ---
  .../cortex-a/armv8/spider/counter_call.goilTemplate   | 11 +++++++++++

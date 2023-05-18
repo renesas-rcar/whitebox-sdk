@@ -1,7 +1,7 @@
-From 433eadfdd9724ec157ced6626d6ae38c3b9c3dbc Mon Sep 17 00:00:00 2001
+From 9e939f0450c0a8888536314282d900c69da87255 Mon Sep 17 00:00:00 2001
 From: Florian Sylvestre <fsylvestre@baylibre.com>
 Date: Tue, 25 Apr 2023 15:04:52 +0200
-Subject: [PATCH 03/13] goil: move inclusion of 'tpl_vector_table.s' in board
+Subject: [PATCH 03/20] goil: move inclusion of 'tpl_vector_table.s' in board
  specific config
 
 Not all cortex-a platforms support secure mode, so the vector table is platform
