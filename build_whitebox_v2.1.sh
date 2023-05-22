@@ -72,5 +72,8 @@ mkdir -p deploy
 cp mcu/deploy/g4mh.srec deploy/App_CDD_ICCOM_S4_Sample_G4MH.srec
 cp realtime_cpu/deploy/cr52.srec deploy/App_CDD_ICCOM_S4_Sample_CR52.srec
 cp application_cpu/work/full.img.gz deploy/
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/spider/bl31-spider.srec deploy/bl31.srec
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/spider/tee-spider.srec deploy/tee.srec
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/spider/u-boot-elf.srec deploy/u-boot-elf.srec
 ls -l deploy
 
