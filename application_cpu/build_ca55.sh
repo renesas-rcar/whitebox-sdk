@@ -44,4 +44,5 @@ cd ../../
 moulin ./aos-rcar-gen4-wb.yaml
 ninja
 ninja image-full
+gzip full.img
 echo "Build finished !"

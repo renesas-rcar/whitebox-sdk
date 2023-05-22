@@ -71,6 +71,6 @@ cd ${BASE_DIR}
 mkdir -p deploy
 cp mcu/deploy/g4mh.srec deploy/App_CDD_ICCOM_S4_Sample_G4MH.srec
 cp realtime_cpu/deploy/cr52.srec deploy/App_CDD_ICCOM_S4_Sample_CR52.srec
-cp application_cpu/work/full.img deploy/
+cp application_cpu/work/full.img.gz deploy/
 ls -l deploy
 
