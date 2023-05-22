@@ -1,9 +1,51 @@
+/*
+ * SPDX-License-Identifier: MIT
+ *
+ * iccom-test application(main.c)
+ *
+ * Copyright (c) 2023 Renesas Electronics Corporation
+ * 
+ * Benchmark scheme
+ * ------------------------------------------------------------------------------
+ * 
+ *                   Cortex-A55                            G4MH
+ *   ┌──────────────┐         ┌────────────┐          ┌────────────┐
+ *   │iccom-test App│         │ICCOM Driver│          │ICCOM-driver│
+ *   └───────┬──────┘         └──────┬─────┘          └──────┬─────┘
+ *           ├───┐                   │                       │
+ *           │   │start Timer        │                       │
+ *           ◄───┘                   │                       │
+ *           │                       │                       │
+ *       ┌──►│                       │                       │
+ *       │   │ Write Request         │                       │
+ *       │   ├──────────────────────►│                       │
+ *       │   │                       │  Send packet          │
+ * Loop  │   │                       ├──────────────────────►│
+ *       │   │                       │                       ├─────┐
+ *       │   │                       │                       │     │ Read Data
+ *       │   │                       │                       │◄────┘
+ *       │   │                       │  Send ACK             │
+ *       │   │                       │◄──────────────────────┤
+ *       │   │  Send Result          │                       │
+ *       │   │◄──────────────────────┤                       │
+ *       └───┤                       │                       │
+ *           ├────┐                  │                       │
+ *           │    │Stop Timer        │                       │
+ *           │◄───┘                  │                       │
+ *           │                       │                       │
+ *           ▼                       ▼                       ▼
+ * 
+ * Throughput: = (Packet Size * LoopNum) / elappsed_time
+ * ------------------------------------------------------------------------------
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
+
 #include "iccom.h"
 #include "iccom_commands.h"
 #include "util.h"
@@ -14,30 +56,35 @@
 
 static int iteration_count_flag = 1;
 static int size_flag = 1;
+static int bench_flag = 0;
 static int cpu_type = 0;
 
 void print_help(int argc, char **argv)
 {
-	printf("Usage: %s [-s|-c|-t]\n", argv[0]);
+	printf("Usage: %s [-s|-c|-b|-r]\n", argv[0]);
+	printf("	-b: enable benchmark mode(default is test mode)\n");
 	printf("	-c: number of iterations to test\n");
-	printf("	-s: size of each iteration (command + reply)\n");
-	printf("        -t: iccom channel no set(default 0) 0:G4MH 1:CR-52 \n");
+	printf("	-s: size of each iteration\n");
+	printf("	-r: enable iccom channel CR-52(default is G4MH) \n");
 }
 
 static int parse_input_args(int argc, char **argv)
 {
 	int c;
 	
-	while ((c = getopt(argc, argv, "c:s:t:")) != -1) {
+	while ((c = getopt(argc, argv, "c:s:br")) != -1) {
 		switch (c) {
+		case 'r':
+			cpu_type = 1;
+			break;
 		case 'c':
 			iteration_count_flag = strtoul(optarg, NULL, 10);
 			break;
 		case 's':
 			size_flag = strtoul(optarg, NULL, 10);
 			break;
-		case 't':
-			cpu_type = strtoul(optarg, NULL, 10);
+		case 'b':
+			bench_flag = 1;
 			break;
 		case '?':
 			print_help(argc, argv);
@@ -70,9 +117,9 @@ int main(int argc, char **argv)
 	struct timespec start_time, end_time;
 	uint64_t elapsed_ms;
 	uint64_t transferred_data;
+	int err_cnt = 0;
 	st_iccom_send_param_t send_param;
 	st_iccom_recive_param_t recive_param;
-	int32_t ret_iccom;
 
 	ret = parse_input_args(argc, argv);
 	if (ret) {
@@ -80,69 +127,92 @@ int main(int argc, char **argv)
 	}
 
 	ret = R_ICCOM_Init(NULL, cpu_type, NULL, NULL, NULL);
-	err_printf("## MURO ## cpu_type = %d \n",cpu_type);
 	if (ret != 0 ) {
-		err_printf("iccom_init error\n");
+		err_printf("R_ICCOM_Init error\n");
 		return ret;
 	}
 
-	ret = clock_gettime(CLOCK_MONOTONIC, &start_time);
-	if (ret < 0) {
-		err_printf("clock_gettime failed at start\n");
-		R_ICCOM_Close();
-		return ret;
-	}
-
-	cmd.cmd_id = ECHO;
-	for (curr_iter = 0; curr_iter < iteration_count_flag; curr_iter++) {
-		// set all the data to the save value (and change it for
-		// every iteration
-		memset(cmd.data, (curr_iter & 0xFF), size_flag);
-		// always take "cmd_id" into account for the size
-		pkt_size = size_flag + sizeof(uint8_t);
-		send_param.send_buf = (uint8_t *)&cmd;
-		send_param.send_size = pkt_size;
-		ret = R_ICCOM_Send(&send_param);
+	if (!bench_flag) { // Test mode(echo back mode)
+		cmd.cmd_id = ECHO;
+		for (curr_iter = 0; curr_iter < iteration_count_flag; curr_iter++) {
+			// set all the data to the save value (and change it for
+			// every iteration
+			memset(cmd.data, (curr_iter & 0xFF), size_flag);
+			// always take "cmd_id" into account for the size
+			pkt_size = size_flag + sizeof(uint8_t);
+	
+			send_param.send_buf = (uint8_t *)&cmd;
+			send_param.send_size = pkt_size;
+			ret = R_ICCOM_Send(&send_param);
+			if (ret < 0) {
+				err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+			recive_param.recive_buf = (uint8_t *)&reply;
+			recive_param.recive_size = pkt_size;
+			ret = R_ICCOM_Recive(&recive_param);
+			if (ret < 0) {
+				err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+			if (memcmp(&cmd, &reply, pkt_size) != 0) {
+				err_printf("memcmp failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+		}
+		printf("ICCOM test is OK\n");
+	} else { // benchmark
+		cmd.cmd_id = NONE;
+		ret = clock_gettime(CLOCK_MONOTONIC, &start_time);
 		if (ret < 0) {
-			err_printf("iccom_send_data failed at iteration %d\n", curr_iter + 1);
-			R_ICCOM_Close();
+			err_printf("clock_gettime failed at start\n");
 			return ret;
 		}
-		recive_param.recive_buf = (uint8_t *)&reply;
-		recive_param.recive_size = pkt_size;
-		ret = R_ICCOM_Recive(&recive_param);
-		if (ret < 0) {
-			err_printf("iccom_wait_for_reply_with_timeout failed at iteration %d\n", curr_iter + 1);
-			R_ICCOM_Close();
-			return ret;
-		}
-		if (memcmp(&cmd, &reply, pkt_size) != 0) {
-			err_printf("memcmp failed at iteration %d\n", curr_iter + 1);
-			R_ICCOM_Close();
-			return ret;
-		}
-	}
 
-	ret = clock_gettime(CLOCK_MONOTONIC, &end_time);
-	if (ret < 0) {
-		err_printf("clock_gettime failed at end\n");
-		R_ICCOM_Close();
-		return ret;
+		for (curr_iter = 0; curr_iter < iteration_count_flag; curr_iter++) {
+			// set all the data to the save value (and change it for
+			// every iteration
+			memset(cmd.data, (curr_iter & 0xFF), size_flag);
+			// always take "cmd_id" into account for the size
+			pkt_size = size_flag + sizeof(uint8_t);
+
+			do{
+				send_param.send_buf = (uint8_t *)&cmd;
+				send_param.send_size = pkt_size;
+				ret = R_ICCOM_Send(&send_param);
+				if (ret < 0) {
+					//err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
+					// return ret;
+					err_cnt++;
+				}
+				//usleep(1);
+			}while(ret < 0);
+		}
+
+		ret = clock_gettime(CLOCK_MONOTONIC, &end_time);
+		if (ret < 0) {
+			err_printf("clock_gettime failed at end\n");
+			return ret;
+		}
+		if (end_time.tv_nsec >= start_time.tv_nsec) {
+			elapsed_ms = (end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;
+		} else {
+			elapsed_ms = (NS_IN_S + start_time.tv_nsec - end_time.tv_nsec) / NS_IN_MS;
+		}
+		elapsed_ms += (end_time.tv_sec - start_time.tv_sec) * MS_IN_S;
+		transferred_data = (1+size_flag) * iteration_count_flag; // packet contains command-part(1byte)
+	
+		fprintf(stdout, "Elapsed time [ms]: %ld\n", elapsed_ms);
+		fprintf(stdout, "Data transfered: %ld\n", transferred_data);
+		fprintf(stdout, "Throughput: %ld bytes/s\n", (transferred_data * 1000)/(elapsed_ms));
+		fprintf(stdout, "Throughput: %1.2f MB/s\n", (transferred_data * 1000)/(elapsed_ms)/1024.0/1024.0);
+		fprintf(stdout, "Error count: %d\n", (err_cnt));
 	}
 
 	R_ICCOM_Close();
-
-	if (end_time.tv_nsec >= start_time.tv_nsec) {
-		elapsed_ms = (end_time.tv_nsec - start_time.tv_nsec) / NS_IN_MS;
-	} else {
-		elapsed_ms = (NS_IN_S + start_time.tv_nsec - end_time.tv_nsec) / NS_IN_MS;
-	}
-	elapsed_ms += (end_time.tv_sec - start_time.tv_sec) * MS_IN_S;
-	transferred_data = size_flag * iteration_count_flag;
-
-	fprintf(stdout, "Elapsed time [ms]: %ld\n", elapsed_ms);
-	fprintf(stdout, "Data transfered: %ld\n", transferred_data);
-	fprintf(stdout, "Throughput: %ld bytes/s\n", (transferred_data * 1000)/(elapsed_ms));
 
 	return ret;
 }
