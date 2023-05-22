@@ -1,0 +1,35 @@
+From 3b55ff14815b0bb4ed1561a798468b8cc76305a0 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 31 Mar 2023 13:07:08 +0900
+Subject: [PATCH 2/4] Fix to store timeout value into correct variable
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ iccom_driver.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/iccom_driver.c b/iccom_driver.c
+index a9552f1..75ff7ac 100644
+--- a/iccom_driver.c
++++ b/iccom_driver.c
+@@ -623,7 +623,7 @@ static int32_t iccom_drv_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto Error;
+ 	}
+-	iccom_hw->int_clear_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
++	iccom_hw->ack_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
+ 
+ 	dts_val_ptr = of_get_property(dev_node, "iccom,int-clear-timeout", NULL);
+ 	if (dts_val_ptr == NULL) {
+@@ -631,7 +631,7 @@ static int32_t iccom_drv_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		goto Error;
+ 	}
+-	iccom_hw->ack_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
++	iccom_hw->int_clear_timeout = msecs_to_jiffies(be32_to_cpup(dts_val_ptr));
+ 
+ 	dts_val_ptr = of_get_property(dev_node, "iccom,read-timeout", NULL);
+ 	if (dts_val_ptr == NULL) {
+-- 
+2.34.1
+

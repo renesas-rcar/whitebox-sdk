@@ -1,0 +1,58 @@
+From 35e39293c77e3db361b4c3873a0810957bedf783 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 30 Mar 2023 19:47:31 +0900
+Subject: [PATCH 3/4] Fix recv function
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ iccom_driver.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
+
+diff --git a/iccom_driver.c b/iccom_driver.c
+index 75ff7ac..da03f0c 100644
+--- a/iccom_driver.c
++++ b/iccom_driver.c
+@@ -290,6 +290,19 @@ static int32_t iccom_drv_read(struct iccom *iccom, uint8_t *buf, uint32_t count)
+ 
+ 	mutex_lock(&iccom_comm->comm_mutex);
+ 
++	ret = wait_event_interruptible_timeout(iccom_comm->read_q,
++					(iccom_comm->valid_rx_data >= 1),
++					iccom->hw_info.read_timeout);
++
++	if (ret < 0) {
++		dev_err(iccom->dev, "[Err] Read operation interrupted");
++		goto Exit;
++	} else if (ret == 0) {
++		dev_err(iccom->dev, "[Err] Read operation timed out");
++		ret = -ENODATA;
++		goto Exit;
++	}
++
+ 	if (iccom_comm->valid_rx_data == 0) {
+ 		dev_err(iccom->dev, "[Err] No data to read\n");
+ 		ret = -ENODATA;
+@@ -386,20 +399,6 @@ static int32_t iccom_drv_write(struct iccom *iccom, uint8_t *buf, uint32_t count
+ 		goto Exit;
+ 	}
+ 
+-	// wait for the reply
+-	ret = wait_event_interruptible_timeout(iccom_comm->read_q,
+-					(iccom_comm->valid_rx_data >= 1),
+-					iccom->hw_info.read_timeout);
+-
+-	if (ret < 0) {
+-		dev_err(iccom->dev, "[Err] Read operation interrupted");
+-		goto Exit;
+-	} else if (ret == 0) {
+-		dev_err(iccom->dev, "[Err] Read operation timed out");
+-		ret = -ENODATA;
+-		goto Exit;
+-	}
+-
+ 	dev_dbg(iccom->dev, "Sent message was ACKed successfully\n");
+ 
+ Exit:
+-- 
+2.34.1
+

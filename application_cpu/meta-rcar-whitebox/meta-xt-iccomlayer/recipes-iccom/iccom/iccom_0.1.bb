@@ -12,6 +12,8 @@ SRCREV = "a8c50ea65865ca72c7f53e8fcf893b6b512c3db2"
 
 SRC_URI_append = "\
     file://0001-Cleanup-and-improve-performance.patch \
+    file://0002-Fix-to-store-timeout-value-into-correct-variable.patch \
+    file://0003-Fix-recv-function.patch \
 "
 S = "${WORKDIR}/git"
 
