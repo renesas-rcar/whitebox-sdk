@@ -41,3 +41,14 @@ Ex.) License priority:
 
 FIle's license infomation > License notification in the directory > License of this repository
 
+# Support
+
+## FAQ
+
+- En: https://en-support.renesas.com/knowledgeBase/category/31891/subcategory/31856
+- Ja: https://ja-support.renesas.com/knowledgeBase/category/31892/subcategory/31857
+
+## Community Q&A forum
+
+- Under preparing
+
