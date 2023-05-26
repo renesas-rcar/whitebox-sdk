@@ -63,3 +63,27 @@ rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 iccom_exe.elf $SCRIPT_DIR/deploy/cr52.srec
 
+# build benchmark
+## Setup source code
+### Dhrystone
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark
+rm -rf ./dhrystone
+wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz
+mkdir -p ./dhrystone && tar xf dhrystone-2.1.tar.gz -C ./dhrystone
+cp ./dhrystone/dhry_1.c{,.org}
+cd ./dhrystone
+patch -p0 < ${SCRIPT_DIR}/patchset_trampoline/dhry_1.c.diff
+### Coremark
+if [ ! -e ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/coremark ]; then
+    git clone https://github.com/eembc/coremark ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/coremark
+fi
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/coremark
+git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
+git apply ${SCRIPT_DIR}/patchset_trampoline/coremark.diff
+## Build
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark
+chmod +x ./build.sh
+./build.sh
+mkdir -p ${SCRIPT_DIR}/deploy
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 benchmark_exe.elf $SCRIPT_DIR/deploy/cr52_bench.srec
+
