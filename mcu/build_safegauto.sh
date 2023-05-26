@@ -4,7 +4,12 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 SOURCE_DIR=${SCRIPT_DIR}/safeg-auto
 
 export PATH=~/.local/bin:$PATH
-# check path
+
+# check CC-RH compiler
+if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
+    echo "CC-RH compiler may not be installed correctly."
+    exit -1
+fi
 if [[ "$(which rlink | grep no)" != "" ]]; then
     export PATH="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00\bin:${PATH}"
 fi
