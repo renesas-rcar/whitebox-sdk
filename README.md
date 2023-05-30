@@ -8,7 +8,7 @@ Please refer to the official webpage:
 Execute the following command:
 
 	sudo apt install git	
-	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v3.x
+	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v4.x
 
 # Tool setup
 Since GUI operation is required during installation, it must be run on an Ubuntu PC.
@@ -26,7 +26,9 @@ Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and e
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v3.1.sh
+	./build_whitebox_v4.0.sh  <BOARD>
+
+`BOARD` is "spider" or "s4sk"
 
 #You can check the generated image with the following command:
 
