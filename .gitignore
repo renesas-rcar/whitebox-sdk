@@ -1,0 +1,6 @@
+# .gitignore
+
+/work
+/proprietary/*.zip
+/deploy
+

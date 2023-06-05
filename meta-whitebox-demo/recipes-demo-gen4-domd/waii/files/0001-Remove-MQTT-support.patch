@@ -1,0 +1,64 @@
+From 8332386aaac12ff460658d3c0471f8538fd05f9e Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 6 Apr 2023 15:15:29 +0900
+Subject: [PATCH] Remove MQTT support
+
+MQTT requires internet connection for testing.
+Thus, it can't be used with local network.
+So, this patch remove it.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ server/vissv2server/vissv2server.go | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/server/vissv2server/vissv2server.go b/server/vissv2server/vissv2server.go
+index db9fca1..f0e13aa 100644
+--- a/server/vissv2server/vissv2server.go
++++ b/server/vissv2server/vissv2server.go
+@@ -32,7 +32,6 @@ import (
+ 	
+ 	"github.com/w3c/automotive-viss2/server/vissv2server/httpMgr"
+ 	"github.com/w3c/automotive-viss2/server/vissv2server/wsMgr"
+-	"github.com/w3c/automotive-viss2/server/vissv2server/mqttMgr"
+ 	"github.com/w3c/automotive-viss2/server/vissv2server/serviceMgr"
+ 	"github.com/w3c/automotive-viss2/server/vissv2server/atServer"
+ 
+@@ -61,7 +60,6 @@ var serverComponents []string = []string{
+ 	"serviceMgr",
+ 	"httpMgr",
+ 	"wsMgr",
+-	"mqttMgr",
+ 	"atServer",
+ }
+ 
+@@ -72,7 +70,6 @@ var serverComponents []string = []string{
+ var transportMgrChannel = []chan string{
+ 	make(chan string),  // HTTP
+ 	make(chan string),  // WS
+-	make(chan string),  // MQTT
+ }
+ 
+ var serviceMgrChannel = []chan string{
+@@ -858,9 +855,6 @@ func main() {
+ 	        case "wsMgr":
+ 		    go wsMgr.WsMgrInit(1, transportMgrChannel[1])
+ 		    go transportDataSession(transportMgrChannel[1], transportDataChan[1], backendChan[1])
+-	        case "mqttMgr":
+-		    go mqttMgr.MqttMgrInit(2, transportMgrChannel[2])
+-		    go transportDataSession(transportMgrChannel[2], transportDataChan[2], backendChan[2])
+ 	        case "serviceMgr":
+ 		    go serviceMgr.ServiceMgrInit(0, serviceMgrChannel[0], *stateDB, *udsPath, *dbFile)
+ 		    go serviceDataSession(serviceMgrChannel[0], serviceDataChan[0], backendChan)
+@@ -876,8 +870,6 @@ func main() {
+ 			serveRequest(request, 0, 0)
+ 		case request := <-transportDataChan[1]: // request from WS/WSS mgr
+ 			serveRequest(request, 1, 0)
+-		case request := <-transportDataChan[2]: // request from MQTT mgr
+-			serveRequest(request, 2, 0)
+ 	    //  case request := <- transportDataChan[3]:  // implement when there is a 4th transport protocol mgr
+ 		}
+ 	}
+-- 
+2.34.1
+

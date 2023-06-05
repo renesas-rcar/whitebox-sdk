@@ -1,0 +1,226 @@
+desc: "R-Car Gen3 CCPF-SK BSP"
+
+variables:
+  MACHINE: "this will be overwritten by parameters"
+  MACHINE_PREFIX: ""
+  YOCTOS_WORK_DIR: "yocto"
+  ENABLE_DEMO: "This is used for switch demo env and development env."
+  USING_EXT_BOARD: "This is used for select extension board for Ger3 SK board."
+
+common_data:
+  sources: &COMMON_SOURCES
+    - type: git
+      url: "git://git.yoctoproject.org/poky"
+      rev: "74b22db6879b388d700f61e08cb3f239cf940d18"
+    - type: git
+      url: "git://git.openembedded.org/meta-openembedded"
+      rev: "814eec96c2a29172da57a425a3609f8b6fcc6afe"
+    - type: git
+      url: "https://github.com/renesas-rcar/meta-renesas"
+      rev: "c5b39adbabdb8fd51517cf37190552b8fb57d062"
+    - type: git
+      url: "https://github.com/yhamamachi/meta-rcar-dev-utils"
+      rev: "a49b516cdeb19bc3af406cdf2591b3ced464207e"
+    - type: git
+      url: "https://github.com/OSSystems/meta-browser"
+      rev: "4b98e0655f2766a69667c95068a89775f352dcc4"
+    - type: git
+      url: "https://github.com/kraj/meta-clang"
+      rev: "8acc0b9c2a3942077d43f0baefc2841cc993fae1"
+    - type: git
+      url: "https://github.com/renesas-rcar/meta-renesas-ccpf"
+      rev: "09dd815616cce3a2bdcf8906c0d21403df8b93bd"
+  conf: &COMMON_CONF
+    - [SSTATE_DIR, "${TOPDIR}/../../../common_data/sstate"]
+    - [DL_DIR, "${TOPDIR}/../../../common_data/downloads"]
+    - [MACHINE, "%{MACHINE}"]
+    - [DISTRO, "poky"]
+
+    - [PACKAGE_CLASSES,"package_rpm"]
+    - [IMAGE_FEATURES, "debug-tweaks"]
+    - [USER_CLASSES, "buildstats image-mklibs image-prelink"]
+    - [PATCHRESOLVE, "noop"]
+    - [PACKAGECONFIG_append_pn-qemu-system-native, " sdl"]
+
+    - [DISTRO_FEATURES_append, " systemd"]
+    - [VIRTUAL-RUNTIME_init_manager, " systemd"]
+    - [SDKIMAGE_FEATURES_append, " staticdev-pkgs"]
+    - [DISTRO_FEATURES_NATIVESDK_append, " wayland"]
+    - [DISTRO_FEATURES_append, " pam"]
+
+    - [LICENSE_FLAGS_WHITELIST, "commercial"]
+    - [MACHINE_FEATURES_append, " cas"]
+    - [DISTRO_FEATURES_remove, " ptest x11 vulkan"]
+    - [SOURCE_DATE_EPOCH, "${@time.strftime('%s', time.localtime())}"]
+    - [REPRODUCIBLE_TIMESTAMP_ROOTFS, "${@time.strftime('%s', time.localtime())}"]
+
+components:
+  bsp-wayland:
+    default: true
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      *COMMON_SOURCES
+    builder:
+      type: yocto
+      work_dir: "build-%{MACHINE}%{MACHINE_PREFIX}-bsp-wayland"
+      conf:
+        - *COMMON_CONF
+
+        - [DISTRO_FEATURES_remove, " x11 vulkan"]
+
+        - [BBMASK_append, "docker|containerd-opencontainers"]
+
+        # Add wic.gz image
+        - [IMAGE_FSTYPES_append, " wic.gz"]
+
+        # Add dist package
+        - [EXTRA_IMAGE_FEATURES_append, " ssh-server-openssh"]
+        - [IMAGE_INSTALL_append, " vim nano e2fsprogs-mke2fs nfs-utils"]
+        - [IMAGE_INSTALL_append, " cmake nodejs python3 python3-pip git"]
+        - [IMAGE_INSTALL_append," kernel kernel-devicetree kernel-devsrc"]
+        - [PACKAGECONFIG_pn-chromium-ozone-wayland, " proprietary-codecs"]
+        - [IMAGE_INSTALL_append, " dhrystone lmbench"]
+        - [IMAGE_INSTALL_append, " chromium-ozone-wayland"]
+
+        # Add system monitor
+        - [IMAGE_INSTALL_append, " nodejs packagegroup-system-monitor"]
+      layers:
+        - "../poky/meta"
+        - "../poky/meta-poky"
+        - "../poky/meta-yocto-bsp"
+        - "../meta-renesas/meta-rcar-gen3"
+        - "../meta-openembedded/meta-oe"
+        - "../meta-openembedded/meta-python"
+        - "../meta-rcar-dev-utils/meta-rcar-gen3"
+        - "../meta-rcar-dev-utils/meta-rcar-common"
+        - "../meta-clang"
+        - "../meta-browser/meta-chromium"
+        - "../meta-openembedded/meta-networking"
+      build_target: core-image-weston
+      target_images:
+        - "tmp/deploy/images/%{MACHINE}/core-image-weston-%{MACHINE}.tar.bz2"
+        - "tmp/deploy/images/%{MACHINE}/Image"
+
+images:
+  full:
+    type: gpt
+    desc: "Full SD-card/eMMC image"
+    partitions:
+      rootfs:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: raw_image
+        size: 4096 MiB
+        image_path: "%{YOCTOS_WORK_DIR}/build-%{MACHINE}%{MACHINE_PREFIX}-bsp-wayland/tmp/deploy/images/%{MACHINE}/core-image-weston-%{MACHINE}.ext4"
+
+parameters:
+  MACHINE:
+    desc: "R-Car Gen3 device for which we will build"
+    h3ulcb:
+      default: true
+      overrides:
+        variables:
+          MACHINE: "h3ulcb"
+    m3ulcb:
+      overrides:
+        variables:
+          MACHINE: "m3ulcb"
+  USING_EXT_BOARD:
+    desc: "Setup demo envrionment"
+    "no":
+      default: true
+      overrides:
+        variables:
+          MACHINE_PREFIX: ""
+    ccpf:
+      overrides:
+        variables:
+          MACHINE_PREFIX: "-ccpf"
+        components:
+          bsp-wayland:
+            builder:
+              layers:
+                - "../meta-renesas-ccpf/meta-rcar-gen3"
+              conf:
+                - [BBMASK_append, "|meta-rcar-gen3/recipes-browser/chromium"]
+                - [MACHINE_FEATURES_append, " usb3"]
+                - [IMAGE_INSTALL_append, " trace-cmd"]
+                - [USE_LTTNG, "1"]
+                - [PREFERRED_VERSION_lttng-modules, "2.12.4"]
+
+  ENABLE_MMP:
+    desc: "Using GFX/MMP evaluation package or not"
+    "no":
+      default: true
+      overrides:
+        components:
+          bsp-wayland:
+            builder:
+              conf:
+                - [BBMASK_append, "gles-user-module|kernel-module-gles|wayland-kms|libgbm"]
+                - [BBMAKS_append, "|kernel-module-uvcs-drv|omx-user-module"]
+                - [BBMAKS_append, "|meta-renesas/meta-rcar-gen3/recipes-multimedia/gstreamer"]
+
+    "yes":
+      overrides:
+        components:
+          bsp-wayland:
+            builder:
+              work_dir: "build-%{MACHINE}%{MACHINE_PREFIX}-mmp"
+              conf:
+                - [MACHINE_FEATURES_append, " gsx"]
+                - [MULTI_PROVIDER_WHITELIST_append, " virtual/libgl virtual/egl virtual/libgles1 virtual/libgles2"]
+                - [PREFERRED_PROVIDER_virtual/libgles1, ""]
+                - [PREFERRED_PROVIDER_virtual/libgles2,  "gles-user-module"]
+                - [PREFERRED_PROVIDER_virtual/egl, "libegl"]
+                - [PREFERRED_PROVIDER_virtual/libgl,  ""]
+                - [PREFERRED_PROVIDER_virtual/mesa,  ""]
+                - [PREFERRED_PROVIDER_virtual/libgbm,  "libgbm"]
+                - [PREFERRED_PROVIDER_libgbm-dev,  "libgbm"]
+                - [BBMASK_append, "|mesa-gl"]
+                - [MACHINE_FEATURES_append, " multimedia"]
+                - [DISTRO_FEATURES_append, " mm-test"]
+                - [DISTRO_FEATURES_append, " h264dec_lib h264enc_lib aaclcdec_lib aaclcdec_mdw"]
+                - [IMAGE_INSTALL_append, " glmark2"]
+                - [XT_MULTIMEDIA_EVA_DIR, "${TOPDIR}/../../../../proprietary"]
+                - ["HOSTTOOLS_append", " unzip "]
+
+  ENABLE_DEMO:
+    desc: "build demo envrionment or development environment"
+    "no":
+      default: true
+    "yes":
+      overrides:
+        components:
+          bsp-wayland:
+            builder:
+              conf:
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-"]
+                - [PACKAGECONFIG_pn-systemd_append, " networkd"]
+                - [PACKAGECONFIG_pn-systemd_append, " timesyncd"]
+                - [PACKAGECONFIG_pn-systemd_append, " resolved"]
+                - [IMAGE_INSTALL_append, " cluster-app ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-serif"]
+                - [IMAGE_INSTALL_append, " simple-video-streaming python3-opencv"]
+                - [IMAGE_INSTALL_append, " iperf3"]
+                # For development
+                - [IMAGE_INSTALL_append, " htop ethtool vim usbutils"]
+              layers:
+                - "../../../../meta-whitebox-demo"
+  ENABLE_DEMO_HOST:
+    desc: "Using Gen3 device as host pc"
+    "no":
+      default: true
+      overrides:
+        components:
+          bsp-wayland:
+            builder:
+              conf:
+                - [IMAGE_INSTALL_append, " autostart-cluster-app gen3-network"]
+    "yes":
+      overrides:
+        components:
+          bsp-wayland:
+            builder:
+              conf:
+                - [IMAGE_INSTALL_append, " host-autostart-browser host-gen3-network"]
+
+

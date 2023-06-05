@@ -1,0 +1,15 @@
+[Unit]
+Description = Textfile collector for node_exporter
+After=local-fs.target network.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=/usr/bin/textfile-collector/textfile-collector.sh
+WorkingDirectory=/usr/bin/textfile-collector
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,15 @@
+[Unit]
+Description = API server for executing command using HTTP protocol
+After=local-fs.target network.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=python3 /usr/bin/api-server/api-server.py
+WorkingDirectory=/usr/bin/api-server
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

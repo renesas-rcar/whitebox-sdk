@@ -1,0 +1,16 @@
+[Unit]
+Description=alcohol_recv_server
+
+[Service]
+Type=simple
+#ExecStartPre=/bin/bash -c ""
+ExecStart=/bin/bash -c "cd /usr/bin && python3 alcohol_recv_server.py --dbfile /var/statestorage.db"
+#ExecStartPost=/bin/bash -c ""
+WorkingDirectory=/usr/bin
+TimeoutSec=1800
+Restart=on-failure
+RestartSec=15s
+
+[Install]
+WantedBy=multi-user.target
+

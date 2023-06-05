@@ -1,0 +1,57 @@
+# parameters:
+  ENABLE_WHITEBOX_SDK_DEMO:
+    desc: "Expand whitebox-sdk for demo"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        components:
+          dom0:
+            builder:
+              conf:
+                - [BBMASK_append, "meta-whitebox-demo/recipes-demo-gen3"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-domd"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
+              layers:
+                - "../../../../meta-whitebox-demo"
+          domd:
+            builder:
+              conf:
+                # Remove unused recipes
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen3"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-dom0"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
+                # Remoce existing network settings
+                - [BBMASK_append, "|meta-aos-rcar-gen4-driver-domain/recipes-connectivity/xen-network"]
+                # Add additional applications
+                - [IMAGE_INSTALL_append, " python3-pip python3-websockets"]
+                - [IMAGE_INSTALL_append, " alcohol-recv-server rh850-ota-master"]
+                - [IMAGE_INSTALL_append, " driving-sim-translator dummy-driving-sim"]
+                - [IMAGE_INSTALL_append, " monitoring-vissv2server"]
+                - [IMAGE_INSTALL_append, " api-server"]
+                # For development
+                - [IMAGE_INSTALL_append, " vim curl htop"]
+              layers:
+                - "../../../../meta-whitebox-demo"
+        images:
+          full:
+            partitions:
+              domd_var:
+                size: 2048 MiB
+
+  USING_REMOTE_META_WHITEBOX_LAYER:
+    desc: "Using remote repository instead of local meta layer"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        variables:
+          META_WB_LAYER_PATH: "../whitebox-sdk/application_cpu/"
+        common_data:
+          sources:
+            - type: git
+              url: "https://github.com/renesas-rcar/whitebox-sdk.git"
+              rev: "v3.1"
+

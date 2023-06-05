@@ -1,0 +1,15 @@
+[Unit]
+Description = Node Exporter
+After=local-fs.target
+ConditionPathExists=/usr/bin
+
+[Service]
+#ExecStart=/usr/bin/node_exporter/node_exporter --collector.systemd --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+ExecStart=/usr/bin/node_exporter/node_exporter --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+WorkingDirectory=/usr/bin/node_exporter
+Restart=no
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+

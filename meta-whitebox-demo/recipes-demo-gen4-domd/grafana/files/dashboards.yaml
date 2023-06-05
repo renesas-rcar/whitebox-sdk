@@ -1,0 +1,26 @@
+apiVersion: 1
+
+providers:
+  - name: "Whitebox_demo_sample"
+    orgId: 1
+    folder: ""
+    folderUid: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /usr/bin/grafana/conf/provisioning/dashboards/dashboard.json
+      foldersFromFilesStructure: false
+  - name: "Node exporter Full"
+    orgId: 1
+    folder: ""
+    folderUid: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /usr/bin/grafana/conf/provisioning/dashboards/node-exporter-full.json
+      foldersFromFilesStructure: false
+

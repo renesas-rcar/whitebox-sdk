@@ -1,0 +1,15 @@
+[Unit]
+Description = Dummy Driving Simulator
+After=local-fs.target network.target dricing-sim-translator.service
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=python3 /usr/bin/dummy-driving-sim/dummy-driving-sim.py
+WorkingDirectory=/usr/bin/dummy-driving-sim
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,26 @@
+From c6712fa01582ad4fc6f18e2a23fcaad38a203616 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 9 Jun 2023 17:52:47 +0900
+Subject: [PATCH 2/2] Minor fix
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ overlays/extensions/Private.vspec | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/overlays/extensions/Private.vspec b/overlays/extensions/Private.vspec
+index f9ce51b..32c0dcc 100644
+--- a/overlays/extensions/Private.vspec
++++ b/overlays/extensions/Private.vspec
+@@ -27,7 +27,7 @@ Vehicle.Private.Safety.AlcoholSensor:
+   type: branch
+   description: AlcoholSensor branch
+ 
+-Vehicle.Private.Safety.AlcoholSensor.Value:
++Vehicle.Private.Safety.AlcoholSensor.value:
+   type: sensor
+   datatype: float
+   description: AlcoholSensor outputs
+-- 
+2.34.1
+

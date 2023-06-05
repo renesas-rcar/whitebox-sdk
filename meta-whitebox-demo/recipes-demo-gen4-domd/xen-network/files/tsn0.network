@@ -1,0 +1,12 @@
+[Match]
+Name=tsn0
+
+[Network]
+#DHCP=yes
+Address=192.168.137.11/24
+Gateway=192.168.137.1
+DNS=192.168.137.1 8.8.8.8
+
+[DHCP]
+CriticalConnection=true
+

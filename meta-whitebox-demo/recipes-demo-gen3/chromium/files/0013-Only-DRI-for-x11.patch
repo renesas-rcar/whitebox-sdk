@@ -1,0 +1,12 @@
+diff -Naur a/content/gpu/BUILD.gn b/content/gpu/BUILD.gn
+--- a/content/gpu/BUILD.gn	2021-07-30 16:02:54.298106046 -0700
++++ b/content/gpu/BUILD.gn	2021-07-30 16:03:19.318535373 -0700
+@@ -135,7 +135,7 @@
+   }
+ 
+   # Use DRI on desktop Linux builds.
+-  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux &&
++  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux && ozone_platform_x11 &&
+       !is_castos) {
+     configs += [ "//build/config/linux/dri" ]
+   }
