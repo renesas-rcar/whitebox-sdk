@@ -11,10 +11,10 @@ if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
     exit -1
 fi
 if [[ "$(which rlink | grep no)" != "" ]]; then
-    export PATH="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00\bin:${PATH}"
+    export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
 fi
 if [[ "${HLNK_DIR:-""}" == "" ]]; then
-    export HLNK_DIR="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00"
+    export HLNK_DIR="C:\Program Files (x86)\Renesas\RH\2_5_0"
 fi
 if [ ! -e ${SOURCE_DIR} ]; then
     git clone https://github.com/toppers/safeg-auto.git ${SOURCE_DIR}

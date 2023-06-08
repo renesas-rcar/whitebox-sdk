@@ -7,7 +7,7 @@ TMP_DIR=$(pwd)/tmp
 rm -rf ${TMP_DIR}
 
 if [ $# != 1 ]; then
-  echo "Usage : setup_csp CSPlus_package_file(zip)"
+  echo "Usage : setup_csp CC-RH_install_file(zip)"
   exit -1
 fi
 
@@ -26,22 +26,18 @@ sudo apt install p7zip-full -y
 
 FILENAME=${ZIPNAME##*/}
 FOLDERNAME=${FILENAME%%.*}
-EXENAME=${FOLDERNAME%%-doc-?}
+EXENAME=${FOLDERNAME%%-doc}.exe
 
 mkdir -p ${TMP_DIR}
 cd ${TMP_DIR}
 
 unzip $ZIPNAME
 cd $FOLDERNAME
-7za x $EXENAME".EXE"
 
-TOOLVER=`echo $EXENAME | sed -r "s/^.*Package_(.*)$/\1/"`
+echo $FILENAME
+echo $FOLDERNAME
+echo $EXENAME
 
-if [ $TOOLVER == "V80900" ]; then
-  cd $EXENAME
-  wine Setup.exe
-else
-  cd $EXENAME/Util
-  wine EnvironmentSetup.exe
-fi
+
+wine $EXENAME /s /v"/qn"
 

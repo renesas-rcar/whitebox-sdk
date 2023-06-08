@@ -7,6 +7,7 @@ deploy
 
 # tool
 tool/CSPlus_CC_Package_V80900-doc-e*
+tool/CC-RH_*.zip
 tool/tmp
 tool/kitware-archive.sh
 

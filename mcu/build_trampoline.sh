@@ -17,16 +17,11 @@ git reset --hard ${COMMIT} ; git clean -df
 git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
 
 
-# check CC-RH compiler
-if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
-    echo "CC-RH compiler may not be installed correctly."
-    exit -1
-fi
 if [[ "$(which rlink | grep no)" != "" ]]; then
-    export PATH="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00\bin:${PATH}"
+    export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
 fi
 if [[ "${HLNK_DIR:-""}" == "" ]]; then
-    export HLNK_DIR="C:\Program Files (x86)\Renesas Electronics\CS+\CC\CC-RH\V2.05.00"
+    export HLNK_DIR="C:\Program Files (x86)\Renesas\RH\2_5_0"
 fi
 
 # Setup python build env for building goil
@@ -37,6 +32,12 @@ source ${SOURCE_DIR}/.venv/bin/activate
 cd ${SOURCE_DIR}/goil/makefile-unix
 ./build.py
 export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
+
+# check CC-RH compiler
+if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
+    echo "CC-RH compiler may not be installed correctly."
+    exit -1
+fi
 
 # build iccom
 cd ${SOURCE_DIR}/examples/renesas/iccom

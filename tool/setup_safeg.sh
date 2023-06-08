@@ -1,8 +1,8 @@
 #!/bin/bash
 
-TOOLPATH_T="${HOME}/.wine/drive_c/'Program Files (x86)'/'Renesas Electronics'/CS+/CC/CC-RH"
-TOOLPATH=${HOME}/.wine/drive_c/'Program Files (x86)'/'Renesas Electronics'/CS+/CC/CC-RH
-VERSION=`ls "${TOOLPATH}" | grep V`
+TOOLPATH_T="${HOME}/.wine/drive_c/'Program Files (x86)'/'Renesas'/RH"
+TOOLPATH=${HOME}/.wine/drive_c/'Program Files (x86)'/'Renesas'/RH
+VERSION=`ls "${TOOLPATH}" | grep 2`
 
 BINPATH=~/.local/bin
 mkdir -p ${BINPATH}
@@ -13,12 +13,12 @@ CCRH=${BINPATH}/ccrh
 SCRIPT=${BINPATH}/setenv
 
 if [[ ${VERSION} == "" ]]; then
-  echo "Error : Not install CCRH"
+  echo "Error 1: Not install CCRH"
   exit -1
 fi
 
 if [[ ! -d ${TOOLPATH} ]]; then
-  echo "Error : Not install CCRH"
+  echo "Error 2: Not install CCRH"
   exit -1
 fi
 

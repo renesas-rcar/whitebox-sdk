@@ -12,14 +12,14 @@ Execute the following command:
 
 # Tool setup
 Since GUI operation is required during installation, it must be run on an Ubuntu PC.
-Please obtain the compiler in advance; "CS+ for CC V8.09.00" is available from the following site.
+Please obtain the compiler in advance; "RH850 Compiler CC-RH V2.05.00 for e2 studio" is available from the following site.
 
-https://www.renesas.com/us/en/software-tool/cs#download
+https://www.renesas.com/us/en/software-tool/c-compiler-package-rh850-family#download
 
-Save the downloaded file (CSPlus_CC_Package_V80900-doc-e.zip) in the "tool" folder and execute the following command
+Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and execute the following command
 
 	cd whitebox-sdk/tool
-	cp <download directry>/CSPlus_CC_Package_V80900-doc-e.zip .
+	cp <download directry>/CC-RH_V20500_setup-doc.zip .
 	./setup_whitebox.sh
 
 # build
