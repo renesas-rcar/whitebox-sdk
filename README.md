@@ -1,6 +1,6 @@
 # What is Whitebox SDK?
 
-Please refer to the ofiicial webpage:
+Please refer to the official webpage:
 
 - https://www.renesas.com/software-tool/r-car-s4-whitebox-sdk-integrated-development-platform-connected-services-and-gateway-application
 
@@ -34,18 +34,18 @@ Execute the following command:
 
 # LICENSE
 
-If there is a directory that contains file which notices about license infomatiom(such as LICENSE/COPYING/Readme and so on),
+If there is a directory that contains file which notices about license information(such as LICENSE/COPYING/Readme and so on),
 all files in that directory are licensed under its license.
 
-And, if file has license infomation(such as spdx information, comment in header, and so on),
-its license has priority to other license infomation(such as license of this repository, license file in the directory, and so on).
+And, if file has license information(such as spdx information, comment in header, and so on),
+its license has priority to other license information(such as license of this repository, license file in the directory, and so on).
 
-Except for the above,all files in this repository are licensed under the [MIT License](./COPYING.MIT).
+Except for the above, all files in this repository are licensed under the [MIT License](./COPYING.MIT).
 
 
 Ex.) License priority:
 
-FIle's license infomation > License notification in the directory > License of this repository
+File's license information > License notification in the directory > License of this repository
 
 # Support
 
