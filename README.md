@@ -26,7 +26,7 @@ Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and e
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v3.0.sh
+	./build_whitebox_v3.1.sh
 
 #You can check the generated image with the following command:
 
