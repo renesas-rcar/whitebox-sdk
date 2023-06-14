@@ -56,5 +56,5 @@ File's license information > License notification in the directory > License of 
 
 ## Community Q&A forum
 
-- Under preparing
+- En: https://community.renesas.com/automotive/gateway/
 
