@@ -22,7 +22,8 @@
                 - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
                 - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
                 - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
-                - [IMAGE_INSTALL_append, " waii packagegroup-system-monitor"]
+                - [IMAGE_INSTALL_append, " waii"]
+                - [IMAGE_INSTALL_append, " node-exporter"]
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
@@ -60,6 +61,19 @@
 #             - type: git
 #               url: "https://github.com/renesas-rcar/whitebox-sdk.git"
 #               rev: "vX.Y"
+
+  ENABLE_MONITORING_TOOL:
+    desc: "Add Grafana/Prometheus into DomD"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        components:
+          domd:
+            builder:
+              conf:
+                - [IMAGE_INSTALL_append, " packagegroup-system-monitor"]
 
   BUILD_DOMD_SDK:
     desc: "Switch build DomD SDK or not"
