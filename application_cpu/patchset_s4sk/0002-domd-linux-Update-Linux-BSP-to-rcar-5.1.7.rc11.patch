@@ -1,0 +1,29 @@
+From 2d9b2333f79867345e6ccfc46ab7258e61cf91fe Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Tue, 27 Jun 2023 17:09:00 +0900
+Subject: [PATCH 02/14] domd: linux: Update Linux BSP to rcar-5.1.7.rc11
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-kernel/linux/linux-renesas_%.bbappend           | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+index 5f3f651..7061b02 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+@@ -1,8 +1,8 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+ 
+-RENESAS_BSP_URL = "git://github.com/xen-troops/linux.git"
+-BRANCH = "v5.10.41/rcar-5.1.7.rc6-xt"
+-SRCREV = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
++RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-xen.git"
++BRANCH = "v5.10.41/rcar-5.1.7.rc11-xt"
++SRCREV = "33c9c4268e83508c68567fac3ff7a6f8b53f1868"
+ 
+ SRC_URI_append = "\
+     file://defconfig \
+-- 
+2.25.1
+

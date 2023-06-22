@@ -1,0 +1,66 @@
+From 5568435aa962e855b79e7e5b8bcff38b6eab7142 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 16 Jun 2023 18:39:42 +0900
+Subject: [PATCH 06/14] domd: snort: Remove tsn2 service
+
+S4SK has 2 Ethernet TSN only.
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../snort/snort/snort-tsn2.service                    | 11 -----------
+ .../recipes-connectivity/snort/snort_%.bbappend       |  6 +-----
+ 2 files changed, 1 insertion(+), 16 deletions(-)
+ delete mode 100644 meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort/snort-tsn2.service
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort/snort-tsn2.service b/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort/snort-tsn2.service
+deleted file mode 100644
+index b205cd3..0000000
+--- a/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort/snort-tsn2.service
++++ /dev/null
+@@ -1,11 +0,0 @@
+-[Unit]
+-Description=Snort for TSN2
+-After=network.target
+-
+-[Service]
+-ExecStartPre=-mkdir /var/log/snort
+-ExecStartPre=-tc qdisc add dev tsn2 ingress
+-ExecStart=/usr/bin/snort --daq-dir /usr/lib/daq/ -Q -c /etc/snort/snort.conf -i tsn2:rmon2
+-
+-[Install]
+-WantedBy=multi-user.target
+diff --git a/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort_%.bbappend
+index e7b1fe1..07965c0 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort_%.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-connectivity/snort/snort_%.bbappend
+@@ -6,7 +6,6 @@ SRC_URI_remove = "file://configure.in-disable-tirpc-checking-for-fedora.patch"
+ 
+ SRC_URI += " file://snort-tsn0.service \
+     file://snort-tsn1.service \
+-    file://snort-tsn2.service \
+     file://configure.in-disable-tirpc-checking-for-fedora-snort-20.patch \
+ "
+ 
+@@ -17,18 +16,15 @@ do_install_append() {
+     install -d ${D}${systemd_unitdir}/system
+     install -m 0644 ${WORKDIR}/snort-tsn0.service ${D}${systemd_unitdir}/system/
+     install -m 0644 ${WORKDIR}/snort-tsn1.service ${D}${systemd_unitdir}/system/
+-    install -m 0644 ${WORKDIR}/snort-tsn2.service ${D}${systemd_unitdir}/system/
+     echo "config daq: rswitch_offload" >> ${D}/etc/snort/snort.conf
+ }
+ 
+ 
+-SYSTEMD_PACKAGES = "snort-tsn0 snort-tsn1 snort-tsn2 "
++SYSTEMD_PACKAGES = "snort-tsn0 snort-tsn1 "
+ SYSTEMD_SERVICE_snort-tsn0 = "snort-tsn0.service"
+ SYSTEMD_SERVICE_snort-tsn1 = "snort-tsn1.service"
+-SYSTEMD_SERVICE_snort-tsn2 = "snort-tsn2.service"
+ 
+ FILES_${PN} += " ${systemd_unitdir}/system/snort-tsn0.service \
+     ${systemd_unitdir}/system/snort-tsn1.service \
+-    ${systemd_unitdir}/system/snort-tsn2.service \
+ "
+ 
+-- 
+2.25.1
+

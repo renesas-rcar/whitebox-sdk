@@ -1,0 +1,56 @@
+From 38b58a2dab3b91b11f2671264f85ce31472a4144 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Mon, 19 Jun 2023 15:50:02 +0900
+Subject: [PATCH 11/14] domx: optee: Add S4SK compatible string
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-security/optee/optee-client_%.bbappend            | 2 +-
+ .../recipes-security/optee/optee-os_%.bbappend                | 4 ++--
+ .../recipes-security/optee/optee-test_%.bbappend              | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-client_%.bbappend b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-client_%.bbappend
+index 5230e03..dbf36c5 100644
+--- a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-client_%.bbappend
++++ b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-client_%.bbappend
+@@ -1,4 +1,4 @@
+-COMPATIBLE_MACHINE = "spider"
++COMPATIBLE_MACHINE = "(spider|s4sk)"
+ 
+ PV = "3.17.0+git${SRCPV}"
+ 
+diff --git a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-os_%.bbappend b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-os_%.bbappend
+index a074339..cb7b1c0 100644
+--- a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-os_%.bbappend
++++ b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-os_%.bbappend
+@@ -1,6 +1,6 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/optee-os:"
+ 
+-COMPATIBLE_MACHINE = "spider"
++COMPATIBLE_MACHINE = "(spider|s4sk)"
+ 
+ PV = "3.17.0+git${SRCPV}"
+ 
+@@ -10,7 +10,7 @@ SRCREV = "f9e550142dd4b33ee1112f5dd64ffa94ba79cefa"
+ 
+ OPTEEMACHINE = "rcar"
+ OPTEEOUTPUTMACHINE = "rcar"
+-OPTEEFLAVOR = "spider_s4"
++OPTEEFLAVOR = "${MACHINE}_s4"
+ 
+ EXTRA_OEMAKE += " \
+     PLATFORM_FLAVOR=${OPTEEFLAVOR} \
+diff --git a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-test_%.bbappend b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-test_%.bbappend
+index a5c1d90..f49add9 100644
+--- a/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-test_%.bbappend
++++ b/meta-aos-rcar-gen4-domx/recipes-security/optee/optee-test_%.bbappend
+@@ -1,4 +1,4 @@
+-COMPATIBLE_MACHINE = "spider"
++COMPATIBLE_MACHINE = "(spider|s4sk)"
+ 
+ PV = "3.17.0+git${SRCPV}"
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,33 @@
+From 743e9729ff8aeac829260d06105e186c39e2a16f Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 16 Jun 2023 19:15:50 +0900
+Subject: [PATCH 08/14] driver/xen: Update config fragment for S4SK
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../files/{early_printk_spider.cfg => early_printk_s4sk.cfg}  | 0
+ .../recipes-extended/xen/xen_git.bbappend                     | 4 ++--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+ rename meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/files/{early_printk_spider.cfg => early_printk_s4sk.cfg} (100%)
+
+diff --git a/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/files/early_printk_spider.cfg b/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/files/early_printk_s4sk.cfg
+similarity index 100%
+rename from meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/files/early_printk_spider.cfg
+rename to meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/files/early_printk_s4sk.cfg
+diff --git a/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/xen_git.bbappend b/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/xen_git.bbappend
+index fab6e22..286259f 100644
+--- a/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/xen_git.bbappend
++++ b/meta-aos-rcar-gen4-driver-domain/recipes-extended/xen/xen_git.bbappend
+@@ -1,7 +1,7 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+ 
+-SRC_URI_append_spider = " \
+-    file://early_printk_spider.cfg \
++SRC_URI_append_s4sk = " \
++    file://early_printk_s4sk.cfg \
+ "
+ 
+ do_configure_append() {
+-- 
+2.25.1
+
