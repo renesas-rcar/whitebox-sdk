@@ -7,11 +7,15 @@ ZEPHYR_SDK_PATH=${SCRIPT_DIR}/zephyr-sdk-0.15.2
 CLEAN_BUILD_FLAG=false
 Usage() {
     echo "Usage:"
-    echo "    $0 [option]"
+    echo "    $0 [board] [option]"
+    echo "board:"
+    echo "    - spider: R-Car S4 Spider board"
+    echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
 }
 # Proc arguments
+OPTIND=2
 while getopts "ch" OPT
 do
     case $OPT in
@@ -25,6 +29,12 @@ if [[ ! -e ${ZEPHYR_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     rm -rf ${ZEPHYR_DIR}
     mkdir -p ${ZEPHYR_DIR}
 fi
+
+# Board argument
+if [ "$1" == "s4sk" ]; then BOARD="s4sk"
+elif [ "$1" == "spider" ]; then BOARD="spider"
+else echo "ERROR: Please specify a board name: spider or s4sk"; exit 1
+fi	
 
 # Setup SDK
 cd ${SCRIPT_DIR}
@@ -53,7 +63,7 @@ pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
 
 # Build
 cd ${ZEPHYR_DIR}/zephyr
-west build -p always -b rcar_spider_cr52 samples/basic/blinky
+west build -p always -b rcar_${BOARD}_cr52 samples/basic/blinky
 ${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 \
     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
