@@ -1,5 +1,11 @@
 #!/bin/bash -eu
 
+# $1 í board name; spider or s4sk
+if [ "$1" != "spider" ] && [ "$1" != "s4sk" ]; then
+    echo "ERROR: Please specify board name: spider or s4sk"
+    exit 1
+fi
+
 export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 
@@ -13,13 +19,17 @@ cd ./work
 
 # Preprae yaml file
 rm -f aos-rcar-gen4.yaml
-curl -O https://raw.githubusercontent.com/aoscloud/meta-aos-rcar-gen4/${AOS_VERSION}/aos-rcar-gen4.yaml
-cat ./aos-rcar-gen4.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
+if [ "$1" == "spider" ]; then
+    curl -O https://raw.githubusercontent.com/aoscloud/meta-aos-rcar-gen4/${AOS_VERSION}/aos-rcar-gen4.yaml
+    cat ./aos-rcar-gen4.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
+elif [ "$1" == "s4sk" ]; then
+    cat ../aos-rcar-gen4-s4sk.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
+fi
 
 #############################################
 # START: Apply patch for meta-aos-rcar-gen4 #
 #############################################
-# Remove meta-aos-rcar-gen4 from repo list
+# Remove meta-aos-rcar-gen from repo list
 PARTERN='    - type: git
       url: "https://github.com/aoscloud/meta-aos-rcar-gen4.git"
       rev: "v1.0.0"'
@@ -36,7 +46,14 @@ cd ../../
 # Apply patch
 cd ./yocto/meta-aos-rcar-gen4
 git am ../../../patchset_aos/*
+
+# Patch for S4SK
+if [ "$1" == "s4sk" ]; then
+    git am ../../../patchset_s4sk/*
+fi
+
 cd ../../
+
 #############################################
 # END: Apply patch for meta-aos-rcar-gen4   #
 #############################################
