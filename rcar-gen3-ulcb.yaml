@@ -199,6 +199,7 @@ parameters:
                 - [PACKAGECONFIG_pn-systemd_append, " timesyncd"]
                 - [PACKAGECONFIG_pn-systemd_append, " resolved"]
                 - [IMAGE_INSTALL_append, " cluster-app ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-serif"]
+                - [IMAGE_INSTALL_append, " ttf-noto-emoji-color ttf-noto-emoji-regular"]
                 - [IMAGE_INSTALL_append, " simple-video-streaming python3-opencv"]
                 - [IMAGE_INSTALL_append, " iperf3"]
                 # For development
