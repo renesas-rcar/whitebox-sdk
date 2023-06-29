@@ -1,0 +1,49 @@
+name: On Push notification for MS Teams
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on:
+  push:
+    branches:
+      - '*-dev'
+jobs:
+  Notification:
+    name: Notification when pushing *-dev branch
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Send message to ms teams channel
+      env:
+        COMMITS: ${{ toJSON(github.event.commits) }}
+      run: |
+        COMMITS=$(cat << EOS
+        ${{ env.COMMITS }}
+        EOS
+        )
+        SUMMARY=""
+        MESSAGE=""
+        BRANCH=${{ github.ref_name }}
+        TITLE="Update ${BRANCH} branch"
+
+        while read -r arr; do
+          COMMIT_USERNAME=$(echo "${arr}" | jq -r '.author.username')
+          COMMIT_MESSAGE="## "
+          COMMIT_MESSAGE+=$(echo "${arr}" | jq -r '.message' | \
+                           sed -z "s/\n/<br \/>/g" | sed 's|<br /><br />|  \\n  \\n|' | sed 's/"/\\"/g')
+          COMMIT_MESSAGE_TITLE=$(echo "${arr}" | jq -r '.message' | \
+                           sed -z "s/\n/<br \/>/g" | sed "s|<br /><br />.*||" | sed 's/"/\\"/g')
+          COMMIT_ID=$(echo "${arr}" | jq -r '.id')
+          COMMIT_URL=$(echo "${arr}" | jq -r '.url')
+
+          SUMMARY+="- [${COMMIT_ID:0:8}](${COMMIT_URL}) ${COMMIT_MESSAGE_TITLE}  \n"
+
+          MESSAGE+="----  \n"
+          MESSAGE+="Commit: [${COMMIT_ID}](${COMMIT_URL})  \n"
+          MESSAGE+="${COMMIT_MESSAGE}  \n"
+          MESSAGE+="  \n"
+        done < <(echo "${COMMITS}" | jq -c '.[]')
+
+        set -x
+        curl \
+          -X POST \
+          -H 'Content-Type: application/json' \
+          ${{ secrets.WEBHOOK_URL }} \
+          -d "{\"title\": \"${TITLE}\",\"text\": \"${SUMMARY}  \n${MESSAGE}\" }"
+
