@@ -27,6 +27,7 @@ done
 
 # setup cross_compiler
 if [[ ! -e "${SCRIPT_DIR}/arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi" ]]; then
+    cd ${SCRIPT_DIR}
     wget -c https://developer.arm.com/-/media/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi.tar.xz
     tar xf arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi.tar.xz
     rm arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi.tar.xz
