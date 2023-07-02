@@ -1,5 +1,5 @@
---- dhry_1.c.org	2023-05-22 20:24:07.000346188 +0900
-+++ dhry_1.c	2023-05-22 20:24:35.364745929 +0900
+--- dhry_1.c.org	2023-06-26 17:36:12.268088041 +0900
++++ dhry_1.c	2023-06-26 17:40:04.729554285 +0900
 @@ -14,10 +14,21 @@
   *
   ****************************************************************************
@@ -23,7 +23,7 @@
  
  Rec_Pointer     Ptr_Glob,
                  Next_Ptr_Glob;
-@@ -28,7 +39,7 @@ char            Ch_1_Glob,
+@@ -28,7 +39,7 @@
  int             Arr_1_Glob [50];
  int             Arr_2_Glob [50] [50];
  
@@ -32,16 +32,18 @@
  Enumeration     Func_1 ();
    /* forward declaration necessary since Enumeration may not simply be int */
  
-@@ -70,7 +81,7 @@ float           Microseconds,
+@@ -69,8 +80,9 @@
+ 
  /* end of variables for time measurement */
  
++extern void print(uint8* data);
  
 -main ()
 +dhrystone_main ()
  /*****/
  
    /* main program, corresponds to procedures        */
-@@ -84,8 +95,9 @@ main ()
+@@ -84,8 +96,9 @@
          Str_30          Str_1_Loc;
          Str_30          Str_2_Loc;
    REG   int             Run_Index;
@@ -53,7 +55,7 @@
    /* Initializations */
  
    Next_Ptr_Glob = (Rec_Pointer) malloc (sizeof (Rec_Type));
-@@ -118,6 +130,7 @@ main ()
+@@ -118,6 +131,7 @@
      printf ("Program compiled without 'register' attribute\n");
      printf ("\n");
    }
@@ -61,7 +63,7 @@
    printf ("Please give the number of runs through the benchmark: ");
    {
      int n;
-@@ -125,6 +138,9 @@ main ()
+@@ -125,7 +139,11 @@
      Number_Of_Runs = n;
    }
    printf ("\n");
@@ -69,9 +71,11 @@
 +  strncpy ((char*)&shared_memory[0], "DHRYSTONE PROG  ", 16);
 +  strncpy ((char*)&shared_memory[1], "is now running", 16);
  
++  print("\r\nDHRYSTONE PROG  is now running\r\n");
    printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
  
-@@ -143,8 +159,11 @@ main ()
+   /***************/
+@@ -143,8 +161,11 @@
    Begin_Time = clock();
  #endif
  
@@ -83,7 +87,7 @@
  
      Proc_5();
      Proc_4();
-@@ -192,7 +211,7 @@ main ()
+@@ -192,7 +213,7 @@
    /**************/
    /* Stop timer */
    /**************/
@@ -92,7 +96,7 @@
  #ifdef TIMES
    times (&time_info);
    End_Time = (long) time_info.tms_utime;
-@@ -261,6 +280,7 @@ main ()
+@@ -261,6 +282,7 @@
  
    if (User_Time < Too_Small_Time)
    {
@@ -100,7 +104,7 @@
      printf ("Measured time too small to obtain meaningful results\n");
      printf ("Please increase number of runs\n");
      printf ("\n");
-@@ -277,11 +297,36 @@ main ()
+@@ -277,11 +299,41 @@
      Dhrystones_Per_Second = ((float) HZ * (float) Number_Of_Runs)
                          / (float) User_Time;
  #endif
@@ -138,6 +142,11 @@
 +    for(i=0; i<16;++i){
 +      strncpy(buf, (char*)shared_memory[i], 16);
 +      printf("%s", buf);
++      print(buf);
++      if (i != 0)
++      {
++        print("\r\n");
++      }
 +    }
    }
    

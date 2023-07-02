@@ -46,7 +46,7 @@ index b221363..74b91ab 100644
  /* Data types and settings */
  /************************/
 diff --git a/core_main.c b/core_main.c
-index a4beeb6..c75d46b 100644
+index a4beeb6..ed42640 100644
 --- a/core_main.c
 +++ b/core_main.c
 @@ -21,6 +21,13 @@ Original Author: Shay Gal-on
@@ -63,7 +63,17 @@ index a4beeb6..c75d46b 100644
  
  /* Function: iterate
          Run the benchmark for a specified number of iterations.
-@@ -68,6 +75,13 @@ iterate(void *pres)
+@@ -48,6 +55,9 @@ static ee_u16 state_known_crc[]  = { (ee_u16)0x5e47,
+                                     (ee_u16)0xe5a4,
+                                     (ee_u16)0x8e3a,
+                                     (ee_u16)0x8d84 };
++
++extern void print(uint8* data);
++
+ void *
+ iterate(void *pres)
+ {
+@@ -68,6 +78,13 @@ iterate(void *pres)
          res->crc = crcu16(crc, res->crc);
          if (i == 0)
              res->crclist = res->crc;
@@ -77,7 +87,7 @@ index a4beeb6..c75d46b 100644
      }
      return NULL;
  }
-@@ -106,13 +120,13 @@ char *mem_name[3] = { "Static", "Heap", "Stack" };
+@@ -106,13 +123,13 @@ char *mem_name[3] = { "Static", "Heap", "Stack" };
  
  #if MAIN_HAS_NOARGC
  MAIN_RETURN_TYPE
@@ -93,7 +103,7 @@ index a4beeb6..c75d46b 100644
  {
  #endif
      ee_u16       i, j = 0, num_algorithms = 0;
-@@ -120,9 +134,13 @@ main(int argc, char *argv[])
+@@ -120,9 +137,14 @@ main(int argc, char *argv[])
      ee_u16       seedcrc = 0;
      CORE_TICKS   total_time;
      core_results results[MULTITHREAD];
@@ -103,11 +113,12 @@ index a4beeb6..c75d46b 100644
  #endif
 +    strncpy ((char*)&shared_memory[0], "CoreMark PROG   ", 16);
 +    strncpy ((char*)&shared_memory[1], "is now running  ", 16);
++    print("CoreMark PROG    is now running\r\n");
 +
      /* first call any initializations needed */
      portable_init(&(results[0].port), &argc, argv);
      /* First some checks to make sure benchmark will run ok */
-@@ -435,6 +453,33 @@ for (i = 0; i < MULTITHREAD; i++)
+@@ -435,6 +457,38 @@ for (i = 0; i < MULTITHREAD; i++)
      for (i = 0; i < MULTITHREAD; i++)
          portable_free(results[i].memblock[0]);
  #endif
@@ -136,6 +147,11 @@ index a4beeb6..c75d46b 100644
 +    for(i=0; i<16;++i){
 +      strncpy(buf, (char*)shared_memory[i], 16);
 +      ee_printf("%s", buf);
++      print(buf);
++      if (i != 0)
++      {
++        print("\r\n");
++      }
 +    }
 +
      /* And last call any target specific code for finalizing */

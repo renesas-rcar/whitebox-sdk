@@ -1,0 +1,99 @@
+From 7ee7a86335a47c969488935ff603dde2a40d1514 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Sun, 2 Jul 2023 18:30:54 +0900
+Subject: [PATCH 23/24] iccom: Add uart support
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/cortex-a/armv8/spider/iccom/iccom.c  | 20 ++++++++++++++++---
+ .../cortex-a/armv8/spider/iccom/iccom.oil     |  3 +++
+ 2 files changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/iccom/iccom.c b/examples/cortex-a/armv8/spider/iccom/iccom.c
+index ccc68c2b..4f0d38a4 100644
+--- a/examples/cortex-a/armv8/spider/iccom/iccom.c
++++ b/examples/cortex-a/armv8/spider/iccom/iccom.c
+@@ -3,6 +3,7 @@
+ #include "iccom_ll.h"
+ #include "iccom_commands.h"
+ #include <string.h>
++#include "serial.h"
+ 
+ #define APP_Task_iccom_START_SEC_CODE
+ #include "tpl_memmap.h"
+@@ -24,13 +25,24 @@ enum ICCOM_MSG {
+ #define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+ #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
+ #define OS_NAME				"Trampoline"
+-#define OS_NAME_SIZE			10
++#define STARTUP_LOG			"[Coatex-R52] ICCOM: driver initialized\r\n"
+ 
+ uint8 iccom_initalized = 0;
+ struct echo_command recv_pkt;
+ 
+ void CallTerminateISR2(void);
+ 
++static void print(uint8* data)
++{
++	int i = 0;
++	size_t len = strlen(data);
++	for (i=0; i< len; i++)
++	{
++		Serial_Tx(*data);
++		data++;
++	}
++}
++
+ static void iccom_notify_tx_data(size_t message)
+ {
+ 	iccom_set_out_msg_reg((uint32)message);
+@@ -116,8 +128,8 @@ static void iccom_handle_rx_msg(size_t size)
+ 
+ 		case OS: {
+ 			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
+-			memcpy(reply_pkt, OS_NAME, OS_NAME_SIZE);
+-			iccom_send((uint8*)reply_pkt, OS_NAME_SIZE, 0);
++			memcpy(reply_pkt, OS_NAME, strlen(OS_NAME));
++			iccom_send((uint8*)reply_pkt, strlen(OS_NAME), 0);
+ 			break;
+ 		}
+ 
+@@ -155,12 +167,14 @@ void iccom_init(void)
+ 
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
++	Serial_Init();
+ 	StartOS(OSDEFAULTAPPMODE);
+ 	return 0;
+ }
+ 
+ TASK(iccom) {
+ 	iccom_init();
++	print(STARTUP_LOG);
+ 	TerminateTask();
+ }
+ 
+diff --git a/examples/cortex-a/armv8/spider/iccom/iccom.oil b/examples/cortex-a/armv8/spider/iccom/iccom.oil
+index e35d7657..87cd3506 100644
+--- a/examples/cortex-a/armv8/spider/iccom/iccom.oil
++++ b/examples/cortex-a/armv8/spider/iccom/iccom.oil
+@@ -20,6 +20,7 @@ CPU iccom {
+       APP_SRC = "iccom_ll.c";
+       APP_NAME = "iccom_exe.elf";
+       CFLAGS  = "-O0";
++      CFLAGS  = "-DHSCIF_1843200BPS";
+       LDFLAGS = "-Map=iccom.map";
+       COMPILER = "arm-none-eabi-gcc";
+       CPPCOMPILER = "arm-none-eabi-g++";
+@@ -27,6 +28,8 @@ CPU iccom {
+       LINKER = "arm-none-eabi-ld";
+       COPIER = "arm-none-eabi-objcopy";
+       SYSTEM = PYTHON;
++
++      LIBRARY = serial;
+     };
+     SYSTEM_CALL = TRUE;
+     MEMMAP = TRUE {
+-- 
+2.25.1
+
