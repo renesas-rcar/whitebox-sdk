@@ -10,13 +10,14 @@ variables:
   XT_DOMU_DTB_NAME: "%{SOC_FAMILY}-%{MACHINE}-domu.dtb"
   XT_XEN_DTB_NAME: "%{SOC_FAMILY}-%{MACHINE}-xen.dtb"
   XT_GENERIC_DOMU_TAG: ""
-  MACHINE: "s4sk"
+  MACHINE: "spider"
   SOC_FAMILY: "r8a779f0"
-  XT_DOMD_CONFIG_NAME: "domd-s4sk.cfg"
-  XT_DOMU_CONFIG_NAME: "domu-s4sk.cfg"
+  XT_DOMD_CONFIG_NAME: "domd-%{MACHINE}.cfg"
+  XT_DOMU_CONFIG_NAME: "domu-%{MACHINE}.cfg"
+  META_RENESAS_COMMIT: "348924c"
 
   # Aos variables
-  AOS_BOARD_MODEL: "rcar-s4-s4sk"
+  AOS_BOARD_MODEL: "rcar-s4-%{MACHINE}"
   AOS_BOARD_VERSION: "1.0"
   AOS_BUNDLE_IMAGE_VERSION: "1.0.0"
   AOS_BUNDLE_OSTREE_REPO: "${TOPDIR}/../../rootfs_repo"
@@ -32,7 +33,7 @@ common_data:
   sources: &COMMON_SOURCES
     - type: git
       url: "git://git.yoctoproject.org/poky"
-      rev: "74b22db68"
+      rev: "232b553"
     - type: git
       url: "git://git.openembedded.org/meta-openembedded"
       rev: "814eec9"
@@ -172,7 +173,7 @@ components:
       - *COMMON_SOURCES
       - type: git
         url: https://github.com/renesas-rcar/meta-renesas.git
-        rev: "2b02ec9699954acfdfd35e6d79b53aadcee153ff"
+        rev: "%{META_RENESAS_COMMIT}"
       - type: git
         url: git://git.yoctoproject.org/meta-selinux
         rev: "46bcf05"
@@ -233,7 +234,7 @@ components:
         - "tmp/deploy/images/%{MACHINE}/xen-%{MACHINE}.uImage"
         - "tmp/deploy/images/%{MACHINE}/xenpolicy-%{MACHINE}"
         - "tmp/deploy/images/%{MACHINE}/%{XT_XEN_DTB_NAME}"
-        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-s4sk.ext4"
+        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
         - "tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
   domu:
     build-dir: "%{YOCTOS_WORK_DIR}"
@@ -241,7 +242,7 @@ components:
       - *COMMON_SOURCES
       - type: git
         url: https://github.com/renesas-rcar/meta-renesas.git
-        rev: "2b02ec9699954acfdfd35e6d79b53aadcee153ff"
+        rev: "fb473def"
     builder:
       type: yocto
       work_dir: "%{DOMU_BUILD_DIR}"
@@ -264,7 +265,7 @@ components:
       build_target: rcar-image-minimal
       target_images:
         - "tmp/deploy/images/%{MACHINE}/Image"
-        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-s4sk.ext4"
+        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
 
 images:
   full:
@@ -301,7 +302,7 @@ images:
         gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
         type: raw_image
         size: 1024 MiB
-        image_path: "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-s4sk.ext4"
+        image_path: "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
       domd_var:
         gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
         type: ext4
@@ -334,7 +335,7 @@ parameters:
               domu-rootfs:
                 type: raw_image
                 gpt_type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4 # Linux filesystem data
-                image_path: "%{YOCTOS_WORK_DIR}/%{DOMU_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-s4sk.ext4"
+                image_path: "%{YOCTOS_WORK_DIR}/%{DOMU_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
 
   # Aos VIS data provider
   VIS_DATA_PROVIDER:
@@ -349,3 +350,13 @@ parameters:
       overrides:
         variables:
           AOS_VIS_DATA_PROVIDER: "telemetryemulatoradapter"
+
+  TARGET_BOARD:
+    desc: "Select build target device"
+    "spider":
+      default: true
+    "s4sk":
+      overrides:
+        variables:
+          MACHINE: "s4sk"
+          META_RENESAS_COMMIT: "fb473de"

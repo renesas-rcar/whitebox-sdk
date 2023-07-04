@@ -18,13 +18,7 @@ mkdir -p ./work
 cd ./work
 
 # Preprae yaml file
-rm -f aos-rcar-gen4.yaml
-if [ "$1" == "spider" ]; then
-    curl -O https://raw.githubusercontent.com/aoscloud/meta-aos-rcar-gen4/${AOS_VERSION}/aos-rcar-gen4.yaml
-    cat ./aos-rcar-gen4.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
-elif [ "$1" == "s4sk" ]; then
-    cat ../aos-rcar-gen4-s4sk.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
-fi
+cat ../aos-rcar-gen4.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
 
 #############################################
 # START: Apply patch for meta-aos-rcar-gen4 #
@@ -58,7 +52,7 @@ cd ../../
 # END: Apply patch for meta-aos-rcar-gen4   #
 #############################################
 
-moulin ./aos-rcar-gen4-wb.yaml
+moulin ./aos-rcar-gen4-wb.yaml --TARGET_BOARD=$1
 ninja
 ninja image-full
 gzip full.img
