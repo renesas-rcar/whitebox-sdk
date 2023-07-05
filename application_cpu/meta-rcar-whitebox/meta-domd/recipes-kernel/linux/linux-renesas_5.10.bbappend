@@ -7,6 +7,7 @@ SRCREV = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
 SRC_URI_append = " \
      file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio.patch \
      file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
+     file://fwe.cfg \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"

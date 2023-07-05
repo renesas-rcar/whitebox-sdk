@@ -1,0 +1,63 @@
+SUMMARY = "AWS IoT FleetWise Edge Agent"
+DESCRIPTION = "AWS IoT FleetWise is a service that makes it easy for Automotive OEMs, Fleet operators, Independent Software vendors (ISVs) to collect, store, organize, and monitor data from vehicles at scale."
+HOMEPAGE = "https://github.com/aws/aws-iot-fleetwise-edge"
+LICENSE = "Apache-2.0"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=34400b68072d710fecd0a2940a0d1658"
+
+# nooelint: oelint.vars.dependsordered
+DEPENDS = "\
+    aws-sdk-cpp \
+    boost \
+    jsoncpp \
+    protobuf \
+    protobuf-native \
+    snappy \
+    "
+
+# nooelint: oelint.file.patchsignedoff
+SRC_URI = "\
+           git://github.com/aws/aws-iot-fleetwise-edge.git;protocol=https;branch=main \
+           file://run-ptest \
+           "
+
+SRCREV = "d0c4fad5110b27c22186f5d5b0d1d50512bcd33e"
+
+S = "${WORKDIR}/git"
+
+inherit cmake systemd ptest
+
+FILES:${PN} += "${systemd_system_unitdir}"
+
+RDEPENDS:${PN} = "protobuf"
+
+EXTRA_OECMAKE += "-DBUILD_TESTING=OFF"
+
+EXTRA_OECMAKE += "-DFWE_AWS_SDK_SHARED_LIBS=ON"
+
+SYSTEMD_SERVICE:${PN} = "fwe@0.service"
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 ${B}/src/executionmanagement/aws-iot-fleetwise-edge ${D}${bindir}
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0755 ${S}/tools/deploy/fwe@.service ${D}${systemd_system_unitdir}
+    install -d ${D}${sysconfdir}/aws-iot-fleetwise
+    install -m 0755 ${S}/configuration/static-config.json ${D}${systemd_system_unitdir}/config-0.json
+    install -d ${D}${localstatedir}/aws-iot-fleetwise
+}
+
+do_install_ptest() {
+    install -m 0755 ${S}/configuration/static-config.json ${D}${PTEST_PATH}/config-0.json
+}
+
+do_compile_prepend() {
+    file_path=${WORKDIR}/recipe-sysroot/usr/include/linux/can/isotp.h
+    if [ -f "${file_path}" ]; then
+        if ! grep -q "CAN_ISOTP_SF_BROADCAST" "${file_path}"; then
+            sed -i '/^#define CAN_ISOTP_WAIT_TX_DONE/a #define CAN_ISOTP_SF_BROADCAST  0x800   /* 1-to-N functional addressing */' ${file_path}
+        fi
+    fi
+}
+do_install_append() {
+    install -m 0755 ${S}/tools/deploy/run-fwe.sh ${D}${bindir}
+}
+

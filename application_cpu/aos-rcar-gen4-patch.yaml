@@ -85,3 +85,25 @@
         variables:
           BUILD_DOMD_SDK: "1"
 
+  ENABLE_AWS:
+    desc: "Add AWS services into DomD"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        components:
+          domd:
+            sources:
+              - type: git
+                url: https://github.com/aws4embeddedlinux/meta-aws.git
+                rev: 6fea710d1b3c8a5ad93e7811e75d8f4cf5962bb2
+            builder:
+              conf:
+                - [CORE_IMAGE_EXTRA_INSTALL_append, " kernel-modules"]
+                - [IMAGE_INSTALL_append, " greengrass-bin texinfo sudo"]
+                - [IMAGE_INSTALL_append, " python3-pip e2fsprogs-resize2fs"]
+                - [IMAGE_INSTALL_append, " aws-iot-fleetwise-edge"]
+              layers:
+                - "../meta-aws"
+
