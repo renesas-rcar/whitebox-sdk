@@ -29,7 +29,7 @@ do_compile_prepend () {
     cd ${S}
     git submodule update --init
     cd ${S}/vss-tools
-    sed -i '17,18d' Pipfile
+    sed -i '17,19d' Pipfile
     python3 -m pip install pipenv
     python3 -m pipenv install --dev
     $(cd binary && gcc -shared -o binarytool.so -fPIC binarytool.c)
