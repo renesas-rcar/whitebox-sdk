@@ -23,7 +23,7 @@ SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE_FILENAME = "prometheus.service"
 SYSTEMD_SERVICE_${PN} = "${SYSTEMD_SERVICE_FILENAME}"
 
-inherit npm
+DEPENDS_append = " nodejs-native"
 
 SRC_URI_append = " \
     file://${SYSTEMD_SERVICE_FILENAME} \
