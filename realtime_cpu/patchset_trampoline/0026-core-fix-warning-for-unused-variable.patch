@@ -1,0 +1,26 @@
+From 773918691ecedfab84b031de8de9fac6e578d2f4 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Thu, 1 Jun 2023 15:41:44 +0200
+Subject: [PATCH 37/41] core: fix warning for unused variable
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ os/tpl_os_kernel.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/os/tpl_os_kernel.c b/os/tpl_os_kernel.c
+index 8f7cfde0..341220b3 100644
+--- a/os/tpl_os_kernel.c
++++ b/os/tpl_os_kernel.c
+@@ -1238,6 +1238,8 @@ FUNC(void, OS_CODE) tpl_init_os(CONST(tpl_application_mode, AUTOMATIC) app_mode)
+       }
+     }
+   }
++#else
++  (void) result;
+ #endif
+ }
+ 
+-- 
+2.25.1
+

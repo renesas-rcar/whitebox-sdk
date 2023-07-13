@@ -88,3 +88,10 @@ chmod +x ./build.sh
 mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 benchmark_exe.elf $SCRIPT_DIR/deploy/cr52_bench.srec
 
+# build eathernet
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet
+chmod +x ./build.sh
+./build.sh
+mkdir -p ${SCRIPT_DIR}/deploy
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
+

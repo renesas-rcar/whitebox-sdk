@@ -1,0 +1,140 @@
+From 39d02b9eefb8ba68c276585badf02589e90a8b23 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 7 Jun 2023 10:40:01 +0200
+Subject: [PATCH 40/41] minor code improvements
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ .../armv8/spider/ethernet/eth_serdes.c        | 10 ++-----
+ .../cortex-a/armv8/spider/ethernet/main.c     |  2 +-
+ .../cortex-a/armv8/spider/ethernet/utils.c    | 26 ++++++++++++++-----
+ .../cortex-a/armv8/spider/ethernet/utils.h    |  6 ++++-
+ 4 files changed, 28 insertions(+), 16 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth_serdes.c b/examples/cortex-a/armv8/spider/ethernet/eth_serdes.c
+index bd4bdfe9..d83ea9ad 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/eth_serdes.c
++++ b/examples/cortex-a/armv8/spider/ethernet/eth_serdes.c
+@@ -51,8 +51,6 @@ typedef enum {
+ #define ETH_SERDES_REG_READ(ch, offset) \
+         (*(volatile uint32*)(eth_serdes_base_addr[ch] + (uint16)offset))
+ 
+-extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
+-
+ void eth_disable_fuse_ovr(void)
+ {
+     /* Disable Fuse_override_en */
+@@ -70,20 +68,16 @@ static int eth_serdes_wait_for_update(uint32 ch, uint16 offset, uint32 mask,
+                                       uint32 exp_val, uint32 timeout)
+ {
+     uint32 start_time;
+-    uint32 elapsed_time;
+-    uint32 curr_time;
+     uint32 reg_val;
+ 
+-    start_time = tpl_time_counter;
++    start_time = get_time();
+ 
+     do {
+-        curr_time = tpl_time_counter;
+         reg_val = ETH_SERDES_REG_READ(ch, offset);
+-        elapsed_time = curr_time - start_time;
+         if ((reg_val & mask) == exp_val) {
+             return 0;
+         }
+-    } while (elapsed_time < timeout);
++    } while (get_elapsed_time(start_time) < timeout);
+ 
+     return ERR_TIMEOUT;
+ }
+diff --git a/examples/cortex-a/armv8/spider/ethernet/main.c b/examples/cortex-a/armv8/spider/ethernet/main.c
+index e7325327..50d446de 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/main.c
++++ b/examples/cortex-a/armv8/spider/ethernet/main.c
+@@ -20,7 +20,7 @@ FUNC(int, OS_APPL_CODE) main(void)
+ TASK(sample_init) {
+ 	int ret;
+ 
+-	mcu_init();
++	rswitch_enable_clock_and_reset();
+ 	port_init();
+ 	// Interrupt initializazion done by Trampoline
+ 	eth_disable_fuse_ovr();
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.c b/examples/cortex-a/armv8/spider/ethernet/utils.c
+index 9a9c1bb5..7b0abd57 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/utils.c
++++ b/examples/cortex-a/armv8/spider/ethernet/utils.c
+@@ -1,11 +1,14 @@
+ #include "tpl_os.h"
+ #include "utils.h"
+-#include "pfcmap.h"
+-#include "device_cfg.h"
+ 
+ #define ETH_CPUCLK_MHZ 1066UL
+-#define ETH_WAIT_NS(t)  { volatile uint32 cnt; \
+-  for ( cnt = 0;cnt < ((((uint32)ETH_CPUCLK_MHZ * ((uint32)t)) / (uint32)1000) + (uint32)1);cnt++ ); }
++#define ETH_WAIT_NS(t) \
++    { \
++        volatile uint32 cnt; \
++        for (cnt = 0; \
++             cnt < ((((uint32)ETH_CPUCLK_MHZ * ((uint32)t)) / (uint32)1000) + (uint32)1); \
++             cnt++); \
++    }
+ 
+ /* Module Standby, Software reset */
+ #define MSTPCR_ETH_1        (*((volatile uint32 *)0xE6152D3CUL)) /* MSTPCR15 Register */
+@@ -23,11 +26,11 @@
+ #define SRCR_BIT_ETHIP      (uint32)(1 << 5)
+ #define SRCR_BIT_ETHPHY     (uint32)(1 << 6)
+ 
+-void mcu_init(void)
++void rswitch_enable_clock_and_reset(void)
+ {
+     volatile uint32 regval = 0x0UL;
+ 
+-    /* Supply RSW2�� clock by writing 0 to CKCR */
++    /* Enable RSW2 clock by writing 0 to CKCR */
+     regval = CKCR_ETH_1;                             /* RSW2CKCR */
+     if (regval & CKCR_BIT_ETHIP)                     /* 1: Stops the clock */
+     {
+@@ -57,6 +60,17 @@ void mcu_init(void)
+     ETH_WAIT_NS(40*1000);
+ }
+ 
++extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
++uint32 get_time(void)
++{
++    return tpl_time_counter;
++}
++
++uint32 get_elapsed_time(uint32 start_val)
++{
++    return (tpl_time_counter - start_val);
++}
++
+ void port_init(void)
+ {
+     uint32 dataL;
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.h b/examples/cortex-a/armv8/spider/ethernet/utils.h
+index db0aa20d..cfadb301 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/utils.h
++++ b/examples/cortex-a/armv8/spider/ethernet/utils.h
+@@ -1,9 +1,13 @@
+ #ifndef _UTILS_H_
+ #define _UTILS_H_
+ 
++#include "tpl_os.h"
++
+ #define BIT(x)      (1UL << x)
+ 
+-void mcu_init(void);
++void rswitch_enable_clock_and_reset(void);
+ void port_init(void);
++uint32 get_time(void);
++uint32 get_elapsed_time(uint32 start_val);
+ 
+ #endif /* _UTILS_H_ */
+\ No newline at end of file
+-- 
+2.25.1
+
