@@ -1,0 +1,23 @@
+From 82e41ad569eb0b88b6807ea5501850a3385cf957 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Mon, 19 Jun 2023 12:51:54 +0900
+Subject: [PATCH 10/14] common: xt-log: Change git protocol to https
+
+git protocol is not supported.
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-extended/xt-log/xt-log_git.bbappend                  | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 meta-aos-rcar-gen4-driver-domain/recipes-extended/xt-log/xt-log_git.bbappend
+
+diff --git a/meta-aos-rcar-gen4-driver-domain/recipes-extended/xt-log/xt-log_git.bbappend b/meta-aos-rcar-gen4-driver-domain/recipes-extended/xt-log/xt-log_git.bbappend
+new file mode 100644
+index 0000000..04b5bb3
+--- /dev/null
++++ b/meta-aos-rcar-gen4-driver-domain/recipes-extended/xt-log/xt-log_git.bbappend
+@@ -0,0 +1 @@
++SRC_URI = "git://github.com/xen-troops/${BPN}.git;branch=yocto-v4.7.0-xt0.1;protocol=https"
+-- 
+2.25.1
+

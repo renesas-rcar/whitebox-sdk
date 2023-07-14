@@ -1,0 +1,28 @@
+From 91168bce63cc51eb7a48d26ebfe3029e54c9d243 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Wed, 21 Jun 2023 17:59:18 +0900
+Subject: [PATCH 13/14] control-domain: Add S4SK image check
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-guests/domd/domd.bbappend                       | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/domd.bbappend b/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/domd.bbappend
+index 7398000..4c6d939 100644
+--- a/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/domd.bbappend
++++ b/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/domd.bbappend
+@@ -25,5 +25,9 @@ do_install_append() {
+     install -m 0644 ${WORKDIR}/domd-override.conf ${D}${sysconfdir}/systemd/system/domd.service.d
+ 
+     # Install domd initramfs
+-    install -m 0644 ${S}/core-image-tiny-initramfs-spider.cpio.gz ${D}${libdir}/xen/boot/initramfs-domd
++    if [ -f ${S}/core-image-tiny-initramfs-spider.cpio.gz ]; then
++        install -m 0644 ${S}/core-image-tiny-initramfs-spider.cpio.gz ${D}${libdir}/xen/boot/initramfs-domd
++    elif [ -f ${S}/core-image-tiny-initramfs-s4sk.cpio.gz ]; then
++        install -m 0644 ${S}/core-image-tiny-initramfs-s4sk.cpio.gz ${D}${libdir}/xen/boot/initramfs-domd
++    fi
+ }
+-- 
+2.25.1
+

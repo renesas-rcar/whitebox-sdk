@@ -1,0 +1,50 @@
+From 277a5f4e7f419a5ed4db5f125ac5c32719d708a8 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Tue, 20 Jun 2023 17:06:33 +0900
+Subject: [PATCH 04/14] domd: kernel: Align patch
+ 0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ ...esas-rswitch-fix-disabling-offload-with-defau.patch | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+index cb2ff4d..bfec32c 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+@@ -1,4 +1,4 @@
+-From c502262747c06a4156af8af9dd66fc0b1464113f Mon Sep 17 00:00:00 2001
++From 57c038083a629effe03c45901d941d1d1eaf9adf Mon Sep 17 00:00:00 2001
+ From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+ Date: Wed, 19 Apr 2023 17:17:23 +0300
+ Subject: [PATCH] net: renesas: rswitch: fix disabling offload with default
+@@ -16,10 +16,10 @@ Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+  1 file changed, 1 insertion(+), 1 deletion(-)
+ 
+ diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+-index a70e8994bc8b..777ca5eca356 100644
++index 3c31e2b62bb2..acf99488b985 100644
+ --- a/drivers/net/ethernet/renesas/rswitch.c
+ +++ b/drivers/net/ethernet/renesas/rswitch.c
+-@@ -2729,6 +2729,7 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
++@@ -2766,6 +2766,7 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
+  	new_routing_list->mask = be32_to_cpu(inet_make_mask(fen.dst_len));
+  	new_routing_list->subnet = fen.dst;
+  	new_routing_list->rdev = rdev;
+@@ -27,10 +27,10 @@ index a70e8994bc8b..777ca5eca356 100644
+  	INIT_LIST_HEAD(&new_routing_list->param_list);
+  
+  	mutex_lock(&rdev->priv->ipv4_forward_lock);
+-@@ -2744,7 +2745,6 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
++@@ -2781,7 +2782,6 @@ static void rswitch_fib_event_add(struct rswitch_fib_event_work *fib_work)
+  
+  	if (!rswitch_add_ipv4_dst_route(new_routing_list, rdev, be32_to_cpu(nh->nh_saddr)))
+- 		nh->fib_nh_flags |= RTNH_F_OFFLOAD;
++ 				nh->fib_nh_flags |= RTNH_F_OFFLOAD;
+ -	new_routing_list->nh = nh;
+  }
+  
+-- 
+2.25.1
+

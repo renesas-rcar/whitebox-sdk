@@ -1,0 +1,30 @@
+From 5b85edd2dfcc94dd9784b0d3975f6d73bfb9d3c4 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 16 Jun 2023 18:04:27 +0900
+Subject: [PATCH 01/14] dom0: kernel: update to rcar-5.1.7.rc11
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-kernel/linux/linux-generic-armv8.bbappend         | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend b/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
+index 75c2aa1..5067066 100644
+--- a/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
++++ b/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
+@@ -1,10 +1,10 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+ 
+-BRANCH = "v5.10.41/rcar-5.1.7.rc3"
++BRANCH = "v5.10.41/rcar-5.1.7.rc11"
+ SRCREV = "${AUTOREV}"
+ LINUX_VERSION = "5.10.41"
+ 
+ SRC_URI = "\
+-    git://github.com/renesas-rcar/linux-bsp.git;branch=${BRANCH} \
++    git://github.com/renesas-rcar/linux-bsp.git;branch=${BRANCH};protocol=https \
+     file://defconfig \
+ "
+-- 
+2.25.1
+

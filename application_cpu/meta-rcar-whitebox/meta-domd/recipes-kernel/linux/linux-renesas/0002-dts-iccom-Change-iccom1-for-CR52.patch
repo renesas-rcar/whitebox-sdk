@@ -1,17 +1,18 @@
-From dbb7a769d50910d616d3b7a193aceb3151beb986 Mon Sep 17 00:00:00 2001
-From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
-Date: Tue, 11 Apr 2023 09:46:40 +0900
-Subject: [PATCH] dts: iccom: Change iccom1 for CR52
+From e7e2542eb5809cd6676ecd362143b46287e66117 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Thu, 13 Jul 2023 15:11:17 +0900
+Subject: [PATCH 2/2] dts: iccom: Change iccom1 for CR52
 
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
  arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
-index da40321c2eab..01541d7af390 100644
+index da41e74ffa35..45e0b14cc5d8 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
-@@ -1277,9 +1277,9 @@ iccom: iccom00@e6260000 {
+@@ -1292,9 +1292,9 @@ iccom00 {
  
  		iccom01 {
  			compatible = "renesas,iccom-rcar";

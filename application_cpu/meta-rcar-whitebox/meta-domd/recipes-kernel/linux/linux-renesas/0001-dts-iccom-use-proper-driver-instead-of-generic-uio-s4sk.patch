@@ -1,0 +1,215 @@
+From f015d0f84a1f6bbc2d7e978181776d5c37fc927f Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Thu, 13 Jul 2023 15:09:37 +0900
+Subject: [PATCH 1/2] dts: iccom: use proper driver instead of generic-uio
+
+... in S4 Starter Kit.
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 183 ++--------------------
+ 1 file changed, 15 insertions(+), 168 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index e40933db1da0..da41e74ffa35 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -1278,180 +1278,27 @@ mailbox: mfis_mbox {
+ 			status = "disabled";
+ 		};
+ 
+-		iccom_reg00: mfis@e6260000 {
+-			compatible = "generic-uio";
+-			reg = <0 0xe6260000 0 0x10000>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_reg_00";
+-		};
+-
+ 		iccom00 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_00";
+-		};
+-
+-		iccom01 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_01";
+-		};
+-
+-		iccom02 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_02";
+-		};
+-
+-		iccom03 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 326 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_03";
+-		};
+-
+-		iccom04 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 328 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_04";
+-		};
+-
+-		iccom05 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 330 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_05";
+-		};
+-
+-		iccom06 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 332 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_06";
+-		};
+-
+-		iccom07 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 334 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_07";
+-		};
+-
+-		iccom08 {
+-			compatible = "generic-uio";
++			compatible = "renesas,iccom-rcar";
+ 			interrupts = <GIC_SPI 336 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_08";
+-		};
+-
+-		iccom09 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 338 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_09";
+-		};
++			reg = <0x0 0xe6260000 0x0 0x10000>;
++			iccom,reg-offset = <0x1480 0xa484 0x14c0 0xa4e0>;
++			iccom,cta-memory = <0x0 0x37fc9000 0x0 0x2000>;
++			iccom,ack-timeout = <250>;
++			iccom,int-clear-timeout = <250>;
++			iccom,read-timeout = <1000>;
+ 
+-		iccom010 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 340 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_10";
+ 		};
+ 
+-
+-		iccom011 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 342 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_11";
+-		};
+-
+-		iccom012 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 344 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_12";
+-		};
+-
+-		iccom013 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 346 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_13";
+-		};
+-
+-		iccom014 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 348 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_14";
+-		};
+-
+-		iccom015 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 350 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_15";
+-		};
+-
+-		iccom016 {
+-			compatible = "generic-uio";
++		iccom01 {
++			compatible = "renesas,iccom-rcar";
+ 			interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_16";
+-		};
+-
+-		iccom017 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_17";
+-		};
+-
+-		iccom018 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 358 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_18";
+-		};
+-
+-		iccom019 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 360 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_19";
+-		};
+-
+-		iccom020 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 362 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_20";
+-		};
+-
+-		iccom021 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 364 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_21";
+-		};
+-
+-		iccom022 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 366 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_22";
+-		};
+-
+-		iccom023 {
+-			compatible = "generic-uio";
+-			interrupts = <GIC_SPI 368 IRQ_TYPE_LEVEL_HIGH>;
+-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+-			linux,uio-name = "iccom_23";
++			reg = <0x0 0xe6260000 0x0 0x10000>;
++			iccom,reg-offset = <0x1580 0xb484 0x15c0 0xb4e0>;
++			iccom,cta-memory = <0x0 0x37fc7000 0x0 0x2000>;
++			iccom,ack-timeout = <250>;
++			iccom,int-clear-timeout = <250>;
++			iccom,read-timeout = <1000>;
+ 		};
+ 
+ 		caiplite_wrapper {
+-- 
+2.25.1
+

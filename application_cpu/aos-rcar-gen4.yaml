@@ -1,0 +1,362 @@
+desc: "Xen-Troops development setup for Renesas RCAR Gen4 hardware"
+min_ver: "0.4"
+
+variables:
+  YOCTOS_WORK_DIR: "yocto"
+  DOM0_BUILD_DIR: "build-dom0"
+  DOMD_BUILD_DIR: "build-domd"
+  DOMU_BUILD_DIR: "build-domu"
+  XT_DOMD_DTB_NAME: "%{SOC_FAMILY}-%{MACHINE}-domd.dtb"
+  XT_DOMU_DTB_NAME: "%{SOC_FAMILY}-%{MACHINE}-domu.dtb"
+  XT_XEN_DTB_NAME: "%{SOC_FAMILY}-%{MACHINE}-xen.dtb"
+  XT_GENERIC_DOMU_TAG: ""
+  MACHINE: "spider"
+  SOC_FAMILY: "r8a779f0"
+  XT_DOMD_CONFIG_NAME: "domd-%{MACHINE}.cfg"
+  XT_DOMU_CONFIG_NAME: "domu-%{MACHINE}.cfg"
+  META_RENESAS_COMMIT: "348924c"
+
+  # Aos variables
+  AOS_BOARD_MODEL: "rcar-s4-%{MACHINE}"
+  AOS_BOARD_VERSION: "1.0"
+  AOS_BUNDLE_IMAGE_VERSION: "1.0.0"
+  AOS_BUNDLE_OSTREE_REPO: "${TOPDIR}/../../rootfs_repo"
+  AOS_BUNDLE_REF_VERSION: "0.3.0"
+  AOS_BUNDLE_DOM0_TYPE: "full"
+  AOS_BUNDLE_DOMD_TYPE: "full"
+  AOS_BUNDLE_RH850_TYPE: ""
+  AOS_RH850_IMAGE_VERSION: "1.0.0"
+  AOS_RH850_IMAGE_PATH: "${TOPDIR}/../../sample_image_RH850/v1.0/OTA_AlcoholApp_Image"
+
+common_data:
+  # Sources used by all yocto-based domains
+  sources: &COMMON_SOURCES
+    - type: git
+      url: "git://git.yoctoproject.org/poky"
+      rev: "232b553"
+    - type: git
+      url: "git://git.openembedded.org/meta-openembedded"
+      rev: "814eec9"
+    - type: git
+      url: "git://git.yoctoproject.org/meta-virtualization"
+      rev: "180241e"
+    - type: git
+      url: "git://git.yoctoproject.org/meta-arm"
+      rev: "5c096848"
+    - type: git
+      url: "https://github.com/xen-troops/meta-xt-common.git"
+      rev: "e27c46b"
+    - type: git
+      url: "https://github.com/aoscloud/meta-aos-rcar-gen4.git"
+      rev: "v1.0.0"
+  # Common configuration options for all yocto-based domains
+  conf: &COMMON_CONF
+    - [SSTATE_DIR, "${TOPDIR}/../../../common_data/sstate"]
+    - [DL_DIR, "${TOPDIR}/../../../common_data/downloads"]
+
+    # Skip warning about missing "virtualization" distro feature
+    - [SKIP_META_VIRT_SANITY_CHECK, "1"]
+
+    # Use hypervisor console on all guests
+    - [SERIAL_CONSOLES, "115200;hvc0"]
+
+    # Remove features that we are not using
+    - [
+        DISTRO_FEATURES_remove,
+        "x11 gtk gobject-introspection-data wifi nfc
+        bluetooth irda zeroconf 3g sysvinit acl alsa argp pcmcia usbgadget
+        usbhost opengl ptest multiarch wayland vulkan sysvinit",
+      ]
+
+    # Aos config
+    - [BOARD_MODEL, "%{AOS_BOARD_MODEL}"]
+    - [BOARD_VERSION, "%{AOS_BOARD_VERSION}"]
+    - [DOM0_IMAGE_VERSION, "%{AOS_BUNDLE_IMAGE_VERSION}"]
+    - [DOMD_IMAGE_VERSION, "%{AOS_BUNDLE_IMAGE_VERSION}"]
+    - [DOMU_IMAGE_VERSION, "%{AOS_BUNDLE_IMAGE_VERSION}"]
+    - [RH850_IMAGE_VERSION, "%{AOS_RH850_IMAGE_VERSION}"]
+
+  # Conf options for domain that are built used renesas layer
+  domd_domu_conf: &DOMD_DOMU_CONF
+    - [MACHINE, "%{MACHINE}"]
+    - [SOC_FAMILY, "%{SOC_FAMILY}"]
+
+    # Add systemd configuration
+    - [DISTRO_FEATURES_append, " systemd"]
+    - [VIRTUAL-RUNTIME_init_manager, "systemd"]
+
+    # add the static lib to SDK toolchain
+    - [SDKIMAGE_FEATURES_append, " staticdev-pkgs"]
+
+    # Add for gstreamer plugins ugly
+    - [LICENSE_FLAGS_WHITELIST, "commercial"]
+
+    # Add Capacity Aware migration Strategy (CAS)
+    - [MACHINE_FEATURES_append, " cas"]
+
+    # Remove ptest to reduce the build time
+    - [DISTRO_FEATURES_remove, "ptest"]
+
+    # Generate ext4 image files
+    - [IMAGE_FSTYPES_append, " ext4"]
+
+    # Disable renesas optee recipes
+    - [BBMASK, "meta-renesas/.*/optee"]
+
+components:
+  dom0:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    default: true
+    sources:
+      - *COMMON_SOURCES
+    builder:
+      type: yocto
+      work_dir: "%{DOM0_BUILD_DIR}"
+      conf:
+        - *COMMON_CONF
+        - [MACHINE, "generic-armv8-xt"]
+        - [XT_DOM_NAME, "dom0"]
+        - [XT_DOMD_MACHINE, "%{MACHINE}"]
+        - [XT_DOMU_MACHINE, "%{MACHINE}"]
+        - [XT_DOMD_SOC_FAMILY, "%{SOC_FAMILY}"]
+        - [XT_DOMD_CONFIG_NAME, "%{XT_DOMD_CONFIG_NAME}"]
+        - [XT_DOMU_CONFIG_NAME, "%{XT_DOMU_CONFIG_NAME}"]
+        - [XT_DOMD_DTB_NAME, "%{XT_DOMD_DTB_NAME}"]
+        - [XT_DOMU_DTB_NAME, "%{XT_DOMU_DTB_NAME}"]
+        - [XT_GUEST_INSTALL, "%{XT_GENERIC_DOMU_TAG} domd"]
+
+        # Disable HWDB which quite huge (around 15MB) and is not required at all
+        - [BAD_RECOMMENDATIONS_append, " udev-hwdb"]
+
+        # Enable systemd on dom0
+        - [DISTRO_FEATURES_append, " systemd"]
+        - [VIRTUAL-RUNTIME_init_manager, "systemd"]
+
+        # Do not install kernel image to rootfs to decrease initrd size
+        - ["RDEPENDS_${KERNEL_PACKAGE_NAME}-base", ""]
+
+        # Aos update config
+        - ["BUNDLE_DIR", "${TOPDIR}/../../"]
+        - ["BUNDLE_OSTREE_REPO", "%{AOS_BUNDLE_OSTREE_REPO}"]
+        - ["BUNDLE_DOM0_TYPE", "%{AOS_BUNDLE_DOM0_TYPE}"]
+        - ["BUNDLE_DOMD_TYPE", "%{AOS_BUNDLE_DOMD_TYPE}"]
+        - ["BUNDLE_RH850_TYPE", "%{AOS_BUNDLE_RH850_TYPE}"]
+        - ["DOMD_REF_VERSION", "%{AOS_BUNDLE_REF_VERSION}"]
+        - ["BUNDLE_IMAGE_VERSION", "%{AOS_BUNDLE_IMAGE_VERSION}"]
+        - ["RH850_IMAGE_PATH", "%{AOS_RH850_IMAGE_PATH}"]
+
+      layers:
+        - "../meta-virtualization"
+        - "../meta-openembedded/meta-oe"
+        - "../meta-openembedded/meta-filesystems"
+        - "../meta-openembedded/meta-python"
+        - "../meta-openembedded/meta-networking"
+        - "../meta-xt-common/meta-xt-control-domain"
+        - "../meta-xt-common/meta-xt-dom0"
+        - "../meta-xt-common/meta-xt-domx"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-dom0"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-control-domain"
+        - "../meta-aos"
+      build_target: core-image-thin-initramfs
+      external_src:
+        domd: "%{YOCTOS_WORK_DIR}/%{DOMD_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/"
+      additional_deps:
+        - "%{DOMD_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/Image"
+      target_images:
+        - "tmp/deploy/images/generic-armv8-xt/Image"
+        - "tmp/deploy/images/generic-armv8-xt/uInitramfs"
+        - "tmp/deploy/images/generic-armv8-xt/aos/version"
+  domd:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - *COMMON_SOURCES
+      - type: git
+        url: https://github.com/renesas-rcar/meta-renesas.git
+        rev: "%{META_RENESAS_COMMIT}"
+      - type: git
+        url: git://git.yoctoproject.org/meta-selinux
+        rev: "46bcf05"
+      - type: git
+        url: "git://git.yoctoproject.org/meta-security"
+        rev: "c62970f"
+      - type: git
+        url: https://github.com/aoscloud/meta-aos.git
+        rev: "v6.0.2"
+    builder:
+      type: yocto
+      work_dir: "%{DOMD_BUILD_DIR}"
+      conf:
+        - *COMMON_CONF
+        - *DOMD_DOMU_CONF
+        - [XT_DOM_NAME, "domd"]
+        - [XT_DEVICE_TREES, "%{XT_DOMD_DTB_NAME} %{XT_XEN_DTB_NAME}"]
+        - [IMAGE_INSTALL_append, " iperf3"]
+
+        # Enable seccomp for crun
+        - [DISTRO_FEATURES_append, " seccomp"]
+
+        # Initramfs configuration
+        - [INITRAMFS_IMAGE, "core-image-tiny-initramfs"]
+        - [INITRAMFS_IMAGE_BUNDLE, "0"]
+        - [INITRAMFS_FSTYPES, "cpio.gz"]
+
+        # Do not install kernel image to rootfs to decrease initrd size
+        - ["RDEPENDS_${KERNEL_PACKAGE_NAME}-base", ""]
+
+        # Aos config
+        - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
+
+      build_target: rcar-image-minimal
+      layers:
+        - "../poky/meta"
+        - "../poky/meta-poky"
+        - "../poky/meta-yocto-bsp"
+        - "../meta-virtualization"
+        - "../meta-selinux"
+        - "../meta-security"
+        - "../meta-openembedded/meta-oe"
+        - "../meta-openembedded/meta-networking"
+        - "../meta-openembedded/meta-perl"
+        - "../meta-openembedded/meta-python"
+        - "../meta-openembedded/meta-filesystems"
+        - "../meta-arm/meta-arm"
+        - "../meta-arm/meta-arm-toolchain"
+        - "../meta-aos"
+        - "../meta-renesas/meta-rcar-gateway"
+        - "../meta-xt-common/meta-xt-domx"
+        - "../meta-xt-common/meta-xt-driver-domain"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-driver-domain"
+      target_images:
+        - "tmp/deploy/images/%{MACHINE}/Image"
+        - "tmp/deploy/images/%{MACHINE}/xen-%{MACHINE}.uImage"
+        - "tmp/deploy/images/%{MACHINE}/xenpolicy-%{MACHINE}"
+        - "tmp/deploy/images/%{MACHINE}/%{XT_XEN_DTB_NAME}"
+        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
+        - "tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+  domu:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - *COMMON_SOURCES
+      - type: git
+        url: https://github.com/renesas-rcar/meta-renesas.git
+        rev: "fb473def"
+    builder:
+      type: yocto
+      work_dir: "%{DOMU_BUILD_DIR}"
+      conf:
+        - *COMMON_CONF
+        - *DOMD_DOMU_CONF
+        - [XT_DOM_NAME, "domu"]
+        - [IMAGE_INSTALL_append, " iperf3 "]
+
+      layers:
+        - "../meta-openembedded/meta-oe"
+        - "../meta-openembedded/meta-filesystems"
+        - "../meta-openembedded/meta-python"
+        - "../meta-arm/meta-arm"
+        - "../meta-arm/meta-arm-toolchain"
+        - "../meta-renesas/meta-rcar-gateway"
+        - "../meta-xt-common/meta-xt-domu"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
+        - "../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domu"
+      build_target: rcar-image-minimal
+      target_images:
+        - "tmp/deploy/images/%{MACHINE}/Image"
+        - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
+
+images:
+  full:
+    type: gpt
+    desc: "Full SD-card/eMMC image"
+    partitions:
+      boot_a:
+        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+        type: ext4
+        size: 128 MiB
+        files:
+          "version": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/aos/version"
+          "Image": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/Image"
+          "uInitramfs": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/uInitramfs"
+          "xen": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/xen-%{MACHINE}.uImage"
+          "xenpolicy": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/xenpolicy-%{MACHINE}"
+          "xen.dtb": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/%{XT_XEN_DTB_NAME}"
+      boot_b:
+        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+        type: ext4
+        size: 128 MiB
+        files:
+          "version": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/aos/version"
+          "Image": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/Image"
+          "uInitramfs": "%{YOCTOS_WORK_DIR}/build-dom0/tmp/deploy/images/generic-armv8-xt/uInitramfs"
+          "xen": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/xen-%{MACHINE}.uImage"
+          "xenpolicy": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/xenpolicy-%{MACHINE}"
+          "xen.dtb": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/%{XT_XEN_DTB_NAME}"
+      boot_env:
+        gpt_type: 21686148-6449-6E6F-744E-656564454649 # BIOS boot partition (kinda...)
+        type: vfat
+        size: 16 MiB
+      domd_rootfs:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: raw_image
+        size: 1024 MiB
+        image_path: "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
+      domd_var:
+        gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
+        type: ext4
+        size: 512 MiB
+        files:
+          ".unprovisioned": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+      domd_aos:
+        gpt_type: CA7D7CCB-63ED-4C53-861C-1742536059CC # LUKS partition
+        type: empty
+        size: 1024 MiB
+parameters:
+  ENABLE_DOMU:
+    desc: "Build generic Yocto-based DomU"
+    "no":
+      default: true
+    "yes":
+      overrides:
+        variables:
+          XT_GENERIC_DOMU_TAG: "domu"
+        components:
+          dom0:
+            builder:
+              additional_deps:
+                - "%{DOMU_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/Image"
+              external_src:
+                domu: "%{YOCTOS_WORK_DIR}/%{DOMU_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/"
+        images:
+          full:
+            partitions:
+              domu-rootfs:
+                type: raw_image
+                gpt_type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4 # Linux filesystem data
+                image_path: "%{YOCTOS_WORK_DIR}/%{DOMU_BUILD_DIR}/tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
+
+  # Aos VIS data provider
+  VIS_DATA_PROVIDER:
+    desc: "Sepecifies plugin for VIS automotive data"
+    renesassimulator:
+      default: true
+      overrides:
+        variables:
+          AOS_VIS_DATA_PROVIDER: "renesassimulatoradapter"
+
+    telemetryemulator:
+      overrides:
+        variables:
+          AOS_VIS_DATA_PROVIDER: "telemetryemulatoradapter"
+
+  TARGET_BOARD:
+    desc: "Select build target device"
+    "spider":
+      default: true
+    "s4sk":
+      overrides:
+        variables:
+          MACHINE: "s4sk"
+          META_RENESAS_COMMIT: "fb473de"

@@ -1,13 +1,21 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
-RENESAS_BSP_URL = "git://github.com/xen-troops/linux.git"
-BRANCH = "v5.10.41/rcar-5.1.7.rc6-xt"
-SRCREV = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
+RENESAS_BSP_URL_spider = "git://github.com/xen-troops/linux.git"
+BRANCH_spider = "v5.10.41/rcar-5.1.7.rc6-xt"
+SRCREV_spider = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
+
+SRC_URI_append_spider = " \
+    file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio.patch \
+    file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
+"
+
+SRC_URI_append_s4sk = " \
+    file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch \
+    file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
+"
 
 SRC_URI_append = " \
-     file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio.patch \
-     file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
-     file://fwe.cfg \
+    file://fwe.cfg \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
