@@ -7,15 +7,33 @@ SOURCE_DIR=${SCRIPT_DIR}/trampoline
 
 export PATH=~/.local/bin:$PATH
 
-if [ ! -e ${SOURCE_DIR} ]; then
-    git clone ${GITHUB_URL} ${SOURCE_DIR}
+CLEAN_BUILD_FLAG=false
+Usage() {
+    echo "Usage:"
+    echo "    $0 [option]"
+    echo "option:"
+    echo "    -c: Clean build flag(Defualt is disable)"
+}
+# Proc arguments
+while getopts "ch" OPT
+do
+    case $OPT in
+        c) CLEAN_BUILD_FLAG=true;;
+        h) Usage; exit;;
+        *) echo Unsupported option; Usage; exit;;
+    esac
+done
+
+if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
+    if [ ! -e ${SOURCE_DIR} ]; then
+        git clone ${GITHUB_URL} ${SOURCE_DIR}
+    fi
+    cd ${SOURCE_DIR}
+    git reset --hard ${COMMIT} ; git clean -df
+
+    # prepare Benchmarks code
+    git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
 fi
-cd ${SOURCE_DIR}
-git reset --hard ${COMMIT} ; git clean -df
-
-# prepare Benchmarks code
-git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
-
 
 if [[ "$(which rlink | grep no)" != "" ]]; then
     export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
