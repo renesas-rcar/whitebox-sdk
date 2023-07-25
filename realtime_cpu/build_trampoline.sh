@@ -11,11 +11,26 @@ export PATH=${SCRIPT_DIR}/arm-gnu-toolchain-12.2.rel1-x86_64-arm-none-eabi/bin:$
 CLEAN_BUILD_FLAG=false
 Usage() {
     echo "Usage:"
-    echo "    $0 [option]"
+    echo "    $0 board [option]"
+    echo "board:"
+    echo "    - spider: R-Car S4 Spider board"
+    echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
 }
+
+if [[ $# < 1 ]]; then
+    echo "Please select a board to build"
+    Usage; exit
+fi
+
+if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
+    echo "Please select a board to build"
+    Usage; exit
+fi
+
 # Proc arguments
+OPTIND=2
 while getopts "ch" OPT
 do
     case $OPT in
@@ -44,6 +59,9 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
 
     # prepare Benchmarks code
     git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
+    if [ "$1" == "s4sk" ]; then
+        git am ${SCRIPT_DIR}/patchset_trampoline_s4sk/*.patch
+    fi
 fi
 
 # Setup python build env

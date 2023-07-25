@@ -66,7 +66,7 @@ esac
 # Build CR52
 cd ${BASE_DIR}/realtime_cpu
 case $CR52 in
-    "Trampoline") ./build_trampoline.sh -c;;
+    "Trampoline") ./build_trampoline.sh $1 -c;;
     "Zephyr")     ./build_zephyr.sh $1 -c;;
 esac
 
