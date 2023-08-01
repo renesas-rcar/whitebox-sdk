@@ -1,0 +1,45 @@
+From 212772f01aa98173d36803f768698375a26a628f Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Wed, 2 Aug 2023 04:31:54 +0900
+Subject: [PATCH] s4sk: Fix Serial output on Zephyr
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts b/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
+index 2369e09570..945a0418bf 100644
+--- a/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
++++ b/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
+@@ -15,8 +15,8 @@
+ 
+ 	chosen {
+ 		zephyr,sram = &sram0;
+-		zephyr,console = &scif3; /* Linux is using scif3 */
+-		zephyr,shell-uart = &scif3;
++		zephyr,console = &scif0; /* Linux is using scif3 */
++		zephyr,shell-uart = &scif0;
+ 	};
+ 
+ 	leds {
+@@ -46,7 +46,7 @@
+ &scif0 {
+ 	pinctrl-0 = <&scif0_data_tx_default &scif0_data_rx_default>;
+ 	pinctrl-names = "default";
+-	status = "disabled";
++	status = "okay";
+ };
+ 
+ /* Linux console */
+@@ -54,7 +54,6 @@
+ 	pinctrl-0 = <&scif3_data_tx_default &scif3_data_rx_default>;
+ 	pinctrl-names = "default";
+ 	current-speed = <115200>;
+-	status = "okay";
+ };
+ 
+ &gpio0 {
+-- 
+2.25.1
+
