@@ -1,0 +1,109 @@
+diff -u a/dhry_1.c b/dhry_1.c
+--- a/dhry_1.c	2023-07-28 15:04:54.754533742 +0900
++++ b/dhry_1.c	2023-07-28 15:05:00.894514064 +0900
+@@ -18,6 +18,16 @@
+ #include "dhry.h"
+ 
+ /* Global Variables: */
++extern void __nop(void);
++#ifndef NRM_ROUT
++#define printf(...) __nop()
++#else
++#define fputs(...) __nop()
++#define puts(...) __nop()
++#endif
++extern uint8 result_array[4][17];
++extern void float_to_char(uint8 input_array[], float input);
++extern void int_to_char(uint8 input_array[], int input);
+ 
+ Rec_Pointer     Ptr_Glob,
+                 Next_Ptr_Glob;
+@@ -70,7 +80,7 @@
+ /* end of variables for time measurement */
+ 
+ 
+-main ()
++dhrystone_main ()
+ /*****/
+ 
+   /* main program, corresponds to procedures        */
+@@ -84,7 +94,7 @@
+         Str_30          Str_1_Loc;
+         Str_30          Str_2_Loc;
+   REG   int             Run_Index;
+-  REG   int             Number_Of_Runs;
++  REG   int             Number_Of_Runs = NUMBER_OF_RUNS;
+ 
+   /* Initializations */
+ 
+@@ -118,6 +128,7 @@
+     printf ("Program compiled without 'register' attribute\n");
+     printf ("\n");
+   }
++  /*
+   printf ("Please give the number of runs through the benchmark: ");
+   {
+     int n;
+@@ -125,8 +136,10 @@
+     Number_Of_Runs = n;
+   }
+   printf ("\n");
++  */
+ 
+   printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
++  fputs("DHRYSTONE PROG  is now running\r", stdout);
+ 
+   /***************/
+   /* Start timer */
+@@ -137,7 +150,7 @@
+   Begin_Time = (long) time_info.tms_utime;
+ #endif
+ #ifdef TIME
+-  Begin_Time = time ( (long *) 0);
++  Begin_Time = (long)(k_uptime_get() / 1000); /* mS -> S */
+ #endif
+ #ifdef MSC_CLOCK
+   Begin_Time = clock();
+@@ -198,7 +211,7 @@
+   End_Time = (long) time_info.tms_utime;
+ #endif
+ #ifdef TIME
+-  End_Time = time ( (long *) 0);
++  End_Time = (long)(k_uptime_get() / 1000); /* mS -> S */
+ #endif
+ #ifdef MSC_CLOCK
+   End_Time = clock();
+@@ -277,11 +290,28 @@
+     Dhrystones_Per_Second = ((float) HZ * (float) Number_Of_Runs)
+                         / (float) User_Time;
+ #endif
+-    printf ("Microseconds for one run through Dhrystone: ");
+-    printf ("%6.1f \n", Microseconds);
+-    printf ("Dhrystones per Second:                      ");
+-    printf ("%6.1f \n", Dhrystones_Per_Second);
+-    printf ("\n");
++    // printf ("Microseconds for one run through Dhrystone: ");
++    // printf ("%6.1f \n", Microseconds);
++    // printf ("Dhrystones per Second:                      ");
++    // printf ("%6.1f \n", Dhrystones_Per_Second);
++    // printf ("\n");
++    puts("DHRYSTONE PROG  is finished !!");
++    puts("\n");
++    puts("Result");
++    puts("----------------");
++    puts("msec/dhrystone");
++    float_to_char((uint8*)&result_array[0], Microseconds);
++    puts(result_array[0]);
++    puts("Dhrystone/sec");
++    float_to_char((uint8*)&result_array[1], Dhrystones_Per_Second);
++    puts(result_array[1]);
++    puts("DMIPS(VAX MIPS)");
++    float_to_char((uint8*)&result_array[2], Dhrystones_Per_Second/1757.0);
++    puts(result_array[2]);
++    puts("MIPS/MHz @1060MHz");
++    float_to_char((uint8*)&result_array[3], Dhrystones_Per_Second/1757.0/1060.0);
++    puts(result_array[3]);
++    puts("\n");
+   }
+   
+ }

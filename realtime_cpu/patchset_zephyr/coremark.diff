@@ -1,0 +1,132 @@
+diff --git a/barebones/core_portme.c b/barebones/core_portme.c
+index 30112ff..0e24dab 100644
+--- a/barebones/core_portme.c
++++ b/barebones/core_portme.c
+@@ -44,8 +44,11 @@ volatile ee_s32 seed5_volatile = 0;
+ CORETIMETYPE
+ barebones_clock()
+ {
++/*
+ #error \
+     "You must implement a method to measure time in barebones_clock()! This function should return current time.\n"
++*/
++    return (CORETIMETYPE)k_cycle_get_32();
+ }
+ /* Define : TIMER_RES_DIVIDER
+         Divider to trade off timer resolution and total time that can be
+@@ -129,8 +132,10 @@ ee_u32 default_num_contexts = 1;
+ void
+ portable_init(core_portable *p, int *argc, char *argv[])
+ {
++/*
+ #error \
+     "Call board initialization routines in portable init (if needed), in particular initialize UART!\n"
++*/
+ 
+     (void)argc; // prevent unused warning
+     (void)argv; // prevent unused warning
+diff --git a/barebones/cvt.c b/barebones/cvt.c
+index 333e8ea..18e7886 100644
+--- a/barebones/cvt.c
++++ b/barebones/cvt.c
+@@ -17,6 +17,11 @@ limitations under the License.
+ #define CVTBUFSIZE 80
+ static char CVTBUF[CVTBUFSIZE];
+ 
++double modf(double value, double* intpart) {
++    *intpart = (double)(int)value;
++    return value - *intpart;
++}
++
+ static char *
+ cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag)
+ {
+diff --git a/core_main.c b/core_main.c
+index a4beeb6..3a7fa64 100644
+--- a/core_main.c
++++ b/core_main.c
+@@ -21,6 +21,16 @@ Original Author: Shay Gal-on
+    initial parameters, tun t he benchmark and report the results.
+ */
+ #include "coremark.h"
++#include <stdio.h>
++#ifndef NRM_ROUT
++#define printf(...) __nop()
++#else
++#define fputs(...) __nop()
++#define puts(...) __nop()
++#endif
++extern uint8 result_array[4][17];
++extern void float_to_char(uint8 input_array[], float input);
++extern void int_to_char(uint8 input_array[], int input);
+ 
+ /* Function: iterate
+         Run the benchmark for a specified number of iterations.
+@@ -82,7 +92,7 @@ ee_s32 get_seed_32(int i);
+ #endif
+ 
+ #if (MEM_METHOD == MEM_STATIC)
+-ee_u8 static_memblk[TOTAL_DATA_SIZE];
++ee_u8 __attribute__((aligned(4))) static_memblk[TOTAL_DATA_SIZE];
+ #endif
+ char *mem_name[3] = { "Static", "Heap", "Stack" };
+ /* Function: main
+@@ -106,13 +116,13 @@ char *mem_name[3] = { "Static", "Heap", "Stack" };
+ 
+ #if MAIN_HAS_NOARGC
+ MAIN_RETURN_TYPE
+-main(void)
++coremark_main(void)
+ {
+     int   argc = 0;
+     char *argv[1];
+ #else
+ MAIN_RETURN_TYPE
+-main(int argc, char *argv[])
++coremark_main(int argc, char *argv[])
+ {
+ #endif
+     ee_u16       i, j = 0, num_algorithms = 0;
+@@ -123,6 +133,7 @@ main(int argc, char *argv[])
+ #if (MEM_METHOD == MEM_STACK)
+     ee_u8 stack_memblock[TOTAL_DATA_SIZE * MULTITHREAD];
+ #endif
++    fputs("CoreMark PROG    is now running\r", stdout);
+     /* first call any initializations needed */
+     portable_init(&(results[0].port), &argc, argv);
+     /* First some checks to make sure benchmark will run ok */
+@@ -384,7 +395,7 @@ for (i = 0; i < MULTITHREAD; i++)
+ #if (MULTITHREAD > 1)
+     ee_printf("Parallel %s : %d\n", PARALLEL_METHOD, default_num_contexts);
+ #endif
+-    ee_printf("Memory location  : %s\n", MEM_LOCATION);
++    ee_printf("Memory location  : %s\n", mem_name[MEM_METHOD]);
+     /* output for verification */
+     ee_printf("seedcrc          : 0x%04x\n", seedcrc);
+     if (results[0].execs & ID_LIST)
+@@ -435,6 +446,25 @@ for (i = 0; i < MULTITHREAD; i++)
+     for (i = 0; i < MULTITHREAD; i++)
+         portable_free(results[i].memblock[0]);
+ #endif
++
++    puts("CoreMark PROG    is finished !!");
++    puts("\n");
++    puts("Result");
++    puts("----------------");
++    puts("CoreMark Size");
++    int_to_char((uint8*)&result_array[0], results[0].size);
++    puts(result_array[0]);
++    puts("Total ticks");
++    int_to_char((uint8*)&result_array[1], total_time);
++    puts(result_array[1]);
++    puts("Total time(secs)");
++    int_to_char((uint8*)&result_array[2], time_in_secs(total_time));
++    puts(result_array[2]);
++    puts("Iterations/Sec");
++    int_to_char((uint8*)&result_array[3], default_num_contexts * results[0].iterations / time_in_secs(total_time) );
++    puts(result_array[3]);
++    puts("\n");
++
+     /* And last call any target specific code for finalizing */
+     portable_fini(&(results[0].port));
+ 

@@ -3,6 +3,7 @@
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 export ZEPHYR_DIR=${SCRIPT_DIR}/zephyrproject
 ZEPHYR_SDK_PATH=${SCRIPT_DIR}/zephyr-sdk-0.15.2
+ZEPHYR_PATCH=${SCRIPT_DIR}/patchset_zephyr
 
 CLEAN_BUILD_FLAG=false
 Usage() {
@@ -53,13 +54,17 @@ pip install wheel
 pip install west
 
 # Setup source code
-cd ${ZEPHYR_DIR}
-if [ ! -e "./.west/config" ]; then
-    west init -m  https://github.com/iotbzh/zephyr.git --manifest-rev 2022-12-20-s4sk ${ZEPHYR_DIR}
+if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
+    cd ${ZEPHYR_DIR}
+    if [ ! -e "./.west/config" ]; then
+        west init -m  https://github.com/iotbzh/zephyr.git --manifest-rev 2022-12-20-s4sk ${ZEPHYR_DIR}
+    fi
+    cd ${ZEPHYR_DIR}/zephyr
+    git am ${ZEPHYR_PATCH}/*.patch
+    west update
+    west zephyr-export
+    pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
 fi
-west update
-west zephyr-export
-pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
 
 # Build
 cd ${ZEPHYR_DIR}/zephyr
@@ -70,4 +75,34 @@ ${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2
 # deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 cp -f ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.srec ${SCRIPT_DIR}/deploy/cr52.srec
+
+# build benchmark
+## Setup source code
+if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
+    ### Dhrystone
+    cd ${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src
+    rm -rf ./dhrystone
+    wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz
+    mkdir -p ./dhrystone && tar xf dhrystone-2.1.tar.gz -C ./dhrystone
+    cp ./dhrystone/dhry_1.c{,.org}
+    cd ./dhrystone
+    patch -p1 <  ${ZEPHYR_PATCH}/dhry_1.c.diff
+    ### Coremark
+    if [ ! -e ${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src/coremark ]; then
+        git clone https://github.com/eembc/coremark ${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src/coremark
+    fi
+    cd ${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src/coremark
+    git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
+    git apply ${ZEPHYR_PATCH}/coremark.diff
+fi
+
+## Build
+cd ${ZEPHYR_DIR}/zephyr
+west build -p always -b rcar_${BOARD}_cr52 samples/basic/benchmark
+${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 \
+    ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
+
+# deploy
+mkdir -p ${SCRIPT_DIR}/deploy
+cp -f ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.srec ${SCRIPT_DIR}/deploy/cr52_bench.srec
 
