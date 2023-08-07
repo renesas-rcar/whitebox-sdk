@@ -11,6 +11,7 @@ DEPENDS += "u-boot-mkimage-native"
 
 SRC_URI = "\
     file://boot-mmc.txt \
+    file://boot-ufs.txt \
 "
 
 do_configure[noexec] = "1"
@@ -18,11 +19,13 @@ do_install[noexec] = "1"
 
 do_compile() {
     uboot-mkimage -T script -d ${WORKDIR}/boot-mmc.txt ${B}/boot-mmc.uImage
+    uboot-mkimage -T script -d ${WORKDIR}/boot-ufs.txt ${B}/boot-ufs.uImage
 }
 
 do_deploy() {
     install -d ${DEPLOYDIR}
     install -m 0644 ${B}/boot-mmc.uImage ${DEPLOYDIR}/boot-mmc.uImage
+    install -m 0644 ${B}/boot-ufs.uImage ${DEPLOYDIR}/boot-ufs.uImage
 }
 
 addtask deploy before do_build after do_compile

@@ -45,6 +45,7 @@
                 files:
                   "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
                   "boot-mmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-mmc.uImage"
+                  "boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-ufs.uImage"
               domd_aos:
                 size: 3072 MiB
 
