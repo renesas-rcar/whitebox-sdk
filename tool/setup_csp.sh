@@ -18,7 +18,7 @@ if [[ ! $ZIPNAME = /* ]]; then
 fi
 
 if [ ! -e $ZIPNAME ]; then
-  echo "Error : File not found."
+  echo -e "\e[31mERROR: CC-RH_install_file(zip) is not found.\e[m"
   exit -2
 fi
 

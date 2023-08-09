@@ -29,8 +29,12 @@ Usage() {
 }
 
 # Board selection is required
-if [[ $# < 1 ]] || [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
-    echo "Please select a board to build"
+if [[ $# < 1 ]] ; then
+    echo -e "\e[31mERROR: Please select a board to build\e[m"
+    Usage; exit
+fi
+if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
+    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
     Usage; exit
 fi
 
@@ -49,7 +53,7 @@ do
   case $OPT in
      [0-9]) BUILD_PATTERN=$OPT;;
      h) Usage; exit;;
-     *) echo Unsupported option; Usage; exit;;
+     *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
   esac
 done
 G4MH=${BUILD_PATTERNS[$((3*${BUILD_PATTERN}+0))]}

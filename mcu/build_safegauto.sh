@@ -11,6 +11,7 @@ Usage() {
     echo "    $0 [option]"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -h: Show this usage"
 }
 # Proc arguments
 while getopts "ch" OPT
@@ -18,13 +19,13 @@ do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
-        *) echo Unsupported option; Usage; exit;;
+        *) echo -e "\e[31mERROR: Unsupported option \e[m"; Usage; exit;;
     esac
 done
 
 # check CC-RH compiler
 if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
-    echo "CC-RH compiler may not be installed correctly."
+    echo -e "\e[31mERROR: CC-RH compiler may not be installed correctly.\e[m"
     exit -1
 fi
 if [[ "$(which rlink | grep no)" != "" ]]; then

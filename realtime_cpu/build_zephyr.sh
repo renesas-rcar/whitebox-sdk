@@ -8,12 +8,13 @@ ZEPHYR_PATCH=${SCRIPT_DIR}/patchset_zephyr
 CLEAN_BUILD_FLAG=false
 Usage() {
     echo "Usage:"
-    echo "    $0 [board] [option]"
+    echo "    $0 board [option]"
     echo "board:"
     echo "    - spider: R-Car S4 Spider board"
     echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -h: Show this usage"
 }
 # Proc arguments
 OPTIND=2
@@ -22,20 +23,25 @@ do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
-        *) echo Unsupported option; Usage; exit;;
+        *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
 done
+
+# Board argument
+if [[ $# < 1 ]]; then
+    echo -e "\e[31mERROR: Please select a board to build\e[m"
+    Usage; exit
+fi
+
+if [ "$1" == "s4sk" ]; then BOARD="s4sk"
+elif [ "$1" == "spider" ]; then BOARD="spider"
+else echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"; Usage; exit
+fi
 
 if [[ ! -e ${ZEPHYR_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     rm -rf ${ZEPHYR_DIR}
     mkdir -p ${ZEPHYR_DIR}
 fi
-
-# Board argument
-if [ "$1" == "s4sk" ]; then BOARD="s4sk"
-elif [ "$1" == "spider" ]; then BOARD="spider"
-else echo "ERROR: Please specify a board name: spider or s4sk"; exit 1
-fi	
 
 # Setup SDK
 cd ${SCRIPT_DIR}

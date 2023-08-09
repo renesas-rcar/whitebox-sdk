@@ -1,10 +1,38 @@
 #!/bin/bash -eu
 
+CLEAN_BUILD_FLAG=false
+Usage() {
+    echo "Usage:"
+    echo "    $0 board [option]"
+    echo "board:"
+    echo "    - spider: for S4 Spider"
+    echo "    - s4sk: for S4 Starter Kit"
+    echo "option:"
+    echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -h: Show this usage"
+}
+
+if [[ $# < 1 ]] ; then
+    echo -e "\e[31mERROR: Please select a board to build \e[m"
+    Usage; exit
+fi
+
 # $1 í board name; spider or s4sk
 if [ "$1" != "spider" ] && [ "$1" != "s4sk" ]; then
-    echo "ERROR: Please specify board name: spider or s4sk"
-    exit 1
+    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
+    Usage; exit
 fi
+
+# Proc arguments
+OPTIND=2
+while getopts "ch" OPT
+do
+    case $OPT in
+        c) CLEAN_BUILD_FLAG=true;;
+        h) Usage; exit;;
+        *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
+    esac
+done
 
 export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)

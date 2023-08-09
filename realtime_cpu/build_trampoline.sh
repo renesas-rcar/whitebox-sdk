@@ -17,15 +17,16 @@ Usage() {
     echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -h: Show this usage"
 }
 
 if [[ $# < 1 ]]; then
-    echo "Please select a board to build"
+    echo -e "\e[31mERROR: Please select a board to build\e[m"
     Usage; exit
 fi
 
 if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
-    echo "Please select a board to build"
+    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
     Usage; exit
 fi
 
@@ -36,7 +37,7 @@ do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
-        *) echo Unsupported option; Usage; exit;;
+        *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
 done
 
