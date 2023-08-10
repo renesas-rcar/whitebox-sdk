@@ -28,12 +28,33 @@ Usage() {
     echo "    -h: Show this usage"
 }
 
+build_all() {
+    for board in spider s4sk ; do
+        $0 $board -1
+        mv ${BASE_DIR}/realtime_cpu/deploy ${BASE_DIR}/deploy/cr52_trampoline_deploy
+        mv ${BASE_DIR}/mcu/deploy ${BASE_DIR}/deploy/g4mh_trampoline_deploy
+        mv ${BASE_DIR}/mcu/trampoline ${BASE_DIR}/deploy/g4mh_trampoline_deploy/trampoline_bench
+
+        ${BASE_DIR}/realtime_cpu/build_zephyr.sh $board -c
+        mv ${BASE_DIR}/realtime_cpu/deploy ${BASE_DIR}/deploy/cr52_zephyr_deploy
+
+        ${BASE_DIR}/mcu/build_safegauto.sh -c
+        mv ${BASE_DIR}/mcu/deploy ${BASE_DIR}/deploy/g4mh_safegauto_deploy
+        mv ${BASE_DIR}/mcu/safeg-auto-bench ${BASE_DIR}/deploy/g4mh_safegauto_deploy/safeg-auto_bench
+
+        mv ${BASE_DIR}/deploy ${BASE_DIR}/deploy_$board
+    done
+    exit
+}
+
 # Board selection is required
 if [[ $# < 1 ]] ; then
     echo -e "\e[31mERROR: Please select a board to build\e[m"
     Usage; exit
 fi
-if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
+if [[ "$1" == "all" ]]; then
+    build_all; exit
+elif [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
     echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
     Usage; exit
 fi
