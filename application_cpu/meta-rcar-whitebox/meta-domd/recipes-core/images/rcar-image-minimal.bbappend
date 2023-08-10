@@ -8,3 +8,10 @@ python () {
         bb.build.addtask('populate_sdk', 'do_build', "do_image_complete", d)
 }
 
+do_deploy_copy_var() {
+    install -d ${DEPLOY_DIR_IMAGE}
+    cp -rf ${S}/../rootfs/var -t ${DEPLOY_DIR_IMAGE}
+}
+
+addtask deploy_copy_var before do_image after do_rootfs
+

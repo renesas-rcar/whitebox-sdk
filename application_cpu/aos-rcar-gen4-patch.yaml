@@ -30,7 +30,7 @@
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
               target_images:
-                - "tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                - "tmp/deploy/images/%{MACHINE}/var/statestorage.db"
                 - "tmp/deploy/images/%{MACHINE}/boot-mmc.uImage"
           domu:
             builder:
@@ -44,7 +44,7 @@
               domd_var:
                 size: 1024 MiB
                 files:
-                  "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                  "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/var/statestorage.db"
                   "boot-mmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-mmc.uImage"
                   "boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-ufs.uImage"
               domd_aos:

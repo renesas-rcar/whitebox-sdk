@@ -235,7 +235,7 @@ components:
         - "tmp/deploy/images/%{MACHINE}/xenpolicy-%{MACHINE}"
         - "tmp/deploy/images/%{MACHINE}/%{XT_XEN_DTB_NAME}"
         - "tmp/deploy/images/%{MACHINE}/rcar-image-minimal-%{MACHINE}.ext4"
-        - "tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+        - "tmp/deploy/images/%{MACHINE}/var/aos/.unprovisioned"
   domu:
     build-dir: "%{YOCTOS_WORK_DIR}"
     sources:
@@ -308,7 +308,7 @@ images:
         type: ext4
         size: 512 MiB
         files:
-          ".unprovisioned": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/aos/.unprovisioned"
+          ".unprovisioned": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/var/aos/.unprovisioned"
       domd_aos:
         gpt_type: CA7D7CCB-63ED-4C53-861C-1742536059CC # LUKS partition
         type: empty
