@@ -1,0 +1,87 @@
+From 9a87799f0e07865baa5308d6540d91a5d1ce8817 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Thu, 24 Aug 2023 16:49:19 +0900
+Subject: [PATCH] [HACK] s4: perform direct reset
+
+This is the temporary patch. It calls reset controller directly to
+reset the board.
+
+This patch should be removed when Renesas implements proper SCP.
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ .../arm-trusted-firmware_git.bbappend         |  1 +
+ .../0003-HACK-s4-perform-direct-reset.patch   | 51 +++++++++++++++++++
+ 2 files changed, 52 insertions(+)
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/files/0003-HACK-s4-perform-direct-reset.patch
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/arm-trusted-firmware_git.bbappend b/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/arm-trusted-firmware_git.bbappend
+index 4a93a41..aeae57a 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/arm-trusted-firmware_git.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/arm-trusted-firmware_git.bbappend
+@@ -4,4 +4,5 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+ SRC_URI += "\
+     file://0001-HACK-s4-boot-U-Boot-in-EL2-mode.patch \
+     file://0002-HACK-s4-Configure-IPMMU-registers.patch \
++    file://0003-HACK-s4-perform-direct-reset.patch \
+ "
+diff --git a/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/files/0003-HACK-s4-perform-direct-reset.patch b/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/files/0003-HACK-s4-perform-direct-reset.patch
+new file mode 100644
+index 0000000..8d09f60
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-bsp/arm-trusted-firmware/files/0003-HACK-s4-perform-direct-reset.patch
+@@ -0,0 +1,51 @@
++From 6c8f64df6f06c63032b015997a03e37712b55300 Mon Sep 17 00:00:00 2001
++From: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
++Date: Tue, 13 Dec 2022 01:54:57 +0200
++Subject: [PATCH 3/3] [HACK] s4: perform direct reset
++
++This is the temporary patch. It calls reset controller directly to
++reset the board.
++
++This patch should be removed when Renesas implements proper SCP.
++
++Signed-off-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
++---
++ plat/renesas/rcar_gen4/plat_pm_scmi.c | 8 ++++++++
++ 1 file changed, 8 insertions(+)
++
++diff --git a/plat/renesas/rcar_gen4/plat_pm_scmi.c b/plat/renesas/rcar_gen4/plat_pm_scmi.c
++index 53aebe729..4fd934b00 100644
++--- a/plat/renesas/rcar_gen4/plat_pm_scmi.c
+++++ b/plat/renesas/rcar_gen4/plat_pm_scmi.c
++@@ -19,6 +19,10 @@
++ #include "rcar_private.h"
++ #include "scmi_private.h"
++ 
+++#define RST_BASE        0xE6160000
+++#define RST_SRESCR0     (RST_BASE + 0x18)
+++#define RST_SPRES       0x5AA58000
+++
++ /*
++  * This file implements the SCP helper functions using SCMI protocol.
++  */
++@@ -66,6 +70,7 @@ void rcar_scmi_sys_shutdown(void)
++  */
++ void rcar_scmi_sys_reboot(void)
++ {
+++#if (SET_SCMI_PARAM == 1)
++ 	int ret;
++ 
++ 	ret = scmi_sys_pwr_state_set(scmi_handle,
++@@ -75,6 +80,9 @@ void rcar_scmi_sys_reboot(void)
++ 				ret);
++ 		panic();
++ 	}
+++#else
+++	mmio_write_32(RST_SRESCR0, RST_SPRES);
+++#endif
++ }
++ 
++ /*
++-- 
++2.38.1
++
+-- 
+2.25.1
+
