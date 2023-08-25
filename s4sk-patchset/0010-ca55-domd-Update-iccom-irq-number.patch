@@ -1,0 +1,26 @@
+From f44902061e87e82da1821636771b2075c7380c21 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 30 Jun 2023 15:49:18 +0900
+Subject: [PATCH 10/23] ca55: domd: Update iccom irq number
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../meta-dom0/recipes-guests/domd/files/domd-s4sk.cfg           | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/application_cpu/meta-rcar-whitebox/meta-dom0/recipes-guests/domd/files/domd-s4sk.cfg b/application_cpu/meta-rcar-whitebox/meta-dom0/recipes-guests/domd/files/domd-s4sk.cfg
+index f50c80f..fdd6b6c 100644
+--- a/application_cpu/meta-rcar-whitebox/meta-dom0/recipes-guests/domd/files/domd-s4sk.cfg
++++ b/application_cpu/meta-rcar-whitebox/meta-dom0/recipes-guests/domd/files/domd-s4sk.cfg
+@@ -93,7 +93,7 @@ irqs = [
+ # pcie@e65d0000
+     448, 449, 450, 451, 452, 453, 454,
+ # iccom00
+-    336,
++    368,
+ # iccom01
+     354,
+ # iccom02
+-- 
+2.34.1
+

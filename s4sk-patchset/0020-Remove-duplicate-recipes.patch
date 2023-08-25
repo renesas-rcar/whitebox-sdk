@@ -1,0 +1,106 @@
+From 9e7de34386674536ee5ce2fde3ebcf86fee75a00 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 7 Aug 2023 17:25:49 +0900
+Subject: [PATCH 20/23] Remove duplicate recipes
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../s4-boot-script/files/boot-emmc.txt        | 23 -------------
+ .../s4-boot-script/files/boot-tftp.txt        | 15 ---------
+ .../s4-boot-script/s4-boot-script.bb          | 32 -------------------
+ 3 files changed, 70 deletions(-)
+ delete mode 100644 application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-emmc.txt
+ delete mode 100644 application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-tftp.txt
+ delete mode 100644 application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/s4-boot-script.bb
+
+diff --git a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-emmc.txt b/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-emmc.txt
+deleted file mode 100644
+index d63c3e4..0000000
+--- a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-emmc.txt
++++ /dev/null
+@@ -1,23 +0,0 @@
+-env delete bootargs
+-
+-setenv set_pcie 'i2c dev 0; i2c mw 0x6c 0x26 5; i2c mw 0x6c 0x254.2 0x1e; i2c mw 0x6c 0x258.2 0x1e'
+-setenv bootcmd_mmc0 'run mmc0_xen_load; run mmc0_dtb_load; run mmc0_kernel_load; run mmc0_xenpolicy_load; run mmc0_initramfs_load; bootm 0x48080000 0x84000000 0x48000000'
+-setenv mmc0_dtb_load 'ext2load mmc 0:1 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device mmcblk0'
+-setenv mmc0_initramfs_load 'ext2load mmc 0:1 0x84000000 uInitramfs'
+-setenv mmc0_kernel_load 'ext2load mmc 0:1 0x7a000000 Image'
+-setenv mmc0_xen_load 'ext2load mmc 0:1 0x48080000 xen'
+-setenv mmc0_xenpolicy_load 'ext2load mmc 0:1 0x7c000000 xenpolicy'
+-setenv mmc0_dtb_load 'ext2load mmc 0:${aos_boot_slot} 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device mmcblk0; fdt set /boot_dev domd_ip ${domd_ip};'
+-setenv mmc0_initramfs_load 'ext2load mmc 0:${aos_boot_slot} 0x84000000 uInitramfs'
+-setenv mmc0_kernel_load 'ext2load mmc 0:${aos_boot_slot} 0x7a000000 Image'
+-setenv mmc0_xen_load 'ext2load mmc 0:${aos_boot_slot} 0x48080000 xen'
+-setenv mmc0_xenpolicy_load 'ext2load mmc 0:${aos_boot_slot} 0x7c000000 xenpolicy'
+-setenv aos_default_vars 'setenv aos_boot_main 0; setenv aos_boot1_ok 1; setenv aos_boot2_ok 1; setenv aos_boot_part 0'
+-setenv aos_save_vars 'env export -t ${loadaddr} aos_boot_main aos_boot_part aos_boot1_ok aos_boot2_ok; fatwrite mmc 0:3 ${loadaddr} uboot.env 0x3E'
+-setenv aos_load_vars 'run aos_default_vars; if load mmc 0:3 ${loadaddr} uboot.env; then env import -t ${loadaddr} ${filesize}; else run aos_save_vars; fi'
+-setenv aos_boot1 'if test ${aos_boot1_ok} -eq 1; then setenv aos_boot1_ok 0; setenv aos_boot2_ok 1; setenv aos_boot_part 0; setenv aos_boot_slot 1; echo "==== Boot from part 1"; run aos_save_vars; run bootcmd_mmc0; fi'
+-setenv aos_boot2 'if test ${aos_boot2_ok} -eq 1; then setenv aos_boot2_ok 0; setenv aos_boot1_ok 1; setenv aos_boot_part 1; setenv aos_boot_slot 2; echo "==== Boot from part 2"; run aos_save_vars; run bootcmd_mmc0; fi'
+-setenv bootcmd_aos 'run aos_load_vars; if test ${aos_boot_main} -eq 0; then run aos_boot1; run aos_boot2; else run aos_boot2; run aos_boot1; fi'
+-setenv bootcmd 'run bootcmd_aos'
+-boot
+-
+diff --git a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-tftp.txt b/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-tftp.txt
+deleted file mode 100644
+index 869f084..0000000
+--- a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/files/boot-tftp.txt
++++ /dev/null
+@@ -1,15 +0,0 @@
+-env delete bootargs
+-env delete bootcmd
+-setenv set_pcie 'i2c dev 0; i2c mw 0x6c 0x26 5; i2c mw 0x6c 0x254.2 0x1e; i2c mw 0x6c 0x258.2 0x1e'
+-setenv bootcmd_tftp 'run tftp_xen_load; run tftp_dtb_load; run set_bootdev; run tftp_kernel_load; run tftp_xenpolicy_load; run tftp_initramfs_load; bootm 0x48080000 0x84000000 0x48000000'
+-setenv set_bootdev 'fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device tftp'
+-setenv tftp_dtb_load 'tftp 0x48000000 s4xen_tftp/r8a779f0-spider-xen.dtb;'
+-setenv tftp_initramfs_load 'tftp 0x84000000 s4xen_tftp/uInitramfs'
+-setenv tftp_kernel_load 'tftp 0x7a000000 s4xen_tftp/Image'
+-setenv tftp_xen_load 'tftp 0x48080000 s4xen_tftp/xen-uImage'
+-setenv tftp_xenpolicy_load 'tftp 0x7c000000 s4xen_tftp/xenpolicy-spider'
+-setenv ipaddr 192.168.0.11
+-setenv serverip 192.168.0.1
+-# saveenv
+-run bootcmd_tftp
+-
+diff --git a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/s4-boot-script.bb b/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/s4-boot-script.bb
+deleted file mode 100644
+index a59b233..0000000
+--- a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/s4-boot-script/s4-boot-script.bb
++++ /dev/null
+@@ -1,32 +0,0 @@
+-SUMMARY = "Boot scripts for S4 Spider board with Aos environment"
+-DESCRIPTION = "Set of U-boot scripts that automate boot process on Spider S4"
+-
+-PV = "0.1"
+-LICENSE = "MIT"
+-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
+-
+-inherit deploy
+-
+-DEPENDS += "u-boot-mkimage-native"
+-
+-SRC_URI = "\
+-    file://boot-tftp.txt \
+-    file://boot-emmc.txt \
+-"
+-
+-do_configure[noexec] = "1"
+-do_install[noexec] = "1"
+-
+-do_compile() {
+-    uboot-mkimage -T script -d ${WORKDIR}/boot-tftp.txt ${B}/boot-tftp.uImage
+-    uboot-mkimage -T script -d ${WORKDIR}/boot-emmc.txt ${B}/boot-emmc.uImage
+-}
+-
+-do_deploy() {
+-    install -d ${DEPLOYDIR}
+-    install -m 0644 ${B}/boot-tftp.uImage ${DEPLOYDIR}/boot-tftp.uImage
+-    install -m 0644 ${B}/boot-emmc.uImage ${DEPLOYDIR}/boot-emmc.uImage
+-}
+-
+-addtask deploy before do_build after do_compile
+-
+-- 
+2.34.1
+

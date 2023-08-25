@@ -1,0 +1,110 @@
+From e2cf7b8cfb8f547220f4dafb3705ccb5a9e9c981 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 8 Aug 2023 19:41:21 +0900
+Subject: [PATCH 23/23] ca55: rcar-whitebox: Add ufs setup script
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ application_cpu/aos-rcar-gen4-patch.yaml      |  1 +
+ .../files/ufs-duplication-script.sh           | 50 +++++++++++++++++++
+ .../ufs-duplication-script.bb                 | 19 +++++++
+ 3 files changed, 70 insertions(+)
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/files/ufs-duplication-script.sh
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/ufs-duplication-script.bb
+
+diff --git a/application_cpu/aos-rcar-gen4-patch.yaml b/application_cpu/aos-rcar-gen4-patch.yaml
+index de311a5..f3601af 100644
+--- a/application_cpu/aos-rcar-gen4-patch.yaml
++++ b/application_cpu/aos-rcar-gen4-patch.yaml
+@@ -24,6 +24,7 @@
+                 - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
+                 - [IMAGE_INSTALL_append, " waii packagegroup-system-monitor"]
+                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
++                - [IMAGE_INSTALL_append, " ufs-duplication-script"]
+               layers:
+                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
+                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/files/ufs-duplication-script.sh b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/files/ufs-duplication-script.sh
+new file mode 100644
+index 0000000..01ff129
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/files/ufs-duplication-script.sh
+@@ -0,0 +1,50 @@
++#!/bin/bash
++
++SOURCE_DISK=/dev/mmcblk0
++TARGET_DISK=/dev/sda
++
++echo "=============================="
++echo "= disk image copy script     ="
++echo "=============================="
++echo ""
++echo "Copy ${SOURCE_DISK} to ${TARGET_DISK}"
++echo ""
++echo "This script will be run after 10 sec."
++echo "if you want to stop this script, please enter the CTRL+C"
++echo ""
++
++sleep 10
++
++echo "Copy the image..."
++set -x
++EOD_S=$(fdisk -l ${SOURCE_DISK} 2>/dev/null | tail -1 | awk '{print $3}')
++EOD_T=$(fdisk -l ${TARGET_DISK} 2>/dev/null | tail -1 | awk '{print $3}')
++BS_S=$(fdisk -l ${SOURCE_DISK} 2>/dev/null | grep Units | awk '{print $8}')
++BS_T=$(fdisk -l ${TARGET_DISK} 2>/dev/null| grep Units | awk '{print $8}')
++BS=512
++dd if=${SOURCE_DISK} of=${TARGET_DISK} bs=${BS} ibs=${BS_S} obs=${BS_T} count=${EOD_S}
++set +x
++
++echo "Setup partition..."
++set +x
++SIZE_LIST=$(fdisk -l ${SOURCE_DISK} | grep ${SOURCE_DISK}p | awk '{print $5}' | xargs echo)
++wipefs -a ${TARGET_DISK} # Remove All partitions
++echo "label: gpt" | sfdisk ${TARGET_DISK} # Setup GPT label
++for size in ${SIZE_LIST}; do
++fdisk ${TARGET_DISK} << EOS
++n
++
++
+++$size
++w
++EOS
++done
++set -x
++
++echo "Sync device..."
++set -x
++sync
++set +x
++
++echo "Finished."
++
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/ufs-duplication-script.bb b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/ufs-duplication-script.bb
+new file mode 100644
+index 0000000..f4c1bef
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-utils/ufs-duplication-script/ufs-duplication-script.bb
+@@ -0,0 +1,19 @@
++DESCRIPTION = "Copy disk image from SD card to UFS"
++LICENSE = "MIT"
++LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
++
++SCRIPT_FILENAME = "ufs-duplication-script.sh"
++RDEPENDS_${PN} += " bash"
++FILES_${PN} += " ${SCRIPT_FILENAME}"
++
++SRC_URI = " \
++    file://${SCRIPT_FILENAME} \
++"
++
++S = "${WORKDIR}"
++do_compile[noexec] = "1"
++do_install () {
++    install -d ${D}/${USRBINPATH}
++    install -m 0755 ${WORKDIR}/${SCRIPT_FILENAME} ${D}/${USRBINPATH}
++}
++
+-- 
+2.34.1
+

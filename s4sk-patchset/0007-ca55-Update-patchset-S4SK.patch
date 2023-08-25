@@ -1,0 +1,329 @@
+From 591513105d4461058b78a04fd2a09c2042db1a1c Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Tue, 27 Jun 2023 17:35:36 +0900
+Subject: [PATCH 07/23] ca55: Update patchset S4SK
+
+---
+ ...om0-kernel-update-to-rcar-5.1.7.rc11.patch |  8 ++---
+ ...-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch | 29 +++++++++++++++++++
+ ...n-patch-0002-PCIe-MSI-support.patch.patch} |  4 +--
+ ...-patch-0006-net-renesas-rswitch-fix.patch} |  4 +--
+ ...ernel-Add-S4SK-dts-for-Xen-and-DomD.patch} |  8 ++---
+ ...0006-domd-snort-Remove-tsn2-service.patch} |  4 +--
+ ...mu-kernel-Update-to-rcar-5.1.7.rc11.patch} | 10 +++----
+ ...xen-Update-config-fragment-for-S4SK.patch} |  4 +--
+ ...-guests-Update-config-file-for-S4SK.patch} |  4 +--
+ ...xt-log-Change-git-protocol-to-https.patch} |  4 +--
+ ...mx-optee-Add-S4SK-compatible-string.patch} |  4 +--
+ ...mit-the-revision-for-S4-Spider-only.patch} |  4 +--
+ ...control-domain-Add-S4SK-image-check.patch} |  4 +--
+ 13 files changed, 60 insertions(+), 31 deletions(-)
+ create mode 100644 application_cpu/patchset_s4sk/0002-domd-linux-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch
+ rename application_cpu/patchset_s4sk/{0002-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch => 0003-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch} (98%)
+ rename application_cpu/patchset_s4sk/{0003-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch => 0004-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch} (95%)
+ rename application_cpu/patchset_s4sk/{0004-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch => 0005-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch} (98%)
+ rename application_cpu/patchset_s4sk/{0005-domd-snort-Remove-tsn2-service.patch => 0006-domd-snort-Remove-tsn2-service.patch} (95%)
+ rename application_cpu/patchset_s4sk/{0006-domu-kernel-Update-to-rcar-5.1.7.rc11.patch => 0007-domu-kernel-Update-to-rcar-5.1.7.rc11.patch} (96%)
+ rename application_cpu/patchset_s4sk/{0007-driver-xen-Update-config-fragment-for-S4SK.patch => 0008-driver-xen-Update-config-fragment-for-S4SK.patch} (91%)
+ rename application_cpu/patchset_s4sk/{0008-control-guests-Update-config-file-for-S4SK.patch => 0009-control-guests-Update-config-file-for-S4SK.patch} (97%)
+ rename application_cpu/patchset_s4sk/{0009-common-xt-log-Change-git-protocol-to-https.patch => 0010-common-xt-log-Change-git-protocol-to-https.patch} (86%)
+ rename application_cpu/patchset_s4sk/{0010-domx-optee-Add-S4SK-compatible-string.patch => 0011-domx-optee-Add-S4SK-compatible-string.patch} (94%)
+ rename application_cpu/patchset_s4sk/{0011-u-boot-Limit-the-revision-for-S4-Spider-only.patch => 0012-u-boot-Limit-the-revision-for-S4-Spider-only.patch} (88%)
+ rename application_cpu/patchset_s4sk/{0012-control-domain-Add-S4SK-image-check.patch => 0013-control-domain-Add-S4SK-image-check.patch} (90%)
+
+diff --git a/application_cpu/patchset_s4sk/0001-dom0-kernel-update-to-rcar-5.1.7.rc11.patch b/application_cpu/patchset_s4sk/0001-dom0-kernel-update-to-rcar-5.1.7.rc11.patch
+index f69a41c..5b76aec 100644
+--- a/application_cpu/patchset_s4sk/0001-dom0-kernel-update-to-rcar-5.1.7.rc11.patch
++++ b/application_cpu/patchset_s4sk/0001-dom0-kernel-update-to-rcar-5.1.7.rc11.patch
+@@ -1,7 +1,7 @@
+-From 2648beb2c0eaef65fa775596c0e1d3c0c2d4876e Mon Sep 17 00:00:00 2001
++From 02696a14d63fc1a8bbde0627c3c14dd0fa1ff341 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 18:04:27 +0900
+-Subject: [PATCH 01/11] dom0: kernel: update to rcar-5.1.7.rc11
++Subject: [PATCH 01/13] dom0: kernel: update to rcar-5.1.7.rc11
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+@@ -9,7 +9,7 @@ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+  1 file changed, 2 insertions(+), 2 deletions(-)
+ 
+ diff --git a/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend b/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
+-index 75c2aa1..ac5411a 100644
++index 75c2aa1..5067066 100644
+ --- a/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
+ +++ b/meta-aos-rcar-gen4-dom0/recipes-kernel/linux/linux-generic-armv8.bbappend
+ @@ -1,10 +1,10 @@
+@@ -22,7 +22,7 @@ index 75c2aa1..ac5411a 100644
+  
+  SRC_URI = "\
+ -    git://github.com/renesas-rcar/linux-bsp.git;branch=${BRANCH} \
+-+    git://git@rcar-env.dgn.renesas.com:/linuxbsp_yocto/linux-bsp.git;branch=${BRANCH};protocol=ssh \
+++    git://github.com/renesas-rcar/linux-bsp.git;branch=${BRANCH};protocol=https \
+      file://defconfig \
+  "
+ -- 
+diff --git a/application_cpu/patchset_s4sk/0002-domd-linux-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch b/application_cpu/patchset_s4sk/0002-domd-linux-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch
+new file mode 100644
+index 0000000..b82d95a
+--- /dev/null
++++ b/application_cpu/patchset_s4sk/0002-domd-linux-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch
+@@ -0,0 +1,29 @@
++From a3f47e82ceb4bcc8803328414ecb0b0d38f73d6c Mon Sep 17 00:00:00 2001
++From: Duy Dang <duy.dang.yw@renesas.com>
++Date: Tue, 27 Jun 2023 17:09:00 +0900
++Subject: [PATCH 02/13] domd: linux: Update Linux BSP to rcar-5.1.7.rc11
++
++Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
++---
++ .../recipes-kernel/linux/linux-renesas_%.bbappend           | 6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++index 5f3f651..7061b02 100644
++--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++@@ -1,8 +1,8 @@
++ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
++ 
++-RENESAS_BSP_URL = "git://github.com/xen-troops/linux.git"
++-BRANCH = "v5.10.41/rcar-5.1.7.rc6-xt"
++-SRCREV = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
+++RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-xen.git"
+++BRANCH = "v5.10.41/rcar-5.1.7.rc11-xt"
+++SRCREV = "33c9c4268e83508c68567fac3ff7a6f8b53f1868"
++ 
++ SRC_URI_append = "\
++     file://defconfig \
++-- 
++2.25.1
++
+diff --git a/application_cpu/patchset_s4sk/0002-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch b/application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch
+similarity index 98%
+rename from application_cpu/patchset_s4sk/0002-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch
+rename to application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch
+index 9326e64..4302ad5 100644
+--- a/application_cpu/patchset_s4sk/0002-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch
++++ b/application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch
+@@ -1,7 +1,7 @@
+-From b0c630ae2eea11a39f299fbf7604025a71f93bbe Mon Sep 17 00:00:00 2001
++From 50aa280285eb86c3839832e6b29815a9792f7be9 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 18:16:51 +0900
+-Subject: [PATCH 02/11] domd: kernel: Align patch 0002-PCIe-MSI-support.patch
++Subject: [PATCH 03/13] domd: kernel: Align patch 0002-PCIe-MSI-support.patch
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+diff --git a/application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch b/application_cpu/patchset_s4sk/0004-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch
+similarity index 95%
+rename from application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch
+rename to application_cpu/patchset_s4sk/0004-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch
+index 4e1d538..a581c79 100644
+--- a/application_cpu/patchset_s4sk/0003-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch
++++ b/application_cpu/patchset_s4sk/0004-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch
+@@ -1,7 +1,7 @@
+-From f69e3818fa47f1442fd8470308c2fb95cd73e4d2 Mon Sep 17 00:00:00 2001
++From 7c7bbd4eb8dee7a78b4dd89679827bc1b0303086 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Tue, 20 Jun 2023 17:06:33 +0900
+-Subject: [PATCH 03/11] domd: kernel: Align patch
++Subject: [PATCH 04/13] domd: kernel: Align patch
+  0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+diff --git a/application_cpu/patchset_s4sk/0004-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch b/application_cpu/patchset_s4sk/0005-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch
+similarity index 98%
+rename from application_cpu/patchset_s4sk/0004-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch
+rename to application_cpu/patchset_s4sk/0005-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch
+index cf968d1..0ec86cb 100644
+--- a/application_cpu/patchset_s4sk/0004-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch
++++ b/application_cpu/patchset_s4sk/0005-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch
+@@ -1,7 +1,7 @@
+-From 7619f624e202f967bad24c5d41ba7d9ac8dbe006 Mon Sep 17 00:00:00 2001
++From 8248f215a6b0eada7b3a6bb04f3cc8cb2bf0d816 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 18:31:08 +0900
+-Subject: [PATCH 04/11] domd: kernel: Add S4SK dts for Xen and DomD
++Subject: [PATCH 05/13] domd: kernel: Add S4SK dts for Xen and DomD
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+@@ -149,7 +149,7 @@ index 0000000..a4f22bb
+ +
+ diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
+ new file mode 100644
+-index 0000000..a3a1db6
++index 0000000..ac2f76b
+ --- /dev/null
+ +++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
+ @@ -0,0 +1,377 @@
+@@ -504,7 +504,7 @@ index 0000000..a3a1db6
+ +		iommus = <&ipmmu_hc 7>, <&ipmmu_hc 23>;
+ +	};
+ +
+-+	iccom00		{ xen,passthrough; };
+++	iccom		{ xen,passthrough; };
+ +	iccom01		{ xen,passthrough; };
+ +	iccom02		{ xen,passthrough; };
+ +	iccom03		{ xen,passthrough; };
+diff --git a/application_cpu/patchset_s4sk/0005-domd-snort-Remove-tsn2-service.patch b/application_cpu/patchset_s4sk/0006-domd-snort-Remove-tsn2-service.patch
+similarity index 95%
+rename from application_cpu/patchset_s4sk/0005-domd-snort-Remove-tsn2-service.patch
+rename to application_cpu/patchset_s4sk/0006-domd-snort-Remove-tsn2-service.patch
+index 97009af..a7448d2 100644
+--- a/application_cpu/patchset_s4sk/0005-domd-snort-Remove-tsn2-service.patch
++++ b/application_cpu/patchset_s4sk/0006-domd-snort-Remove-tsn2-service.patch
+@@ -1,7 +1,7 @@
+-From 88b3e77ad5786ab4ce7e3aa553e2dd3a65dbeea9 Mon Sep 17 00:00:00 2001
++From 011de6bd78a28077da6df34bc79c393ad43ede70 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 18:39:42 +0900
+-Subject: [PATCH 05/11] domd: snort: Remove tsn2 service
++Subject: [PATCH 06/13] domd: snort: Remove tsn2 service
+ 
+ S4SK has 2 Ethernet TSN only.
+ 
+diff --git a/application_cpu/patchset_s4sk/0006-domu-kernel-Update-to-rcar-5.1.7.rc11.patch b/application_cpu/patchset_s4sk/0007-domu-kernel-Update-to-rcar-5.1.7.rc11.patch
+similarity index 96%
+rename from application_cpu/patchset_s4sk/0006-domu-kernel-Update-to-rcar-5.1.7.rc11.patch
+rename to application_cpu/patchset_s4sk/0007-domu-kernel-Update-to-rcar-5.1.7.rc11.patch
+index 2c2a0ee..e6749bc 100644
+--- a/application_cpu/patchset_s4sk/0006-domu-kernel-Update-to-rcar-5.1.7.rc11.patch
++++ b/application_cpu/patchset_s4sk/0007-domu-kernel-Update-to-rcar-5.1.7.rc11.patch
+@@ -1,7 +1,7 @@
+-From e0b690494d47f25ec6042a0edd483a72f592f894 Mon Sep 17 00:00:00 2001
++From 0bbc6889ed7a9dd1d3e43bbd1dc2de3627c7b949 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 18:47:07 +0900
+-Subject: [PATCH 06/11] domu: kernel: Update to rcar-5.1.7.rc11...
++Subject: [PATCH 07/13] domu: kernel: Update to rcar-5.1.7.rc11...
+ 
+ ... and add S4SK devicetree source
+ 
+@@ -227,7 +227,7 @@ index 442360b..26b47b5 100644
+  };
+ +
+ diff --git a/meta-aos-rcar-gen4-domu/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domu/recipes-kernel/linux/linux-renesas_%.bbappend
+-index 0d30114..39ec8dd 100644
++index 0d30114..169bb89 100644
+ --- a/meta-aos-rcar-gen4-domu/recipes-kernel/linux/linux-renesas_%.bbappend
+ +++ b/meta-aos-rcar-gen4-domu/recipes-kernel/linux/linux-renesas_%.bbappend
+ @@ -1,14 +1,14 @@
+@@ -236,9 +236,9 @@ index 0d30114..39ec8dd 100644
+ -RENESAS_BSP_URL = "git://github.com/xen-troops/linux.git"
+ -BRANCH = "v5.10.41/rcar-5.1.7.rc3-xt"
+ -SRCREV = "d1e67027b82143bd56cc8a881e11e4d475dcffb9"
+-+RENESAS_BSP_URL = "git://git@rcar-env.dgn.renesas.com:/xen/xen-s4sk/linux-bsp.git"
+++RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-xen.git"
+ +BRANCH = "v5.10.41/rcar-5.1.7.rc11"
+-+SRCREV = "cdaec89a26026512a97aa6a4215acca1527e9c6b"
+++SRCREV = "33c9c4268e83508c68567fac3ff7a6f8b53f1868"
+  
+  SRC_URI_append = "\
+ -    file://r8a779f0-spider-domu.dts;subdir=git/arch/${ARCH}/boot/dts/renesas \
+diff --git a/application_cpu/patchset_s4sk/0007-driver-xen-Update-config-fragment-for-S4SK.patch b/application_cpu/patchset_s4sk/0008-driver-xen-Update-config-fragment-for-S4SK.patch
+similarity index 91%
+rename from application_cpu/patchset_s4sk/0007-driver-xen-Update-config-fragment-for-S4SK.patch
+rename to application_cpu/patchset_s4sk/0008-driver-xen-Update-config-fragment-for-S4SK.patch
+index cfb8b30..b30bdb4 100644
+--- a/application_cpu/patchset_s4sk/0007-driver-xen-Update-config-fragment-for-S4SK.patch
++++ b/application_cpu/patchset_s4sk/0008-driver-xen-Update-config-fragment-for-S4SK.patch
+@@ -1,7 +1,7 @@
+-From 013cea29ed795b532621886d2cbec991bf560a75 Mon Sep 17 00:00:00 2001
++From 76a0fa72b57f04d94acc55dc614eb12b39838aaf Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 19:15:50 +0900
+-Subject: [PATCH 07/11] driver/xen: Update config fragment for S4SK
++Subject: [PATCH 08/13] driver/xen: Update config fragment for S4SK
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+diff --git a/application_cpu/patchset_s4sk/0008-control-guests-Update-config-file-for-S4SK.patch b/application_cpu/patchset_s4sk/0009-control-guests-Update-config-file-for-S4SK.patch
+similarity index 97%
+rename from application_cpu/patchset_s4sk/0008-control-guests-Update-config-file-for-S4SK.patch
+rename to application_cpu/patchset_s4sk/0009-control-guests-Update-config-file-for-S4SK.patch
+index 112e495..df971d2 100644
+--- a/application_cpu/patchset_s4sk/0008-control-guests-Update-config-file-for-S4SK.patch
++++ b/application_cpu/patchset_s4sk/0009-control-guests-Update-config-file-for-S4SK.patch
+@@ -1,7 +1,7 @@
+-From 64ef36753654f9bace156bbe8fbc630c0665fed6 Mon Sep 17 00:00:00 2001
++From 7cbffd77a1c6c1cd1cca63b73998a7e638134b80 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Fri, 16 Jun 2023 19:31:04 +0900
+-Subject: [PATCH 08/11] control: guests: Update config file for S4SK
++Subject: [PATCH 09/13] control: guests: Update config file for S4SK
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+diff --git a/application_cpu/patchset_s4sk/0009-common-xt-log-Change-git-protocol-to-https.patch b/application_cpu/patchset_s4sk/0010-common-xt-log-Change-git-protocol-to-https.patch
+similarity index 86%
+rename from application_cpu/patchset_s4sk/0009-common-xt-log-Change-git-protocol-to-https.patch
+rename to application_cpu/patchset_s4sk/0010-common-xt-log-Change-git-protocol-to-https.patch
+index 2344715..6fd47ec 100644
+--- a/application_cpu/patchset_s4sk/0009-common-xt-log-Change-git-protocol-to-https.patch
++++ b/application_cpu/patchset_s4sk/0010-common-xt-log-Change-git-protocol-to-https.patch
+@@ -1,7 +1,7 @@
+-From 771744e7de730b3e75c9b2026c24af63ae1d4735 Mon Sep 17 00:00:00 2001
++From 440b70baa46c8190d7f2032bbc056b4547e9e7df Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Mon, 19 Jun 2023 12:51:54 +0900
+-Subject: [PATCH 09/11] common: xt-log: Change git protocol to https
++Subject: [PATCH 10/13] common: xt-log: Change git protocol to https
+ 
+ git protocol is not supported.
+ 
+diff --git a/application_cpu/patchset_s4sk/0010-domx-optee-Add-S4SK-compatible-string.patch b/application_cpu/patchset_s4sk/0011-domx-optee-Add-S4SK-compatible-string.patch
+similarity index 94%
+rename from application_cpu/patchset_s4sk/0010-domx-optee-Add-S4SK-compatible-string.patch
+rename to application_cpu/patchset_s4sk/0011-domx-optee-Add-S4SK-compatible-string.patch
+index 38e9bf1..190a089 100644
+--- a/application_cpu/patchset_s4sk/0010-domx-optee-Add-S4SK-compatible-string.patch
++++ b/application_cpu/patchset_s4sk/0011-domx-optee-Add-S4SK-compatible-string.patch
+@@ -1,7 +1,7 @@
+-From 729ba62e496108210ef3af724cc2459c57992729 Mon Sep 17 00:00:00 2001
++From 880b4966e29e3843f7482aa76707717ea61633e4 Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Mon, 19 Jun 2023 15:50:02 +0900
+-Subject: [PATCH 10/11] domx: optee: Add S4SK compatible string
++Subject: [PATCH 11/13] domx: optee: Add S4SK compatible string
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+diff --git a/application_cpu/patchset_s4sk/0011-u-boot-Limit-the-revision-for-S4-Spider-only.patch b/application_cpu/patchset_s4sk/0012-u-boot-Limit-the-revision-for-S4-Spider-only.patch
+similarity index 88%
+rename from application_cpu/patchset_s4sk/0011-u-boot-Limit-the-revision-for-S4-Spider-only.patch
+rename to application_cpu/patchset_s4sk/0012-u-boot-Limit-the-revision-for-S4-Spider-only.patch
+index 742fce6..2add0fc 100644
+--- a/application_cpu/patchset_s4sk/0011-u-boot-Limit-the-revision-for-S4-Spider-only.patch
++++ b/application_cpu/patchset_s4sk/0012-u-boot-Limit-the-revision-for-S4-Spider-only.patch
+@@ -1,7 +1,7 @@
+-From f4056905313397ac228a3ec9e25a55bce77fea35 Mon Sep 17 00:00:00 2001
++From 0c2756d0360031cbf64dd7ee7cbcf3d76f779a8c Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Tue, 20 Jun 2023 17:08:22 +0900
+-Subject: [PATCH 11/11] u-boot: Limit the revision for S4 Spider only
++Subject: [PATCH 12/13] u-boot: Limit the revision for S4 Spider only
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+diff --git a/application_cpu/patchset_s4sk/0012-control-domain-Add-S4SK-image-check.patch b/application_cpu/patchset_s4sk/0013-control-domain-Add-S4SK-image-check.patch
+similarity index 90%
+rename from application_cpu/patchset_s4sk/0012-control-domain-Add-S4SK-image-check.patch
+rename to application_cpu/patchset_s4sk/0013-control-domain-Add-S4SK-image-check.patch
+index 747c076..f112fa3 100644
+--- a/application_cpu/patchset_s4sk/0012-control-domain-Add-S4SK-image-check.patch
++++ b/application_cpu/patchset_s4sk/0013-control-domain-Add-S4SK-image-check.patch
+@@ -1,7 +1,7 @@
+-From d9eff7a5326076bf8f790db03198a9a3cf57941b Mon Sep 17 00:00:00 2001
++From f2420081a46c75614757eccf008c1b561430ef1b Mon Sep 17 00:00:00 2001
+ From: Duy Dang <duy.dang.yw@renesas.com>
+ Date: Wed, 21 Jun 2023 17:59:18 +0900
+-Subject: [PATCH] control-domain: Add S4SK image check
++Subject: [PATCH 13/13] control-domain: Add S4SK image check
+ 
+ Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+ ---
+-- 
+2.34.1
+

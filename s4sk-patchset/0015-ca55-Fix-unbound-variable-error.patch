@@ -1,0 +1,29 @@
+From 7f428ab1b091d1064f9d4171ff5bb635f95791da Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 6 Jul 2023 18:11:35 +0900
+Subject: [PATCH 15/23] ca55: Fix unbound variable error
+
+Fix following error:
+  ./build_ca55.sh: line 4: $1: unbound variable
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ application_cpu/build_ca55.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/application_cpu/build_ca55.sh b/application_cpu/build_ca55.sh
+index 9058a2c..9e5cabf 100755
+--- a/application_cpu/build_ca55.sh
++++ b/application_cpu/build_ca55.sh
+@@ -1,7 +1,7 @@
+ #!/bin/bash -eu
+ 
+ # $1 í board name; spider or s4sk
+-if [ "$1" != "spider" ] && [ "$1" != "s4sk" ]; then
++if [[ $# > 0 ]] || [ "$1" != "spider" ] && [ "$1" != "s4sk" ]; then
+     echo "ERROR: Please specify board name: spider or s4sk"
+     exit 1
+ fi
+-- 
+2.34.1
+

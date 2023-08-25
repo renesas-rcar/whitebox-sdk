@@ -1,0 +1,75 @@
+From c036ee16be482d6425410d57a3cb2f8a0e9d7a81 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 10 Aug 2023 11:20:45 +0900
+Subject: [PATCH 1/4] HACK: ca55: improve stack issue at TFTP command on
+ U-Boot.
+
+This is not correct fix.
+Just in my experience, this patch improves the issue but not resolved.
+Until correct fix is come, this patch may be helpful for Whitebox SDK
+users.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ ...Improve-large-file-download-via-TFTP.patch | 32 +++++++++++++++++++
+ .../recipes-bsp/u-boot/u-boot_%.bbappend      |  9 ++++++
+ 2 files changed, 41 insertions(+)
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/files/0001-HACK-Improve-large-file-download-via-TFTP.patch
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/u-boot_%.bbappend
+
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/files/0001-HACK-Improve-large-file-download-via-TFTP.patch b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/files/0001-HACK-Improve-large-file-download-via-TFTP.patch
+new file mode 100644
+index 0000000..0888843
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/files/0001-HACK-Improve-large-file-download-via-TFTP.patch
+@@ -0,0 +1,32 @@
++From 328fbb78b757ec81053e23640a3da391869364ac Mon Sep 17 00:00:00 2001
++From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
++Date: Thu, 10 Aug 2023 11:09:23 +0900
++Subject: [PATCH] HACK: Improve large file download via TFTP
++
++This patch doesn't include correct fixes.
++Just in my experience, TFTP download failure is reduced by this patch.
++Until correct fix is comming, I think this patch helps users.
++
++Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
++---
++ drivers/net/rswitch.c | 4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++diff --git a/drivers/net/rswitch.c b/drivers/net/rswitch.c
++index b0dabfe0d1..2ad09e5f95 100644
++--- a/drivers/net/rswitch.c
+++++ b/drivers/net/rswitch.c
++@@ -274,8 +274,8 @@ struct rswitch_gwca {
++ #define RSWITCH_NUM_BASE_DESC		2
++ #define RSWITCH_TX_CHAIN_INDEX		1
++ #define RSWITCH_RX_CHAIN_INDEX		0
++-#define RSWITCH_NUM_TX_DESC		8
++-#define RSWITCH_NUM_RX_DESC		8
+++#define RSWITCH_NUM_TX_DESC		1024
+++#define RSWITCH_NUM_RX_DESC		1024
++ 
++ enum RX_DS_CC_BIT {
++ 	RX_DS   = 0x0fff, /* Data size */
++-- 
++2.34.1
++
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/u-boot_%.bbappend b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/u-boot_%.bbappend
+new file mode 100644
+index 0000000..1b27db9
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-bsp/u-boot/u-boot_%.bbappend
+@@ -0,0 +1,9 @@
++FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
++
++BRANCH = "v2020.10/rcar-5.1.1.rc9"
++SRCREV = "616f05eb5a88014037bd92ea0f1c3bfe6ea2444a"
++
++SRC_URI_append = " \
++    file://0001-HACK-Improve-large-file-download-via-TFTP.patch \
++"
++
+-- 
+2.34.1
+

@@ -1,0 +1,78 @@
+From e2c68155f4d76910e931fc21e91e55ab2e921483 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 7 Aug 2023 17:27:42 +0900
+Subject: [PATCH 21/23] WIP: ca55: Support temporary UFS boot
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ application_cpu/aos-rcar-gen4-patch.yaml       |  1 +
+ .../s4-boot-script/files/boot-ufs.txt          | 18 ++++++++++++++++++
+ .../s4-boot-script/s4-boot-script.bb           |  3 +++
+ 3 files changed, 22 insertions(+)
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/files/boot-ufs.txt
+
+diff --git a/application_cpu/aos-rcar-gen4-patch.yaml b/application_cpu/aos-rcar-gen4-patch.yaml
+index f747087..de311a5 100644
+--- a/application_cpu/aos-rcar-gen4-patch.yaml
++++ b/application_cpu/aos-rcar-gen4-patch.yaml
+@@ -44,6 +44,7 @@
+                 files:
+                   "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/work/%{MACHINE}-poky-linux/rcar-image-minimal/1.0-r0/rootfs/var/statestorage.db"
+                   "boot-emmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-emmc.uImage"
++                  "boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-ufs.uImage"
+               domd_aos:
+                 size: 3072 MiB
+ 
+diff --git a/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/files/boot-ufs.txt b/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/files/boot-ufs.txt
+new file mode 100644
+index 0000000..6db8b48
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/files/boot-ufs.txt
+@@ -0,0 +1,18 @@
++env delete bootargs
++
++setenv set_pcie 'i2c dev 0; i2c mw 0x6c 0x26 5; i2c mw 0x6c 0x254.2 0x1e; i2c mw 0x6c 0x258.2 0x1e'
++setenv bootcmd_mmc0 'run mmc0_xen_load; run mmc0_dtb_load; run mmc0_kernel_load; run mmc0_xenpolicy_load; run mmc0_initramfs_load; bootm 0x48080000 0x84000000 0x48000000'
++setenv mmc0_dtb_load 'ext2load mmc 0:${aos_boot_slot} 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device sda; fdt set /boot_dev domd_ip ${domd_ip};'
++setenv mmc0_initramfs_load 'ext2load mmc 0:${aos_boot_slot} 0x84000000 uInitramfs'
++setenv mmc0_kernel_load 'ext2load mmc 0:${aos_boot_slot} 0x7a000000 Image'
++setenv mmc0_xen_load 'ext2load mmc 0:${aos_boot_slot} 0x48080000 xen'
++setenv mmc0_xenpolicy_load 'ext2load mmc 0:${aos_boot_slot} 0x7c000000 xenpolicy'
++setenv aos_default_vars 'setenv aos_boot_main 0; setenv aos_boot1_ok 1; setenv aos_boot2_ok 1; setenv aos_boot_part 0'
++setenv aos_save_vars 'env export -t ${loadaddr} aos_boot_main aos_boot_part aos_boot1_ok aos_boot2_ok; fatwrite mmc 0:3 ${loadaddr} uboot.env 0x3E'
++setenv aos_load_vars 'run aos_default_vars; if load mmc 0:3 ${loadaddr} uboot.env; then env import -t ${loadaddr} ${filesize}; else run aos_save_vars; fi'
++setenv aos_boot1 'if test ${aos_boot1_ok} -eq 1; then setenv aos_boot1_ok 0; setenv aos_boot2_ok 1; setenv aos_boot_part 0; setenv aos_boot_slot 1; echo "==== Boot from part 1"; run aos_save_vars; run bootcmd_mmc0; fi'
++setenv aos_boot2 'if test ${aos_boot2_ok} -eq 1; then setenv aos_boot2_ok 0; setenv aos_boot1_ok 1; setenv aos_boot_part 1; setenv aos_boot_slot 2; echo "==== Boot from part 2"; run aos_save_vars; run bootcmd_mmc0; fi'
++setenv bootcmd_aos 'run aos_load_vars; if test ${aos_boot_main} -eq 0; then run aos_boot1; run aos_boot2; else run aos_boot2; run aos_boot1; fi'
++setenv bootcmd 'run bootcmd_aos'
++boot
++
+diff --git a/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/s4-boot-script.bb b/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/s4-boot-script.bb
+index 47c6a5a..f9b8970 100644
+--- a/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/s4-boot-script.bb
++++ b/application_cpu/meta-rcar-whitebox/meta-rcar-common/recipes-bsp/s4-boot-script/s4-boot-script.bb
+@@ -11,6 +11,7 @@ DEPENDS += "u-boot-mkimage-native"
+ 
+ SRC_URI = "\
+     file://boot-emmc.txt \
++    file://boot-ufs.txt \
+ "
+ 
+ do_configure[noexec] = "1"
+@@ -18,11 +19,13 @@ do_install[noexec] = "1"
+ 
+ do_compile() {
+     uboot-mkimage -T script -d ${WORKDIR}/boot-emmc.txt ${B}/boot-emmc.uImage
++    uboot-mkimage -T script -d ${WORKDIR}/boot-ufs.txt ${B}/boot-ufs.uImage
+ }
+ 
+ do_deploy() {
+     install -d ${DEPLOYDIR}
+     install -m 0644 ${B}/boot-emmc.uImage ${DEPLOYDIR}/boot-emmc.uImage
++    install -m 0644 ${B}/boot-ufs.uImage ${DEPLOYDIR}/boot-ufs.uImage
+ }
+ 
+ addtask deploy before do_build after do_compile
+-- 
+2.34.1
+

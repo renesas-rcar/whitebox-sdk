@@ -1,0 +1,46 @@
+From 4881b140a51fbe26985c2ab56981c2c170301cdb Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 7 Aug 2023 17:25:05 +0900
+Subject: [PATCH 19/23] WIP: Fix iccom??
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../patchset_s4sk/0015-Fix-iccom.patch        | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 application_cpu/patchset_s4sk/0015-Fix-iccom.patch
+
+diff --git a/application_cpu/patchset_s4sk/0015-Fix-iccom.patch b/application_cpu/patchset_s4sk/0015-Fix-iccom.patch
+new file mode 100644
+index 0000000..0964fdd
+--- /dev/null
++++ b/application_cpu/patchset_s4sk/0015-Fix-iccom.patch
+@@ -0,0 +1,26 @@
++From 9ecf7edffd473f82b84ae4f386e6dc6ec731637a Mon Sep 17 00:00:00 2001
++From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
++Date: Fri, 7 Jul 2023 15:08:33 +0900
++Subject: [PATCH] Fix iccom
++
++Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
++---
++ .../recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts    | 2 ++
++ 1 file changed, 2 insertions(+)
++
++diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
++index ac2f76b..87b1008 100644
++--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
+++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
++@@ -350,6 +350,8 @@
++ 	};
++ 
++ 	iccom		{ xen,passthrough; };
+++	iccom0		{ xen,passthrough; };
+++	iccom1		{ xen,passthrough; };
++ 	iccom01		{ xen,passthrough; };
++ 	iccom02		{ xen,passthrough; };
++ 	iccom03		{ xen,passthrough; };
++-- 
++2.34.1
++
+-- 
+2.34.1
+

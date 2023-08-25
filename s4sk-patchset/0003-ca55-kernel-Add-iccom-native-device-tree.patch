@@ -1,0 +1,255 @@
+From b7e76e97438d93af06bb67c0bd381141b96f7118 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Thu, 22 Jun 2023 12:10:00 +0900
+Subject: [PATCH 03/23] ca55: kernel: Add iccom native device tree
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ ...r-driver-instead-of-generic-uio-s4sk.patch | 213 ++++++++++++++++++
+ .../linux/linux-renesas_5.10.bbappend         |   6 +-
+ 2 files changed, 218 insertions(+), 1 deletion(-)
+ create mode 100644 application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas/0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch
+
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas/0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas/0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch
+new file mode 100644
+index 0000000..83bbb6f
+--- /dev/null
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas/0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch
+@@ -0,0 +1,213 @@
++From 160c4111c87cf1e63bff2092d0c373797124094f Mon Sep 17 00:00:00 2001
++From: OpenEmbedded <oe.patch@oe>
++Date: Thu, 19 Jan 2023 12:11:22 +0100
++Subject: [PATCH] dts: iccom: use proper driver instead of generic-uio
++
++---
++ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 185 ++--------------------
++ 1 file changed, 16 insertions(+), 169 deletions(-)
++
++diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++index eb33420c4d56..509eeee410fc 100644
++--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++@@ -1289,180 +1289,27 @@ mailbox: mfis_mbox {
++ 			status = "disabled";
++ 		};
++ 
++-		iccom_reg00: mfis@e6260000 {
++-			compatible = "generic-uio";
++-			reg = <0 0xe6260000 0 0x10000>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_reg_00";
++-		};
++-
++-		iccom00 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_00";
++-		};
++-
++-		iccom01 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_01";
++-		};
++-
++-		iccom02 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_02";
++-		};
++-
++-		iccom03 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 326 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_03";
++-		};
++-
++-		iccom04 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 328 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_04";
++-		};
++-
++-		iccom05 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 330 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_05";
++-		};
++-
++-		iccom06 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 332 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_06";
++-		};
++-
++-		iccom07 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 334 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_07";
++-		};
++-
++-		iccom08 {
++-			compatible = "generic-uio";
+++		iccom: iccom00@e6260000 {
+++			compatible = "renesas,iccom-rcar";
++ 			interrupts = <GIC_SPI 336 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_08";
++-		};
++-
++-		iccom09 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 338 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_09";
++-		};
+++			reg = <0x0 0xe6260000 0x0 0x10000>;
+++			iccom,reg-offset = <0x1480 0xa484 0x14c0 0xa4e0>;
+++			iccom,cta-memory = <0x0 0x37fc9000 0x0 0x2000>;
+++			iccom,ack-timeout = <250>;
+++			iccom,int-clear-timeout = <250>;
+++			iccom,read-timeout = <1000>;
++ 
++-		iccom010 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 340 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_10";
++ 		};
++ 
++-
++-		iccom011 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 342 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_11";
++-		};
++-
++-		iccom012 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 344 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_12";
++-		};
++-
++-		iccom013 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 346 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_13";
++-		};
++-
++-		iccom014 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 348 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_14";
++-		};
++-
++-		iccom015 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 350 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_15";
++-		};
++-
++-		iccom016 {
++-			compatible = "generic-uio";
+++		iccom01 {
+++			compatible = "renesas,iccom-rcar";
++ 			interrupts = <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_16";
++-		};
++-
++-		iccom017 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_17";
++-		};
++-
++-		iccom018 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 358 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_18";
++-		};
++-
++-		iccom019 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 360 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_19";
++-		};
++-
++-		iccom020 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 362 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_20";
++-		};
++-
++-		iccom021 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 364 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_21";
++-		};
++-
++-		iccom022 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 366 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_22";
++-		};
++-
++-		iccom023 {
++-			compatible = "generic-uio";
++-			interrupts = <GIC_SPI 368 IRQ_TYPE_LEVEL_HIGH>;
++-			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
++-			linux,uio-name = "iccom_23";
+++			reg = <0x0 0xe6260000 0x0 0x10000>;
+++			iccom,reg-offset = <0x1580 0xb484 0x15c0 0xb4e0>;
+++			iccom,cta-memory = <0x0 0x37fc7000 0x0 0x2000>;
+++			iccom,ack-timeout = <250>;
+++			iccom,int-clear-timeout = <250>;
+++			iccom,read-timeout = <1000>;
++ 		};
++ 
++ 		caiplite_wrapper {
++-- 
++2.25.1
++
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
+index 70b9254..e49e158 100644
+--- a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
+@@ -4,11 +4,15 @@ RENESAS_BSP_URL_spider = "git://github.com/xen-troops/linux.git"
+ BRANCH_spider = "v5.10.41/rcar-5.1.7.rc6-xt"
+ SRCREV_spider = "f5bb327b43cc6248cde9f3baf18e64257be8bc02"
+ 
+-SRC_URI_append = " \
++SRC_URI_append_spider = " \
+      file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio.patch \
+      file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
+ "
+ 
++SRC_URI_append_s4sk = " \
++     file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch \
++"
++
+ ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
+ 
+ # Ignore in-tree defconfig
+-- 
+2.34.1
+

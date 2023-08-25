@@ -1,0 +1,27 @@
+From 8ec23fe8e2cedb2dfd6fdb21a1914429284f2ee6 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 6 Jul 2023 18:28:15 +0900
+Subject: [PATCH 16/23] WIP: ca55: Ignore rswitch patch
+
+This is temporary workaround.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../recipes-demo-gen4-domd/linux/linux-renesas_%.bbappend       | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/linux/linux-renesas_%.bbappend b/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/linux/linux-renesas_%.bbappend
+index 039c39f..ddbf449 100644
+--- a/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/linux/linux-renesas_%.bbappend
++++ b/application_cpu/meta-whitebox-demo/recipes-demo-gen4-domd/linux/linux-renesas_%.bbappend
+@@ -1,6 +1,6 @@
+ FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+ 
+-SRC_URI_append = "\
++SRC_URI_append_spider = "\
+     file://0001-net-ethernet-renesas-rswitch-Improve-the-performance.patch \
+ "
+ 
+-- 
+2.34.1
+

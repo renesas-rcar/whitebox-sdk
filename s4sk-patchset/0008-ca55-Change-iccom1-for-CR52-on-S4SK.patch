@@ -1,0 +1,25 @@
+From 2d0857cf67b383217c2fd999a7b24e708b593424 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Thu, 29 Jun 2023 12:19:57 +0900
+Subject: [PATCH 08/23] ca55: Change iccom1 for CR52 on S4SK
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend   | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
+index e49e158..c3ae9a4 100644
+--- a/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
++++ b/application_cpu/meta-rcar-whitebox/meta-domd/recipes-kernel/linux/linux-renesas_5.10.bbappend
+@@ -11,6 +11,7 @@ SRC_URI_append_spider = " \
+ 
+ SRC_URI_append_s4sk = " \
+      file://0001-dts-iccom-use-proper-driver-instead-of-generic-uio-s4sk.patch \
++     file://0002-dts-iccom-Change-iccom1-for-CR52.patch \
+ "
+ 
+ ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
+-- 
+2.34.1
+

@@ -1,0 +1,35 @@
+From 1ca249720399892802e66783eb0bdc2227965a9e Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Tue, 4 Jul 2023 18:52:17 +0900
+Subject: [PATCH 11/23] ca55: Update meta-renesas commit ID for S4SK
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ application_cpu/aos-rcar-gen4-s4sk.yaml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/application_cpu/aos-rcar-gen4-s4sk.yaml b/application_cpu/aos-rcar-gen4-s4sk.yaml
+index f9c12c6..1f601de 100644
+--- a/application_cpu/aos-rcar-gen4-s4sk.yaml
++++ b/application_cpu/aos-rcar-gen4-s4sk.yaml
+@@ -172,7 +172,7 @@ components:
+       - *COMMON_SOURCES
+       - type: git
+         url: https://github.com/renesas-rcar/meta-renesas.git
+-        rev: "2b02ec9699954acfdfd35e6d79b53aadcee153ff"
++        rev: "fb473def5263e910f90c49969415b1fd3f4ac880"
+       - type: git
+         url: git://git.yoctoproject.org/meta-selinux
+         rev: "46bcf05"
+@@ -241,7 +241,7 @@ components:
+       - *COMMON_SOURCES
+       - type: git
+         url: https://github.com/renesas-rcar/meta-renesas.git
+-        rev: "2b02ec9699954acfdfd35e6d79b53aadcee153ff"
++        rev: "fb473def5263e910f90c49969415b1fd3f4ac880"
+     builder:
+       type: yocto
+       work_dir: "%{DOMU_BUILD_DIR}"
+-- 
+2.34.1
+

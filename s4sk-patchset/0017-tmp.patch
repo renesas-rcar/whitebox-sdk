@@ -1,0 +1,30 @@
+From e4181e176be359797427b517a1cb8877c37e342b Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 7 Jul 2023 14:44:47 +0900
+Subject: [PATCH 17/23] tmp
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ application_cpu/build_ca55.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/application_cpu/build_ca55.sh b/application_cpu/build_ca55.sh
+index 9e5cabf..8a703ce 100755
+--- a/application_cpu/build_ca55.sh
++++ b/application_cpu/build_ca55.sh
+@@ -58,10 +58,10 @@ cd ../../
+ # END: Apply patch for meta-aos-rcar-gen4   #
+ #############################################
+ 
+-moulin ./aos-rcar-gen4-wb.yaml
++moulin ./aos-rcar-gen4-wb.yaml --BUILD_DOMD_SDK=no
+ ninja
+ ninja image-full
+-gzip full.img
++gzip -k full.img
+ if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
+     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work/
+ fi
+-- 
+2.34.1
+

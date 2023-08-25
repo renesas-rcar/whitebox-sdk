@@ -1,0 +1,51 @@
+From 1c2c91d9cdd6b19c3132196740f7f73f76bb143f Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 23 Jun 2023 15:07:26 +0900
+Subject: [PATCH 05/23] cr52: Add S4SK Zephyr
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ realtime_cpu/build_zephyr.sh | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/realtime_cpu/build_zephyr.sh b/realtime_cpu/build_zephyr.sh
+index b840d54..a9a6bf0 100755
+--- a/realtime_cpu/build_zephyr.sh
++++ b/realtime_cpu/build_zephyr.sh
+@@ -7,7 +7,10 @@ ZEPHYR_SDK_PATH=${SCRIPT_DIR}/zephyr-sdk-0.15.2
+ CLEAN_BUILD_FLAG=false
+ Usage() {
+     echo "Usage:"
+-    echo "    $0 [option]"
++    echo "    $0 [board] [option]"
++    echo "board:"
++    echo "    - spider: R-Car S4 Spider board"
++    echo "    - s4sk: R-Car S4 Starter Kit"
+     echo "option:"
+     echo "    -c: Clean build flag(Defualt is disable)"
+ }
+@@ -26,6 +29,12 @@ if [[ ! -e ${ZEPHYR_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
+     mkdir -p ${ZEPHYR_DIR}
+ fi
+ 
++# Board argument
++if [ "$1" == "s4sk" ]; then BOARD="s4sk"
++elif [ "$1" == "spider" ]; then BOARD="spider"
++else echo "ERROR: Please specify a board name: spider or s4sk"; exit 1
++fi	
++
+ # Setup SDK
+ cd ${SCRIPT_DIR}
+ if [ ! -e "${ZEPHYR_SDK_PATH}" ]; then
+@@ -53,7 +62,7 @@ pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
+ 
+ # Build
+ cd ${ZEPHYR_DIR}/zephyr
+-west build -p always -b rcar_spider_cr52 samples/basic/blinky
++west build -p always -b rcar_${BOARD}_cr52 samples/basic/blinky
+ ${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 \
+     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
+ 
+-- 
+2.34.1
+
