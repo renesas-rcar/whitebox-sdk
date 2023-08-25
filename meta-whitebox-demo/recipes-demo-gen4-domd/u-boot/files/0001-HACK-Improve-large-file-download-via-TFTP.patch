@@ -1,0 +1,32 @@
+From 328fbb78b757ec81053e23640a3da391869364ac Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 10 Aug 2023 11:09:23 +0900
+Subject: [PATCH] HACK: Improve large file download via TFTP
+
+This patch doesn't include correct fixes.
+Just in my experience, TFTP download failure is reduced by this patch.
+Until correct fix is comming, I think this patch helps users.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ drivers/net/rswitch.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/rswitch.c b/drivers/net/rswitch.c
+index b0dabfe0d1..2ad09e5f95 100644
+--- a/drivers/net/rswitch.c
++++ b/drivers/net/rswitch.c
+@@ -274,8 +274,8 @@ struct rswitch_gwca {
+ #define RSWITCH_NUM_BASE_DESC		2
+ #define RSWITCH_TX_CHAIN_INDEX		1
+ #define RSWITCH_RX_CHAIN_INDEX		0
+-#define RSWITCH_NUM_TX_DESC		8
+-#define RSWITCH_NUM_RX_DESC		8
++#define RSWITCH_NUM_TX_DESC		1024
++#define RSWITCH_NUM_RX_DESC		1024
+ 
+ enum RX_DS_CC_BIT {
+ 	RX_DS   = 0x0fff, /* Data size */
+-- 
+2.34.1
+

@@ -113,6 +113,10 @@ prepare_ipl () {
 
     # Cleanup temp dir
     rm -rf ${TEMP_DIR}
+
+    # Copy U-boot binary
+    cp -f ${SCRIPT_DIR}/work/s4_build/yocto/build-domd/tmp/deploy/images/spider/u-boot-elf-spider.srec \
+        -t ${OUTPUT_DIR}/u-boot-elf.srec
 }
 prepare_ipl
 
