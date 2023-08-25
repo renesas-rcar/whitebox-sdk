@@ -20,7 +20,7 @@ common_data:
       rev: "c5b39adbabdb8fd51517cf37190552b8fb57d062"
     - type: git
       url: "https://github.com/yhamamachi/meta-rcar-dev-utils"
-      rev: "a49b516cdeb19bc3af406cdf2591b3ced464207e"
+      rev: "765771bb9786443ebec0aac5a7701bd4063777f8"
     - type: git
       url: "https://github.com/OSSystems/meta-browser"
       rev: "4b98e0655f2766a69667c95068a89775f352dcc4"
