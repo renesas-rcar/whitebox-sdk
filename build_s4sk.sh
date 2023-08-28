@@ -46,6 +46,14 @@ build_sw() {
     cd application_cpu
     mkdir -p $SCRIPT_DIR/work/common_data
     ln -sdf $SCRIPT_DIR/work/common_data ./common_data
+    ############################################################
+    # use mirror repository                                    #
+    ############################################################
+    sed -i \
+        -e "s|git://git.openembedded.org|https://github.com/openembedded|" \
+        -e "s|git://git.yoctoproject.org/poky|https://github.com/yoctoproject/poky|" \
+        ./aos-rcar-gen4-s4sk.yaml
+    ############################################################
     ./build_ca55.sh s4sk
     mv -f ./work/full.img.gz ${SCRIPT_DIR}/work/s4_build/s4sk.demo.full.img.gz
     cp ./work/yocto/build-domd/tmp/deploy/images/s4sk/*.srec \

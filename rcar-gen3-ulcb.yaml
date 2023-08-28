@@ -10,10 +10,10 @@ variables:
 common_data:
   sources: &COMMON_SOURCES
     - type: git
-      url: "git://git.yoctoproject.org/poky"
+      url: "https://github.com/yoctoproject/poky"
       rev: "74b22db6879b388d700f61e08cb3f239cf940d18"
     - type: git
-      url: "git://git.openembedded.org/meta-openembedded"
+      url: "https://github.com/openembedded/meta-openembedded"
       rev: "814eec96c2a29172da57a425a3609f8b6fcc6afe"
     - type: git
       url: "https://github.com/renesas-rcar/meta-renesas"
