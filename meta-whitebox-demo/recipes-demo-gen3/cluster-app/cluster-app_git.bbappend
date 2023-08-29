@@ -1,5 +1,5 @@
 
-BRANCH = "wb-demo"
-SRCREV = "eaa485bade9eb8c83973de2bde8bfc0596171588"
+BRANCH = "wb-demo-v2"
+SRCREV = "6a6163172afdced4f05eff5b7d3e3c55adce007f"
 SRC_URI = "git://github.com/yhamamachi/automotive-viss2-client.git;branch=${BRANCH};protocol=https"
 
