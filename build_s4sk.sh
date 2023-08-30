@@ -56,8 +56,6 @@ build_sw() {
     ############################################################
     ./build_ca55.sh s4sk
     mv -f ./work/full.img.gz ${SCRIPT_DIR}/work/s4_build/s4sk.demo.full.img.gz
-    cp ./work/yocto/build-domd/tmp/deploy/images/s4sk/*.srec \
-        -t ${SCRIPT_DIR}/work/s4_build/s4_ipl
 }
 
 # Extract ipl from proprietary package
@@ -80,14 +78,18 @@ prepare_ipl () {
     unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
     mv ${TEMP_DIR}/Flash_Boot ${OUTPUT_DIR}
 
+    # Copy U-Boot binary
+    cp ./work/yocto/build-domd/tmp/deploy/images/s4sk/*.srec \
+        -t ${SCRIPT_DIR}/work/s4_build/s4_ipl
+
     # Cleanup temp dir
     rm -rf ${TEMP_DIR}
 }
 
 
+build_sw
 check_proprietary_package
 prepare_ipl
-build_sw
 
 echo "Build finished !"
 
