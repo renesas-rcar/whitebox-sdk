@@ -79,7 +79,7 @@ prepare_ipl () {
     mv ${TEMP_DIR}/Flash_Boot ${OUTPUT_DIR}
 
     # Copy U-Boot binary
-    cp ./work/yocto/build-domd/tmp/deploy/images/s4sk/*.srec \
+    cp ./work/yocto/build-domd/tmp/deploy/images/s4sk/u-boot-elf-s4sk.srec \
         -t ${SCRIPT_DIR}/work/s4_build/s4_ipl
 
     # Cleanup temp dir
