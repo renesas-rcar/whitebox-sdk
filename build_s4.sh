@@ -5,10 +5,11 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 AOS_VERSION="v1.0.0"
 WHITEBOX_VERSION="v3.1"
 TARGET_BOARD=""
-BOARD_LIST=("spider")
+BOARD_LIST=("spider" "s4sk")
 
 GUIDE_PATH=$(find ${SCRIPT_DIR}/proprietary -name "R-Car_S4_SDK_start_up_guide_content*.zip" | head -1)
 TOOL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "rcar_tool_ubuntu*.zip" | head -1)
+IPL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "ICUMX_Loader_and_Flashwriter_Package_*.zip" | head -1)
 
 #================================================
 # Usage
@@ -18,6 +19,7 @@ Usage() {
     echo "    $0 board [option]"
     echo "board:"
     echo "    spider"
+    echo "    s4sk"
     echo "option:"
     echo "    -h: Show this usage"
 }
@@ -67,6 +69,22 @@ check_proprietary_package_spider() {
         err_msg; exit -1
     fi
 }
+
+check_proprietary_package_s4sk() {
+    err_msg () {
+        echo "ERROR: Proprietary packages are not found:"
+        echo "  - ${SCRIPT_DIR}/proprietary/ICUMX_Loader_and_Flashwriter_Package_*.zip"
+        echo ""
+        echo "Please download following files from renesas.com:"
+        echo "  - https://www.renesas.com/us/en/icumx-loader-and-flash-writer-package-r-car-s4-starter-kit"
+        echo "    - ICUMX Loader and Flash writer Package for R-Car S4 Starter Kit for SDK v(VERSION)"
+        echo "Note: version 3.16.0 or later is recommended"
+    }
+    if [[ ! -e "${IPL_PATH}" ]]; then
+        err_msg; exit -1
+    fi
+}
+
 #================================================
 # build_sw
 #================================================
@@ -165,6 +183,27 @@ prepare_ipl_spider () {
     # Copy U-boot binary
     cp -f ${SCRIPT_DIR}/work/s4_build/yocto/build-domd/tmp/deploy/images/spider/u-boot-elf-spider.srec \
         ${OUTPUT_DIR}/u-boot-elf.srec
+}
+
+#================================================
+# Extract ipl from proprietary package
+#================================================
+prepare_ipl_s4sk () {
+    OUTPUT_DIR=${SCRIPT_DIR}/work/s4_build/s4_ipl
+    TEMP_DIR=${SCRIPT_DIR}/work/s4_build/s4_ipl_temp
+    rm -rf ${OUTPUT_DIR} ${TEMP_DIR}
+    mkdir -p ${TEMP_DIR}
+
+    # Extract Xen Hypervisor IPL
+    unzip -qo ${IPL_PATH} -d ${TEMP_DIR}
+    mv ${TEMP_DIR}/* ${OUTPUT_DIR}
+
+    # Copy U-boot binary
+    cp -f ${SCRIPT_DIR}/work/s4_build/yocto/build-domd/tmp/deploy/images/${TARGET_BOARD}/*.srec \
+        -t ${OUTPUT_DIR}
+
+    # Cleanup temp dir
+    rm -rf ${TEMP_DIR}
 }
 
 #================================================
