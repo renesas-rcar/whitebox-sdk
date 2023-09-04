@@ -3,7 +3,7 @@
 export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 AOS_VERSION="v1.0.0"
-WHITEBOX_VERSION="v3.1"
+WHITEBOX_VERSION="v4.0"
 TARGET_BOARD=""
 BOARD_LIST=("spider" "s4sk")
 
@@ -18,8 +18,7 @@ Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
     echo "board:"
-    echo "    spider"
-    echo "    s4sk"
+    for i in ${BOARD_LIST[@]}; do echo "  - $i"; done
     echo "option:"
     echo "    -h: Show this usage"
 }
@@ -29,7 +28,7 @@ Usage() {
 #================================================
 proc_args () {
     for board in ${BOARD_LIST[*]}; do
-        if [[ "$board" == "$1" ]]; then
+        if [[ "$board" == "${1:-}" ]]; then
             TARGET_BOARD=$1
             shift 1
         fi
@@ -97,18 +96,16 @@ build_sw() {
     cd ${SCRIPT_DIR}/work/s4_build
 
     # Setup yaml file
-    curl -O https://raw.githubusercontent.com/aoscloud/meta-aos-rcar-gen4/${AOS_VERSION}/aos-rcar-gen4.yaml
+    curl -O https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}/application_cpu/aos-rcar-gen4.yaml
     curl -O https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}/application_cpu/aos-rcar-gen4-patch.yaml
     cat aos-rcar-gen4.yaml aos-rcar-gen4-patch.yaml ${SCRIPT_DIR}/aos-rcar-gen4-demo-patch.yaml \
         > ${SCRIPT_DIR}/work/s4_build/aos-rcar-gen4-demo.yaml
 
-    # Remove meta-aos-rcar-gen4 from repo list
-    PARTERN='    - type: git
-          url: "https://github.com/aoscloud/meta-aos-rcar-gen4.git"
-          rev: "v1.0.0"'
+    # Apply append patch for repository
     apply_patch_meta-aos-rcar-gen4 () {
         cd ${SCRIPT_DIR}/work/s4_build
-        sed -i -z "s|${PARTERN//$'\n'/\\n}||" ./aos-rcar-gen4-demo.yaml
+        # Remove meta-aos-rcar-gen4 from repo list
+        sed -i '49,51d' ${SCRIPT_DIR}/work/s4_build/aos-rcar-gen4-demo.yaml
 
         # Prepare additional repo
         mkdir -p ./yocto
@@ -118,6 +115,7 @@ build_sw() {
         fi
         cd ./yocto/meta-aos-rcar-gen4
         git reset --hard ${AOS_VERSION}; git clean -df
+
         PATCHSET=(
             "0001-domd-Update-Linux-Kernel-to-latest-v5.10.41-rcar-5.1.patch"
             "0002-domd-Add-Snort-and-required-S4-R-Switch-specific-lib.patch"
@@ -126,19 +124,48 @@ build_sw() {
             "0005-net-renesas-rswitch-fix-disabling-offload-with-defau.patch"
         )
         for patch in ${PATCHSET[@]}; do
-            URL=https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}/application_cpu/patchset_aos/${patch}
+            BASE_URL=https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}
+            URL=${BASE_URL}/application_cpu/patchset_aos/${patch}
             curl -s $URL | git apply
         done
+
+        # Additional patchset for s4sk
+        if [[ "$TARGET_BOARD" == "s4sk" ]]; then
+            PATCHSET=(
+                "0001-dom0-kernel-update-to-rcar-5.1.7.rc11.patch"
+                "0002-domd-linux-Update-Linux-BSP-to-rcar-5.1.7.rc11.patch"
+                "0003-domd-kernel-Align-patch-0002-PCIe-MSI-support.patch.patch"
+                "0004-domd-kernel-Align-patch-0006-net-renesas-rswitch-fix.patch"
+                "0005-domd-kernel-Add-S4SK-dts-for-Xen-and-DomD.patch"
+                "0006-domd-snort-Remove-tsn2-service.patch"
+                "0007-domu-kernel-Update-to-rcar-5.1.7.rc11.patch"
+                "0008-driver-xen-Update-config-fragment-for-S4SK.patch"
+                "0009-control-guests-Update-config-file-for-S4SK.patch"
+                "0010-common-xt-log-Change-git-protocol-to-https.patch"
+                "0011-domx-optee-Add-S4SK-compatible-string.patch"
+                "0012-u-boot-Limit-the-revision-for-S4-Spider-only.patch"
+                "0013-control-domain-Add-S4SK-image-check.patch"
+                "0014-domd-base-files-Set-longer-time-to-wait-for-devices.patch"
+                "0015-HACK-s4-perform-direct-reset.patch"
+            )
+            for patch in ${PATCHSET[@]}; do
+                BASE_URL=https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}
+                URL=${BASE_URL}/application_cpu/patchset_s4sk/${patch}
+                curl -s $URL | git apply
+            done
+        fi
     }
     apply_patch_meta-aos-rcar-gen4
 
     # Build image
     cd ${SCRIPT_DIR}/work/s4_build
-    moulin ./aos-rcar-gen4-demo.yaml --BUILD_DOMD_SDK=no
+    moulin ./aos-rcar-gen4-demo.yaml \
+        --TARGET_BOARD=${TARGET_BOARD} \
+        --BUILD_DOMD_SDK=no
     ninja
     ninja image-full
-    gzip -kf full.img
-    mv {,demo.}full.img.gz
+    gzip -f full.img
+    mv full.img.gz ${TARGET_BOARD}.demo.full.img.gz
 }
 
 #================================================

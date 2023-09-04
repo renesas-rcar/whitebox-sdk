@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 DEPLOY_DIR=${SCRIPT_DIR}/deploy
 TARGET_BOARD=""
-BOARD_LIST=("spider")
+BOARD_LIST=("spider" "s4sk")
 
 #================================================
 # Usage
@@ -12,7 +12,7 @@ Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
     echo "board:"
-    echo "    spider"
+    for i in ${BOARD_LIST[@]}; do echo "  - $i"; done
     echo "option:"
     echo "    -h: Show this usage"
 }

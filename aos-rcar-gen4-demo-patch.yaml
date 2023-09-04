@@ -53,5 +53,5 @@
           sources:
             - type: git
               url: "https://github.com/renesas-rcar/whitebox-sdk.git"
-              rev: "v3.1"
+              rev: "v4.0"
 

@@ -3,20 +3,20 @@
 [Whitebox SDK]: https://github.com/renesas-rcar/whitebox-sdk
 This branch is for sharing demonstration environment used [Whitebox SDK]
 
-Currently, this branch is based on v3.1 on [Whitebox SDK].
+Currently, this branch is based on v4.0 on [Whitebox SDK].
 
 # Tool setup
 
 Please refer to following.
 
-- https://github.com/renesas-rcar/whitebox-sdk/tree/v3.1#tool-setup
+- https://github.com/renesas-rcar/whitebox-sdk/tree/v4.0#tool-setup
 
 # build
 Execute the following command:
 ```
-git clone https://github.com/renesas-rcar/whitebox-sdk.git -b demo_v1 whitebox-sdk-demo
+git clone https://github.com/renesas-rcar/whitebox-sdk.git -b demo_v2 whitebox-sdk-demo
 cd whitebox-sdk-demo
-./build_all.sh
+./build_all.sh spider|s4sk
 ```
 
 You can check the generated image with the following command:
@@ -27,12 +27,12 @@ ls -l deploy
 # Board connection example
 
 ```
-                 +---------------------------+----------------------------+      
-                 | USB serial                |                            |      
-                 |                           v                            v      
-            +-----------+ Eth     TSN0 +-----------+ TSN1      eth0 +-----------+
-Internet----| Host PC   |--------------| S4 Spider |----------------| H3SK+CCPF |
-            +-----------+              +-----------+                +-----------+
+                 +---------------------------+----------------------------+
+                 | USB serial                |                            |
+                 |                           v                            v
+            +-----------+ Eth     TSN0 +-----------+ TSN1      eth0 +-------------+
+Internet----| Host PC   |--------------| S4 Board  |----------------| H3SK(+CCPF) |
+            +-----------+              +-----------+                +-------------+
                                                                       |micro  |USB
                                                                       |HDMI   |3.0
                                                                       |       |
