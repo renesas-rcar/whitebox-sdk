@@ -161,7 +161,8 @@ build_sw() {
     cd ${SCRIPT_DIR}/work/s4_build
     moulin ./aos-rcar-gen4-demo.yaml \
         --TARGET_BOARD=${TARGET_BOARD} \
-        --BUILD_DOMD_SDK=no
+        --BUILD_DOMD_SDK=no \
+        --ENABLE_AWS=no
     ninja
     ninja image-full
     gzip -f full.img
