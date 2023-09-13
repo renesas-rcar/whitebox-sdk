@@ -80,7 +80,7 @@ cd ../../
 # END: Apply patch for meta-aos-rcar-gen4   #
 #############################################
 
-moulin ./aos-rcar-gen4-wb.yaml --TARGET_BOARD=$1
+moulin ./aos-rcar-gen4-wb.yaml --TARGET_BOARD $1
 ninja
 ninja image-full
 gzip full.img
