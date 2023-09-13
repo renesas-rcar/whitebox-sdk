@@ -100,7 +100,7 @@ esac
 # Build CA55
 cd ${BASE_DIR}/application_cpu
 case $CA55 in
-    "Linux") ./build_ca55.sh $1 -c;;
+    "Linux") ./build_xenhypervisor.sh $1 -c;;
 esac
 
 # deploy images
