@@ -7,8 +7,7 @@ WHITEBOX_VERSION="v4.0"
 TARGET_BOARD=""
 BOARD_LIST=("spider" "s4sk")
 
-GUIDE_PATH=$(find ${SCRIPT_DIR}/proprietary -name "R-Car_S4_SDK_start_up_guide_content*.zip" | head -1)
-TOOL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "rcar_tool_ubuntu*.zip" | head -1)
+TOOL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "rcar-xos_tool_hypervisor_*.gz" | head -1)
 IPL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "ICUMX_Loader_and_Flashwriter_Package_*.zip" | head -1)
 
 #================================================
@@ -52,18 +51,13 @@ proc_args () {
 check_proprietary_package_spider() {
     err_msg () {
         echo "ERROR: Proprietary packages are not found:"
-        echo "  - ${SCRIPT_DIR}/proprietary/R-Car_S4_SDK_start_up_guide_content*.zip"
-        echo "  - ${SCRIPT_DIR}/proprietary/rcar_tool_ubuntu*.zip"
+        echo "  - ${SCRIPT_DIR}/proprietary/rcar-xos_tool_hypervisor*.zip"
         echo ""
         echo "Please download following files from renesas.com:"
         echo "  - https://www.renesas.com/r-car-s4#downloads"
-        echo "    - R-Car S4 SDK Start Up Guide PKG v(VERSION)"
-        echo "    - R-Car S4 SDK common tool for ubuntu v(VERSION)"
-        echo "Note: version 3.14.0 or later is recommended"
+        echo "    - R-Car S4 SDK hypervisor tool v(VERSION)"
+        echo "Note: version 3.16.1 or later is recommended"
     }
-    if [[ ! -e "${GUIDE_PATH}" ]]; then
-        err_msg; exit -1
-    fi
     if [[ ! -e "${TOOL_PATH}" ]]; then
         err_msg; exit -1
     fi
@@ -179,38 +173,20 @@ prepare_ipl_spider () {
     mkdir -p ${TEMP_DIR}
 
     # Extract Xen Hypervisor IPL
-    TOOL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "rcar_tool_ubuntu*.zip" | head -1)
-    unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
-    TOOL_PATH=$(find ${TEMP_DIR} -name "rcar-xos_tool_hypervisor*.tar.gz" | head -1)
+    TOOL_PATH=$(find ${SCRIPT_DIR}/proprietary -name "rcar-xos_tool_hypervisor_*.gz" | head -1)
     tar xf ${TOOL_PATH} -C ${TEMP_DIR}
     TOOL_PATH=$(find ${TEMP_DIR} -name "R-Car_S4_Xen*.zip" | head -1)
     unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
-    TOOL_PATH=$(find ${TEMP_DIR} -name "Flash_Boot.zip" | head -1)
+    TOOL_PATH=$(find ${TEMP_DIR} -name "Flash_Boot.zip" | grep -v S4SK)
     unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
     mv ${TEMP_DIR}/Flash_Boot ${OUTPUT_DIR}
-
-    # Extract teraterm macro
-    GUIDE_PATH=$(find ${SCRIPT_DIR}/proprietary -name "R-Car_S4_SDK_start_up_guide_content*.zip" | head -1)
-    unzip -qo ${GUIDE_PATH} -d ${TEMP_DIR}
-    GUIDE_PATH=$(find ${TEMP_DIR} -name "R-CarS4_SDK_StartupGuide*.zip" | head -1)
-    unzip -qo ${GUIDE_PATH} -d ${TEMP_DIR}
-    MACRO_PATH=$(find ${TEMP_DIR} -name "*.ttl" | head -1)
-    cp ${MACRO_PATH} ${OUTPUT_DIR}/Flash_Bootloaders_S4.ttl
-
-    # patch to teraterm macro
-    sed -e 's/dummy_rtos/App_CDD_ICCOM_S4_Sample_CR52/' \
-        -e 's/dummy_g4mh_case0/App_CDD_ICCOM_S4_Sample_G4MH/' \
-        -e 's/bl31-spider/bl31/' \
-        -e 's/tee-spider/tee/' \
-        -e 's/u-boot-elf-spider/u-boot-elf/' \
-        -i ${OUTPUT_DIR}/Flash_Bootloaders_S4.ttl
 
     # Cleanup temp dir
     rm -rf ${TEMP_DIR}
 
     # Copy U-boot binary
     cp -f ${SCRIPT_DIR}/work/s4_build/yocto/build-domd/tmp/deploy/images/spider/u-boot-elf-spider.srec \
-        ${OUTPUT_DIR}/u-boot-elf.srec
+        ${OUTPUT_DIR}/u-boot-elf-spider.srec
 }
 
 #================================================
