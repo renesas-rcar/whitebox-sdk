@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eu
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 DEPLOY_DIR=${SCRIPT_DIR}/deploy
