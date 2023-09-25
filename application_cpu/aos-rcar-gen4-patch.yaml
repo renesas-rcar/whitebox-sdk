@@ -22,6 +22,7 @@
                 - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
                 - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
                 - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
+                - [IMAGE_INSTALL_append, " can-utils python3-numpy"]
                 - [IMAGE_INSTALL_append, " waii"]
                 - [IMAGE_INSTALL_append, " node-exporter"]
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]

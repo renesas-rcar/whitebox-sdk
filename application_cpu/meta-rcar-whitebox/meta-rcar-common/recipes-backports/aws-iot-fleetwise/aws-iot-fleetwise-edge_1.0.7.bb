@@ -20,7 +20,7 @@ SRC_URI = "\
            file://run-ptest \
            "
 
-SRCREV = "d0c4fad5110b27c22186f5d5b0d1d50512bcd33e"
+SRCREV = "1bd0a99ba8b10f4720fafd45170275fa2c8bd0ab"
 
 S = "${WORKDIR}/git"
 
@@ -60,4 +60,3 @@ do_compile_prepend() {
 do_install_append() {
     install -m 0755 ${S}/tools/deploy/run-fwe.sh ${D}${bindir}
 }
-
