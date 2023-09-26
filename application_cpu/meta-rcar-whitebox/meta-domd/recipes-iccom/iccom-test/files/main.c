@@ -55,10 +55,13 @@
 #define MS_IN_S		1000
 #define NS_IN_S		(NS_IN_MS * MS_IN_S)
 #define OS_SIZE		10
-
+#define BEN_SIZE        (17*14+1)
+#define BENCH_SIZE      (BEN_SIZE*2+1)
+#define BENCH_WAIT      (1000*1000*180)
 static int iteration_count_flag = 1;
 static int size_flag = 1;
 static int bench_flag = 0;
+static int iccom_bench_flag = 0;
 static int cpu_type = 0;
 static int os_type = 0;
 struct cpu_name_t {
@@ -67,8 +70,9 @@ struct cpu_name_t {
 
 void print_help(int argc, char **argv)
 {
-	printf("Usage: %s [-s|-c|-b|-r|-v|-h]\n", argv[0]);
-	printf("	-b: enable benchmark mode(default is test mode)\n");
+	printf("Usage: %s [-s|-c|-b|-r|-v|-p|-h]\n", argv[0]);
+	printf("        -p: benchmark(Dhrystone and Coremark) \n");
+	printf("	-b: enable iccom benchmark mode(default is test mode)\n");
 	printf("	-c: number of iterations to test\n");
 	printf("	-s: size of each iteration\n");
 	printf("	-r: enable iccom channel CR-52(default is G4MH) \n");
@@ -80,7 +84,7 @@ static int parse_input_args(int argc, char **argv)
 {
 	int c;
 	
-	while ((c = getopt(argc, argv, "c:s:brvh")) != -1) {
+	while ((c = getopt(argc, argv, "c:s:bprvh")) != -1) {
 		switch (c) {
 		case 'r':
 			cpu_type = 1;
@@ -91,8 +95,10 @@ static int parse_input_args(int argc, char **argv)
 		case 's':
 			size_flag = strtoul(optarg, NULL, 10);
 			break;
-		case 'b':
+		case 'p':
 			bench_flag = 1;
+		case 'b':
+			iccom_bench_flag = 1;
 			break;
 		case 'v':
 			os_type = 1;
@@ -150,59 +156,51 @@ int main(int argc, char **argv)
 
 	if (os_type) { // get OS mode
 		cmd.cmd_id = OS;
-                // always take "cmd_id" into account for the size
-                pkt_size = OS_SIZE + sizeof(uint8_t);
+		// always take "cmd_id" into account for the size
+		pkt_size = OS_SIZE + sizeof(uint8_t);
 
-                send_param.send_buf = (uint8_t *)&cmd;
-                send_param.send_size = pkt_size;
-                ret = R_ICCOM_Send(&send_param);
-                if (ret < 0) {
-                        err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
-                        R_ICCOM_Close();
-                        return ret;
-                }
-                recive_param.recive_buf = (uint8_t *)&reply;
-                recive_param.recive_size = pkt_size;
-                ret = R_ICCOM_Recive(&recive_param);
-                if (ret < 0) {
-                        err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
-                        R_ICCOM_Close();
-                        return ret;
-                }
-		printf("%s OS is running on %s\n", (uint8_t *)&reply, cpu[cpu_type].cpu_name);
-	} else if (!bench_flag) { // Test mode(echo back mode)
-		cmd.cmd_id = ECHO;
-		for (curr_iter = 0; curr_iter < iteration_count_flag; curr_iter++) {
-			// set all the data to the save value (and change it for
-			// every iteration
-			memset(cmd.data, (curr_iter & 0xFF), size_flag);
-			// always take "cmd_id" into account for the size
-			pkt_size = size_flag + sizeof(uint8_t);
-	
-			send_param.send_buf = (uint8_t *)&cmd;
-			send_param.send_size = pkt_size;
-			ret = R_ICCOM_Send(&send_param);
-			if (ret < 0) {
-				err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
-				R_ICCOM_Close();
-				return ret;
-			}
-			recive_param.recive_buf = (uint8_t *)&reply;
-			recive_param.recive_size = pkt_size;
-			ret = R_ICCOM_Recive(&recive_param);
-			if (ret < 0) {
-				err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
-				R_ICCOM_Close();
-				return ret;
-			}
-			if (memcmp(&cmd, &reply, pkt_size) != 0) {
-				err_printf("memcmp failed at iteration %d\n", curr_iter + 1);
-				R_ICCOM_Close();
-				return ret;
-			}
+		send_param.send_buf = (uint8_t *)&cmd;
+ 		send_param.send_size = pkt_size;
+		ret = R_ICCOM_Send(&send_param);
+		if (ret < 0) {
+			err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
+			return ret;
 		}
-		printf("ICCOM test is OK\n");
-	} else { // benchmark
+		recive_param.recive_buf = (uint8_t *)&reply;
+		recive_param.recive_size = pkt_size;
+		ret = R_ICCOM_Recive(&recive_param);
+		if (ret < 0) {
+ 			err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
+			return ret;
+		}
+		printf("%s OS is running on %s\n", (uint8_t *)&reply, cpu[cpu_type].cpu_name);
+	} else if (bench_flag) { // benchmark
+		cmd.cmd_id = BENCH;
+		// always take "cmd_id" into account for the size
+		pkt_size = BENCH_SIZE + sizeof(uint8_t);
+
+		send_param.send_buf = (uint8_t *)&cmd;
+		send_param.send_size = pkt_size;
+		ret = R_ICCOM_Send(&send_param);
+		if (ret < 0) {
+			err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
+			return ret;
+		}
+		recive_param.recive_buf = (uint8_t *)&reply;
+		recive_param.recive_size = pkt_size;
+		printf("benchmark is running ...\n");
+		usleep(BENCH_WAIT);
+		ret = R_ICCOM_Recive(&recive_param);
+		if (ret < 0) {
+			err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
+			R_ICCOM_Close();
+			return ret;
+		}
+		printf("%s", (uint8_t *)&reply);
+	} else if (iccom_bench_flag) { // iccom benchmark
 		cmd.cmd_id = NONE;
 		ret = clock_gettime(CLOCK_MONOTONIC, &start_time);
 		if (ret < 0) {
@@ -250,6 +248,38 @@ int main(int argc, char **argv)
 		fprintf(stdout, "Throughput: %ld bytes/s\n", (transferred_data * 1000)/(elapsed_ms));
 		fprintf(stdout, "Throughput: %1.2f MB/s\n", (transferred_data * 1000)/(elapsed_ms)/1024.0/1024.0);
 		fprintf(stdout, "Error count: %d\n", (err_cnt));
+        } else  { // Test mode(echo back mode)
+		cmd.cmd_id = ECHO;
+		for (curr_iter = 0; curr_iter < iteration_count_flag; curr_iter++) {
+			// set all the data to the save value (and change it for
+			// every iteration
+			memset(cmd.data, (curr_iter & 0xFF), size_flag);
+			// always take "cmd_id" into account for the size
+			pkt_size = size_flag + sizeof(uint8_t);
+
+			send_param.send_buf = (uint8_t *)&cmd;
+			send_param.send_size = pkt_size;
+			ret = R_ICCOM_Send(&send_param);
+			if (ret < 0) {
+				err_printf("R_ICCOM_Send failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+			recive_param.recive_buf = (uint8_t *)&reply;
+			recive_param.recive_size = pkt_size;
+			ret = R_ICCOM_Recive(&recive_param);
+			if (ret < 0) {
+				err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+			if (memcmp(&cmd, &reply, pkt_size) != 0) {
+				err_printf("memcmp failed at iteration %d\n", curr_iter + 1);
+				R_ICCOM_Close();
+				return ret;
+			}
+		}
+		printf("ICCOM test is OK\n");
 	}
 
 	R_ICCOM_Close();
