@@ -29,6 +29,7 @@
                 - [IMAGE_INSTALL_append, " ufs-duplication-script"]
                 - [IMAGE_INSTALL_append, " rps-setup"]
                 - [IMAGE_INSTALL_append, " hw-routing-script"]
+                - [IMAGE_INSTALL_append, " pktgen-script"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
