@@ -28,6 +28,7 @@
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
                 - [IMAGE_INSTALL_append, " ufs-duplication-script"]
                 - [IMAGE_INSTALL_append, " rps-setup"]
+                - [IMAGE_INSTALL_append, " hw-routing-script"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
