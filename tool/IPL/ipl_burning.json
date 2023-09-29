@@ -1,0 +1,520 @@
+{
+    "flash_writer": {
+        "v3h1":     "AArch32_ICU_Flash_writer_SCIF_DUMMY_CERT_EB200400_condor.mot",
+        "v3h2":     "ICUMXA_Flash_writer_SCIF_DUMMY_CERT_EB200400_condor.mot",
+        "v3m2":     "AArch32_Flash_writer_SCIF_DUMMY_CERT_E6300400_EAGLE.mot",
+        "v3u" :     "AArch32_ICU_Flash_writer_SCIF_DUMMY_CERT_EB200000_falcon.mot",
+        "m3n":      "AArch64_Gen3_Scif_MiniMon_Develop_M3N_V0.03.mot",
+        "m3":       "AArch64_Gen3_H3_M3_Scif_MiniMon_V5.11.mot",
+        "m3_2x4":   "AArch64_Gen3_H3_M3_Scif_MiniMon_V5.11.mot",
+        "e3_2x512": "AArch64_Gen3_E3_Scif_MiniMon_develop_Ebisu_V0.02.mot",
+        "e3_4x512": "AArch64_Gen3_E3-4D_Scif_MiniMon_V5.03A.mot",
+        "h3_4x1":   "AArch64_Gen3_H3_M3_Scif_MiniMon_V3.03.mot",
+        "h3_2x2":   "AArch64_Gen3_H3_M3_Scif_MiniMon_V3.03.mot",
+        "h3_4x2":   "AArch64_Gen3_H3_M3_Scif_MiniMon_V3.03.mot",
+        "m3ulcb":   "AArch32_Flash_writer_SCIF_DUMMY_CERT_E6300400_ULCB.mot",
+        "h3ulcb":   "AArch32_Flash_writer_SCIF_DUMMY_CERT_E6300400_ULCB.mot",
+        "spider":   "ICUMX_Flash_writer_SCIF_DUMMY_CERT_EB203000_S4.mot",
+        "s4sk":     "ICUMX_Flash_writer_SCIF_DUMMY_CERT_EB203000_S4.mot"
+    },
+
+    "ipl": {
+        "v3h1": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "icumxa_loader.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "dummy_fw.srec",
+                "flash_addr": "C0000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "dummy_rtos.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "bl31.srec",
+                "flash_addr": "2C0000"
+            },
+            {
+                "name":       "u-boot-elf-condor.srec",
+                "flash_addr": "840000"
+            }
+        ],
+
+        "v3h2": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "icumxa_loader.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "dummy_fw.srec",
+                "flash_addr": "C0000"
+            },
+            {
+                "name":       "dummy_rtos.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "smoni.srec",
+                "flash_addr": "2C0000"
+            },
+            {
+                "name":       "u-boot-elf-condor.srec",
+                "flash_addr": "840000"
+            }
+        ],
+
+        "v3m2": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "cr7_loader.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa3.srec",
+                "flash_addr": "C0000"
+            },
+            {
+                "name":       "bl2-eagle.srec",
+                "flash_addr": "140000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-eagle.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "u-boot-elf-eagle.srec",
+                "flash_addr": "840000"
+            }
+        ],
+
+        "v3u": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "icumxa_loader.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa17.srec",
+                "flash_addr": "440000"
+            },
+            {
+                "name":       "dummy_fw.srec",
+                "flash_addr": "480000"
+            },
+            {
+                "name":       "dummy_rtos.srec",
+                "flash_addr": "580000"
+            },
+            {
+                "name":       "smoni.srec",
+                "flash_addr": "680000"
+            },
+            {
+                "name":       "u-boot-elf-falcon.srec",
+                "flash_addr": "780000"
+            }
+        ],
+
+        "m3n": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "m3": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "m3_2x4": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs-2x4g.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "e3_2x512": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-ebisu.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-ebisu.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-ebisu.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-ebisu.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "e3_4x512": [
+            {
+                "name":       "bootparam_sa0-4d.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-ebisu-4d.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-ebisu-4d.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-ebisu.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-ebisu.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "h3_4x1": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "h3_2x2": [
+            {
+                "name":       "bootparam_sa0-2x2g.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x-2x2g.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6-2x2g.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x-2x2g.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs-4x2g.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "h3_4x2": [
+            {
+                "name":       "bootparam_sa0-4x2g.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-salvator-x-4x2g.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6-4x2g.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-salvator-x-4x2g.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-salvator-x.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf-salvator-xs-4x2g.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "m3ulcb": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-m3ulcb.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-m3ulcb.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-m3ulcb.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf.srec",
+                "flash_addr": "640000"
+            }
+        ],
+
+        "h3ulcb": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0"
+            },
+            {
+                "name":       "bl2-h3ulcb.srec",
+                "flash_addr": "40000"
+            },
+            {
+                "name":       "cert_header_sa6.srec",
+                "flash_addr": "180000"
+            },
+            {
+                "name":       "bl31-h3ulcb.srec",
+                "flash_addr": "1C0000"
+            },
+            {
+                "name":       "tee-h3ulcb.srec",
+                "flash_addr": "200000"
+            },
+            {
+                "name":       "u-boot-elf.srec",
+                "flash_addr": "640000"
+            }
+        ],
+        "spider": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "icumx_loader.srec",
+                "flash_addr": "40000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "cert_header_sa9.srec",
+                "flash_addr": "240000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "dummy_fw.srec",
+                "flash_addr": "280000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "App_CDD_ICCOM_S4_Sample_CR52.srec",
+                "flash_addr": "500000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "App_CDD_ICCOM_S4_Sample_G4MH.srec",
+                "flash_addr": "900000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "dummy_icumh_case1.srec",
+                "flash_addr": "380000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "bl31-spider.srec",
+                "flash_addr": "E00000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "tee-spider.srec",
+                "flash_addr": "E80000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "u-boot-elf-spider.srec",
+                "flash_addr": "F80000",
+                "write_sel":  "Flash"
+            }
+        ],
+        "s4sk": [
+            {
+                "name":       "bootparam_sa0.srec",
+                "flash_addr": "0",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "icumx_loader.srec",
+                "flash_addr": "40000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "cert_header_sa9.srec",
+                "flash_addr": "240000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "dummy_fw.srec",
+                "flash_addr": "280000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "App_CDD_ICCOM_S4_Sample_CR52.srec",
+                "flash_addr": "500000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "App_CDD_ICCOM_S4_Sample_G4MH.srec",
+                "flash_addr": "900000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "dummy_icumh_case1.srec",
+                "flash_addr": "380000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "bl31-s4sk.srec",
+                "flash_addr": "E00000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "tee-s4sk.srec",
+                "flash_addr": "E80000",
+                "write_sel":  "Flash"
+            },
+            {
+                "name":       "u-boot-elf-s4sk.srec",
+                "flash_addr": "F80000",
+                "write_sel":  "Flash"
+            }
+        ]
+    }
+}
