@@ -1,0 +1,130 @@
+diff --git a/barebones/core_portme.c b/barebones/core_portme.c
+index 30112ff..9c0732a 100644
+--- a/barebones/core_portme.c
++++ b/barebones/core_portme.c
+@@ -44,8 +44,7 @@ volatile ee_s32 seed5_volatile = 0;
+ CORETIMETYPE
+ barebones_clock()
+ {
+-#error \
+-    "You must implement a method to measure time in barebones_clock()! This function should return current time.\n"
++    return time();
+ }
+ /* Define : TIMER_RES_DIVIDER
+         Divider to trade off timer resolution and total time that can be
+@@ -129,8 +128,8 @@ ee_u32 default_num_contexts = 1;
+ void
+ portable_init(core_portable *p, int *argc, char *argv[])
+ {
+-#error \
+-    "Call board initialization routines in portable init (if needed), in particular initialize UART!\n"
++// #error \
++//     "Call board initialization routines in portable init (if needed), in particular initialize UART!\n"
+ 
+     (void)argc; // prevent unused warning
+     (void)argv; // prevent unused warning
+diff --git a/barebones/core_portme.h b/barebones/core_portme.h
+index b221363..ef228d1 100644
+--- a/barebones/core_portme.h
++++ b/barebones/core_portme.h
+@@ -21,6 +21,16 @@ Original Author: Shay Gal-on
+ */
+ #ifndef CORE_PORTME_H
+ #define CORE_PORTME_H
++
++#include "t_syslog.h"
++#include "stdio.h"
++#define COMPILER_FLAGS "Unknown"
++#define MAIN_HAS_NOARGC 1
++#define MEM_METHOD MEM_STATIC
++#define CLOCKS_PER_SEC 1
++#define HAS_FLOAT 0
++extern uint32 time(void);
++
+ /************************/
+ /* Data types and settings */
+ /************************/
+diff --git a/core_main.c b/core_main.c
+index a4beeb6..8d16fff 100644
+--- a/core_main.c
++++ b/core_main.c
+@@ -21,6 +21,11 @@ Original Author: Shay Gal-on
+    initial parameters, tun t he benchmark and report the results.
+ */
+ #include "coremark.h"
++#define ee_printf(...) syslog(LOG_INFO, __VA_ARGS__)
++extern uint8 shared_memory[16][16];
++extern uint8 result_array[4][17];
++extern void float_to_char(uint8 input_array[], float input);
++extern void int_to_char(uint8 input_array[], int input);
+ 
+ /* Function: iterate
+         Run the benchmark for a specified number of iterations.
+@@ -103,16 +108,17 @@ char *mem_name[3] = { "Static", "Heap", "Stack" };
+    the benchmark will run between 10 to 100 secs
+ 
+ */
++extern char bench_buf2[17*14+1];
+ 
+ #if MAIN_HAS_NOARGC
+ MAIN_RETURN_TYPE
+-main(void)
++coremark_main(void)
+ {
+     int   argc = 0;
+     char *argv[1];
+ #else
+ MAIN_RETURN_TYPE
+-main(int argc, char *argv[])
++coremark_main(int argc, char *argv[])
+ {
+ #endif
+     ee_u16       i, j = 0, num_algorithms = 0;
+@@ -120,9 +126,13 @@ main(int argc, char *argv[])
+     ee_u16       seedcrc = 0;
+     CORE_TICKS   total_time;
+     core_results results[MULTITHREAD];
++    char         buf[17];
+ #if (MEM_METHOD == MEM_STACK)
+     ee_u8 stack_memblock[TOTAL_DATA_SIZE * MULTITHREAD];
+ #endif
++    strcpy (&shared_memory[0], "CoreMark PROG   ");
++    strcpy (&shared_memory[1], "is now running  ");
++
+     /* first call any initializations needed */
+     portable_init(&(results[0].port), &argc, argv);
+     /* First some checks to make sure benchmark will run ok */
+@@ -435,6 +445,33 @@ for (i = 0; i < MULTITHREAD; i++)
+     for (i = 0; i < MULTITHREAD; i++)
+         portable_free(results[i].memblock[0]);
+ #endif
++
++    strcpy (&shared_memory[ 1], "                ");
++    strcpy (&shared_memory[ 2], "Result          ");
++    strcpy (&shared_memory[ 3], "----------------");
++    strcpy (&shared_memory[ 4], "CoreMark Size   ");
++    int_to_char(&result_array[0], results[0].size);
++    strcpy (&shared_memory[ 5], result_array[0]      );
++    strcpy (&shared_memory[ 6], "Total ticks     ");
++    int_to_char(&result_array[1], total_time);
++    strcpy (&shared_memory[ 7], result_array[1]     );
++    strcpy (&shared_memory[ 8], "Total time(secs)");
++    int_to_char(&result_array[2], time_in_secs(total_time));
++    strcpy (&shared_memory[ 9], result_array[2]      );
++    strcpy (&shared_memory[10], "Iterations/Sec  ");
++    int_to_char(&result_array[3], default_num_contexts * results[0].iterations / time_in_secs(total_time) );
++    strcpy (&shared_memory[11], result_array[3]      );
++    strcpy (&shared_memory[12], "                ");
++    strcpy (&shared_memory[13], "                ");
++
++    buf[16] = '\0';
++    bench_buf2[0] = '\0';
++    for(i=0; i<14;++i){
++      strncpy(buf, shared_memory[i], 16);
++      sprintf(bench_buf2, "%s%s\n", bench_buf2, buf);
++      ee_printf("%s", buf);
++    }
++
+     /* And last call any target specific code for finalizing */
+     portable_fini(&(results[0].port));
+ 

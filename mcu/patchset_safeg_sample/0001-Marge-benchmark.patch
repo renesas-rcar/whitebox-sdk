@@ -1,0 +1,444 @@
+From 082231a128c8198bcb8a9ca6a6ea99424adfab93 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 29 Sep 2023 13:40:16 +0900
+Subject: [PATCH] Marge benchmark
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ vm_atk2/Makefile.ccrh                   |  5 +-
+ vm_atk2/vm1_atk2/Makefile               |  3 +
+ vm_atk2/vm1_atk2/app/HelloAutosar.yaml  | 17 +++++
+ vm_atk2/vm1_atk2/benchmark.c            | 93 +++++++++++++++++++++++++
+ vm_atk2/vm1_atk2/core_list_join.c       |  1 +
+ vm_atk2/vm1_atk2/core_main.c            |  1 +
+ vm_atk2/vm1_atk2/core_matrix.c          |  1 +
+ vm_atk2/vm1_atk2/core_portme.c          |  1 +
+ vm_atk2/vm1_atk2/core_portme.h          |  1 +
+ vm_atk2/vm1_atk2/core_state.c           |  1 +
+ vm_atk2/vm1_atk2/core_util.c            |  1 +
+ vm_atk2/vm1_atk2/coremark.h             |  1 +
+ vm_atk2/vm1_atk2/dhry.h                 |  1 +
+ vm_atk2/vm1_atk2/dhry_1.c               |  1 +
+ vm_atk2/vm1_atk2/dhry_2.c               |  1 +
+ vm_atk2/vm1_atk2/iccom/iccom_cdd.c      | 91 ++++++++++++++----------
+ vm_atk2/vm1_atk2/iccom/iccom_commands.h |  1 +
+ 17 files changed, 182 insertions(+), 39 deletions(-)
+ create mode 100644 vm_atk2/vm1_atk2/benchmark.c
+ create mode 120000 vm_atk2/vm1_atk2/core_list_join.c
+ create mode 120000 vm_atk2/vm1_atk2/core_main.c
+ create mode 120000 vm_atk2/vm1_atk2/core_matrix.c
+ create mode 120000 vm_atk2/vm1_atk2/core_portme.c
+ create mode 120000 vm_atk2/vm1_atk2/core_portme.h
+ create mode 120000 vm_atk2/vm1_atk2/core_state.c
+ create mode 120000 vm_atk2/vm1_atk2/core_util.c
+ create mode 120000 vm_atk2/vm1_atk2/coremark.h
+ create mode 120000 vm_atk2/vm1_atk2/dhry.h
+ create mode 120000 vm_atk2/vm1_atk2/dhry_1.c
+ create mode 120000 vm_atk2/vm1_atk2/dhry_2.c
+
+diff --git a/vm_atk2/Makefile.ccrh b/vm_atk2/Makefile.ccrh
+index 5e33444..dc8cc92 100644
+--- a/vm_atk2/Makefile.ccrh
++++ b/vm_atk2/Makefile.ccrh
+@@ -204,13 +204,14 @@ APPL_CFG_INPUT := $(foreach file,$(CFGNAME),$(file).arxml)
+ APPL_DIR = $(APPLDIR) $(SRCDIR)/library 
+ ifeq ($(APPLNAME),sample1_vm1)
+   APPL_DIR := $(APPL_DIR) ./iccom/ ./flash/ ./app/ ./rte/
++# ./coremark/ ./dhrystone/
+ endif
+ APPL_ASMOBJS = hvc_asm.obj
+ ifdef USE_CXX
+   ifeq ($(APPLNAME),sample1_vm1)
+     APPL_CXXOBJS = Rte.obj C_Init_Code.obj EcuM.obj EcuM_StartupTask.obj Os_Hook.obj
+     APPL_CXXOBJS := $(APPL_CXXOBJS) rpc_qspi_driver.obj qspi_flash_writer.obj
+-    APPL_CXXOBJS := $(APPL_CXXOBJS) iccom_cdd.obj iccom_ll.obj
++    APPL_CXXOBJS := $(APPL_CXXOBJS) iccom_cdd.obj iccom_ll.obj benchmark.obj core_list_join.obj core_main.obj core_matrix.obj core_portme.obj core_state.obj core_util.obj dhry_1.obj dhry_2.obj
+     APPL_COBJS =
+   else
+     APPL_CXXOBJS = $(APPLNAME).obj 
+@@ -220,7 +221,7 @@ else
+   ifeq ($(APPLNAME),sample1_vm1)
+     APPL_COBJS = Rte.obj C_Init_Code.obj EcuM.obj EcuM_StartupTask.obj Os_Hook.obj
+     APPL_COBJS := $(APPL_COBJS) rpc_qspi_driver.obj qspi_flash_writer.obj
+-    APPL_COBJS := $(APPL_COBJS) iccom_cdd.obj iccom_ll.obj
++    APPL_COBJS := $(APPL_COBJS) iccom_cdd.obj iccom_ll.obj benchmark.obj core_list_join.obj core_main.obj core_matrix.obj core_portme.obj core_state.obj core_util.obj dhry_1.obj dhry_2.obj
+   else
+     APPL_COBJS = $(APPLNAME).obj 
+   endif
+diff --git a/vm_atk2/vm1_atk2/Makefile b/vm_atk2/vm1_atk2/Makefile
+index 2c4a34b..8721b1f 100644
+--- a/vm_atk2/vm1_atk2/Makefile
++++ b/vm_atk2/vm1_atk2/Makefile
+@@ -28,10 +28,13 @@ endif
+ 
+ OBJNAME = atk2-sc1_vm1
+ 
++CDEFS := $(CDEFS) -DTIME=TIME -DITERATIONS=30000
++
+ ifeq ($(COMPILER),GHS)
+ include ../Makefile.ghs
+ endif
+ 
+ ifeq ($(COMPILER),CCRH)
++LDFLAGS := -library=lib\\v850e3v5\\libmalloc.lib
+ include ../Makefile.ccrh
+ endif
+diff --git a/vm_atk2/vm1_atk2/app/HelloAutosar.yaml b/vm_atk2/vm1_atk2/app/HelloAutosar.yaml
+index 3420f2d..fdf2bf3 100644
+--- a/vm_atk2/vm1_atk2/app/HelloAutosar.yaml
++++ b/vm_atk2/vm1_atk2/app/HelloAutosar.yaml
+@@ -80,6 +80,12 @@ Ecuc:
+       OsTaskPriority: 10
+       OsTaskSchedule: FULL
+       OsTaskStackSize: 4096
++    TIMER_TASK:
++      DefinitionRef: OsTask
++      OsTaskActivation: 1
++      OsTaskPriority: 14
++      OsTaskSchedule: FULL
++      OsTaskStackSize: 4096
+     ECU_INIT_TASK:
+       DefinitionRef: OsTask
+       OsTaskActivation: 1
+@@ -100,6 +106,17 @@ Ecuc:
+         OsAlarmAlarmTime: 8000000
+         OsAlarmCycleTime: 800000
+         OsAlarmAutostartType: RELATIVE
++    ALARM2:
++      DefinitionRef: OsAlarm
++      OsAlarmCounterRef: /Ecuc/Os/MAIN_HW_COUNTER
++      OsAlarmAction:
++        OsAlarmActivateTask:
++          OsAlarmActivateTaskRef: /Ecuc/Os/TIMER_TASK
++      OsAlarmAutostart:
++        OsAlarmAppModeRef: /Ecuc/Os/MainApp
++        OsAlarmAlarmTime: 8000000
++        OsAlarmCycleTime: 800000
++        OsAlarmAutostartType: RELATIVE
+ 
+ # ダミーのEcuCコンテナ(SystemDesk.arxml共通化のため用意する)
+   EcuC:
+diff --git a/vm_atk2/vm1_atk2/benchmark.c b/vm_atk2/vm1_atk2/benchmark.c
+new file mode 100644
+index 0000000..736cc7c
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/benchmark.c
+@@ -0,0 +1,93 @@
++#include "Os.h"
++#include "t_syslog.h"
++#include "t_stdlib.h"
++
++/**
++ * Timer related definision
++*/
++volatile uint32 g_timer_cnt = 0;
++#define TICK_TO_MSEC(n) (n*10)
++#define TICK_TO_SEC(n)  (n/100)
++uint32 time() {return TICK_TO_SEC(g_timer_cnt);}
++
++/**
++ * Benchmark related definision
++*/
++#ifdef __GHS_HEAP__
++#define HEAPSIZE 4096
++volatile char __ghsend_heap[HEAPSIZE*2];
++volatile char* __ghsbegin_heap = &__ghsend_heap[HEAPSIZE*2-1];
++#endif
++#include "coremark.h"
++volatile uint8 shared_memory[16][16];
++volatile uint8 result_array[4][17];
++extern void dhrystone_main(void);
++extern void coremark_main(void);
++
++void float_to_char(uint8 input_array[], float input) {
++	uint8 i, n;
++	uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++	 float tmp;
++
++	for (i=0; i<16; ++i){
++		tmp = input;
++		if (i < 8) {
++			for(n=i+1; n<8;++n)
++				tmp = tmp / 10;
++		}
++		else {
++			for(n=7; n<i; ++n)
++				tmp = tmp * 10;
++		}
++
++		if((int)tmp%10 != 0 || i == 7)
++			ascii_offset = 0x30; // changed at once
++
++		input_array[i+(i/8)] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++	}
++	input_array[8] = '.';
++	input_array[16] = '\0';
++}
++void int_to_char(uint8 input_array[], int input) {
++	uint8 i, n;
++	uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++	int tmp;
++
++	for (i=0; i<16; ++i){
++		tmp = input;
++		for(n=i+1; n<16;++n)
++			tmp = tmp / 10;
++		if((int)tmp%10 != 0)
++			ascii_offset = 0x30; // changed at once
++
++		input_array[i] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++	}
++}
++
++// Timer resolution is 10 msec as same as interrupt timing of Maintask(TICK_FOR_10MS)
++void ms_sleep(int ms){
++	volatile uint32 end;
++	end = TICK_TO_MSEC(g_timer_cnt) + ms;
++	while(end > TICK_TO_MSEC(g_timer_cnt));
++}
++void sec_sleep(int sec){
++	volatile uint32 end;
++	end = TICK_TO_SEC(g_timer_cnt) + sec;
++	while(end > TICK_TO_SEC(g_timer_cnt));
++}
++
++void benchmark(void)
++{
++	dhrystone_main();
++	ms_sleep(100);
++
++	coremark_main();
++	sec_sleep(1);
++}
++
++TASK(TIMER_TASK)
++{
++	g_timer_cnt++;
++	TerminateTask();
++}
++
+diff --git a/vm_atk2/vm1_atk2/core_list_join.c b/vm_atk2/vm1_atk2/core_list_join.c
+new file mode 120000
+index 0000000..1c0999c
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_list_join.c
+@@ -0,0 +1 @@
++./coremark/core_list_join.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_main.c b/vm_atk2/vm1_atk2/core_main.c
+new file mode 120000
+index 0000000..e94a1b6
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_main.c
+@@ -0,0 +1 @@
++./coremark/core_main.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_matrix.c b/vm_atk2/vm1_atk2/core_matrix.c
+new file mode 120000
+index 0000000..5bb6ed7
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_matrix.c
+@@ -0,0 +1 @@
++./coremark/core_matrix.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_portme.c b/vm_atk2/vm1_atk2/core_portme.c
+new file mode 120000
+index 0000000..cbc65f9
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_portme.c
+@@ -0,0 +1 @@
++./coremark/barebones/core_portme.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_portme.h b/vm_atk2/vm1_atk2/core_portme.h
+new file mode 120000
+index 0000000..2ec0308
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_portme.h
+@@ -0,0 +1 @@
++./coremark/barebones/core_portme.h
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_state.c b/vm_atk2/vm1_atk2/core_state.c
+new file mode 120000
+index 0000000..c2ef5cb
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_state.c
+@@ -0,0 +1 @@
++./coremark/core_state.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/core_util.c b/vm_atk2/vm1_atk2/core_util.c
+new file mode 120000
+index 0000000..3414701
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/core_util.c
+@@ -0,0 +1 @@
++./coremark/core_util.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/coremark.h b/vm_atk2/vm1_atk2/coremark.h
+new file mode 120000
+index 0000000..4a34b07
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/coremark.h
+@@ -0,0 +1 @@
++./coremark/coremark.h
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/dhry.h b/vm_atk2/vm1_atk2/dhry.h
+new file mode 120000
+index 0000000..26a896f
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/dhry.h
+@@ -0,0 +1 @@
++./dhrystone/dhry.h
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/dhry_1.c b/vm_atk2/vm1_atk2/dhry_1.c
+new file mode 120000
+index 0000000..7cd1b64
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/dhry_1.c
+@@ -0,0 +1 @@
++./dhrystone/dhry_1.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/dhry_2.c b/vm_atk2/vm1_atk2/dhry_2.c
+new file mode 120000
+index 0000000..aa840d6
+--- /dev/null
++++ b/vm_atk2/vm1_atk2/dhry_2.c
+@@ -0,0 +1 @@
++./dhrystone/dhry_2.c
+\ No newline at end of file
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+index d2922fc..997bc5b 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
++++ b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
+@@ -8,18 +8,24 @@
+ 
+ /* ICCOM protocol */
+ enum ICCOM_MSG {
+-    ICCOM_MSG_INVALID,
+-    ICCOM_MSG_INIT,
+-    ICCOM_MSG_DATA,
+-    ICCOM_MSG_ACK
++	ICCOM_MSG_INVALID,
++	ICCOM_MSG_INIT,
++	ICCOM_MSG_DATA,
++	ICCOM_MSG_ACK
+ };
+ 
+ #define ICCOM_BUF_MAX_SIZE		(TOTAL_CTA_SIZE/2)
+ #define TIMER_TICK_INTERVAL_NS		(125U)
+-#define TIMER_TICKS_PER_MS			(1000000U/TIMER_TICK_INTERVAL_NS)
+-#define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
++#define TIMER_TICKS_PER_MS		(1000000U/TIMER_TICK_INTERVAL_NS)
++#define HOST_INT_CLEAR_TIMEOUT_MS	(500U*TIMER_TICKS_PER_MS)
+ #define OS_NAME				"SafeG-Auto"
+ #define OS_NAME_SIZE			10
++#define BENCH_SIZE			(17*14+1)
++#define BENCH_TOTAL_SIZE		BENCH_SIZE*2+1
++
++char bench_total[BENCH_TOTAL_SIZE];
++char bench_buf[BENCH_SIZE];
++char bench_buf2[BENCH_SIZE];
+ 
+ uint8 iccom_initalized = 0;
+ uint8 rx_buffer[ICCOM_BUF_MAX_SIZE];
+@@ -101,6 +107,17 @@ static void iccom_handle_rx_msg(size_t size)
+ 			break;
+ 		}
+ 
++		case BENCH: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++
++			// Just copy the data back
++			benchmark();
++			sprintf(bench_total, "%s%s", bench_buf, bench_buf2);
++			memcpy(reply_pkt, bench_total, BENCH_TOTAL_SIZE);
++			iccom_send((uint8*)reply_pkt, BENCH_TOTAL_SIZE, 0);
++			break;
++		}
++
+ 		case ECHO: {
+ 			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
+ 
+@@ -155,37 +172,37 @@ void runnable_iccom_cdd(void)
+ 	uint32 target_message = 0;
+ 	size_t rx_size = 0;
+ 
+-    iccom_get_in_ctrl_reg(&target_control);
+-    if ((target_control & ICCOM_INT_TRIGGER) == ICCOM_INT_TRIGGER)
+-    {
+-        iccom_clear_interrupt();
+-    	iccom_get_in_msg_reg(&target_message);
+-
+-    	switch (iccom_get_msg_type(target_control)) {
+-    	case ICCOM_MSG_DATA:
+-    		rx_size = (size_t)target_message;
+-    		if (rx_size > ICCOM_BUF_MAX_SIZE)
+-    			rx_size = ICCOM_BUF_MAX_SIZE;
+-    		iccom_handle_rx_msg(rx_size);
+-    		break;
+-    	case ICCOM_MSG_ACK:
+-    		iccom_handle_ack_received();
+-    		break;
+-    	case ICCOM_MSG_INIT:
+-    		iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
+-    		iccom_set_out_msg_reg(0x00000000UL);
+-    		iccom_initalized = 1;
+-    		iccom_send_initialization_ack();
+-    		break;
+-    	default:
+-    		// Unexpected message. Do we need to do something here?
+-    		break;
+-    	}
+-    }
+-    else
+-    {
+-        /* Do nothing */
+-    }
++	iccom_get_in_ctrl_reg(&target_control);
++	if ((target_control & ICCOM_INT_TRIGGER) == ICCOM_INT_TRIGGER)
++	{
++		iccom_clear_interrupt();
++		iccom_get_in_msg_reg(&target_message);
++
++		switch (iccom_get_msg_type(target_control)) {
++		case ICCOM_MSG_DATA:
++			rx_size = (size_t)target_message;
++			if (rx_size > ICCOM_BUF_MAX_SIZE)
++				rx_size = ICCOM_BUF_MAX_SIZE;
++			iccom_handle_rx_msg(rx_size);
++			break;
++		case ICCOM_MSG_ACK:
++    			iccom_handle_ack_received();
++    			break;
++		case ICCOM_MSG_INIT:
++			iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++			iccom_set_out_msg_reg(0x00000000UL);
++			iccom_initalized = 1;
++			iccom_send_initialization_ack();
++			break;
++		default:
++			// Unexpected message. Do we need to do something here?
++			break;
++		}
++	}
++	else
++	{
++		/* Do nothing */
++	}
+ 
+ }
+ #if 0
+diff --git a/vm_atk2/vm1_atk2/iccom/iccom_commands.h b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+index f6cb33d..cebc669 100644
+--- a/vm_atk2/vm1_atk2/iccom/iccom_commands.h
++++ b/vm_atk2/vm1_atk2/iccom/iccom_commands.h
+@@ -21,6 +21,7 @@ enum iccom_command {
+ 	NONE = 0,
+ 	ECHO,
+ 	OS,
++	BENCH,
+ };
+ 
+ #define FLASH_PAGE_SIZE			0x100	// 256 bytes
+-- 
+2.25.1
+
