@@ -1,0 +1,134 @@
+--- dhry_1.c.org	2023-09-21 13:38:01.889007710 +0900
++++ dhry_1.c	2023-09-21 16:06:50.339175671 +0900
+@@ -14,10 +14,17 @@
+  *
+  ****************************************************************************
+  */
+-
+ #include "dhry.h"
+ 
++#include "tpl_os.h"
+ /* Global Variables: */
++#define printf(...) __nop()
++#define NUMBER_OF_RUNS (10000000)
++//#define NUMBER_OF_RUNS (5000000)
++extern uint8 shared_memory[16][16];
++extern uint8 result_array[4][17];
++extern void float_to_char(uint8 input_array[], float input);
++extern void int_to_char(uint8 input_array[], int input);
+ 
+ Rec_Pointer     Ptr_Glob,
+                 Next_Ptr_Glob;
+@@ -68,9 +75,9 @@
+                 Dhrystones_Per_Second;
+ 
+ /* end of variables for time measurement */
++extern char bench_buf[17*14+1];
+ 
+-
+-main ()
++dhrystone_main ()
+ /*****/
+ 
+   /* main program, corresponds to procedures        */
+@@ -84,8 +91,9 @@
+         Str_30          Str_1_Loc;
+         Str_30          Str_2_Loc;
+   REG   int             Run_Index;
+-  REG   int             Number_Of_Runs;
+-
++  REG   int             Number_Of_Runs = NUMBER_OF_RUNS;
++  int                   i, j;
++  char                  buf[17];
+   /* Initializations */
+ 
+   Next_Ptr_Glob = (Rec_Pointer) malloc (sizeof (Rec_Type));
+@@ -118,6 +126,7 @@
+     printf ("Program compiled without 'register' attribute\n");
+     printf ("\n");
+   }
++  /*
+   printf ("Please give the number of runs through the benchmark: ");
+   {
+     int n;
+@@ -125,6 +134,9 @@
+     Number_Of_Runs = n;
+   }
+   printf ("\n");
++  */
++  strcpy (&shared_memory[0], "DHRYSTONE PROG  ");
++  strcpy (&shared_memory[1], "is now running");
+ 
+   printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
+ 
+@@ -143,8 +155,11 @@
+   Begin_Time = clock();
+ #endif
+ 
++  strcpy (&shared_memory[3], "Run Index:     ");
+   for (Run_Index = 1; Run_Index <= Number_Of_Runs; ++Run_Index)
+   {
++    // int_to_char(&result_array[0], Run_Index);
++    // strcpy (&shared_memory[ 4], result_array[0]      );
+ 
+     Proc_5();
+     Proc_4();
+@@ -192,7 +207,7 @@
+   /**************/
+   /* Stop timer */
+   /**************/
+-  
++
+ #ifdef TIMES
+   times (&time_info);
+   End_Time = (long) time_info.tms_utime;
+@@ -261,6 +276,7 @@
+ 
+   if (User_Time < Too_Small_Time)
+   {
++    strcpy (&shared_memory[3], "TooSmall error  ");
+     printf ("Measured time too small to obtain meaningful results\n");
+     printf ("Please increase number of runs\n");
+     printf ("\n");
+@@ -277,11 +293,36 @@
+     Dhrystones_Per_Second = ((float) HZ * (float) Number_Of_Runs)
+                         / (float) User_Time;
+ #endif
+-    printf ("Microseconds for one run through Dhrystone: ");
+-    printf ("%6.1f \n", Microseconds);
+-    printf ("Dhrystones per Second:                      ");
+-    printf ("%6.1f \n", Dhrystones_Per_Second);
+-    printf ("\n");
++    // printf ("Microseconds for one run through Dhrystone: ");
++    // printf ("%6.1f \n", Microseconds);
++    // printf ("Dhrystones per Second:                      ");
++    // printf ("%6.1f \n", Dhrystones_Per_Second);
++    // printf ("\n");
++    strcpy (&shared_memory[ 1], "                ");
++    strcpy (&shared_memory[ 2], "Result          ");
++    strcpy (&shared_memory[ 3], "----------------");
++    strcpy (&shared_memory[ 4], "msec/dhrystone  ");
++    float_to_char(&result_array[0], Microseconds);
++    strcpy (&shared_memory[ 5], result_array[0]      );
++    strcpy (&shared_memory[ 6], "Dhrystone/sec   ");
++    float_to_char(&result_array[1], Dhrystones_Per_Second);
++    strcpy (&shared_memory[ 7], result_array[1]     );
++    strcpy (&shared_memory[8], "DMIPS(VAX MIPS) ");
++    float_to_char(&result_array[2], Dhrystones_Per_Second/1757.0);
++    strcpy (&shared_memory[9], result_array[2]      );
++    strcpy (&shared_memory[10], "MIPS/MHz @400MHz");
++    float_to_char(&result_array[3], Dhrystones_Per_Second/1757.0/400.0);
++    strcpy (&shared_memory[11], result_array[3]      );
++    strcpy (&shared_memory[12], "                ");
++    strcpy (&shared_memory[13], "                ");
++
++    buf[16] = '\0';
++    bench_buf[0] = '\0';
++    for(i=0; i<14;++i){
++      strncpy(buf, shared_memory[i], 16);
++      sprintf(bench_buf, "%s%s\n", bench_buf, buf);
++      printf("%s", buf);
++    }
+   }
+   
+ }
