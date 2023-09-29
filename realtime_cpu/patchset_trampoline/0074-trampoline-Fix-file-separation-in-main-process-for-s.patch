@@ -1,0 +1,67 @@
+From ff1a747627eeb4b41edd1493a98c6750fd55ae8e Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Thu, 26 Oct 2023 16:25:32 +0900
+Subject: [PATCH] trampoline: Fix file separation in main process for sample
+ project
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/cortex-a/armv8/spider/sample/iccom.c    |  8 --------
+ examples/cortex-a/armv8/spider/sample/sample.c   | 13 +++++++++++++
+ examples/cortex-a/armv8/spider/sample/sample.oil |  1 +
+ 3 files changed, 14 insertions(+), 8 deletions(-)
+ create mode 100644 examples/cortex-a/armv8/spider/sample/sample.c
+
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom.c b/examples/cortex-a/armv8/spider/sample/iccom.c
+index 8947725d..f691bcd7 100644
+--- a/examples/cortex-a/armv8/spider/sample/iccom.c
++++ b/examples/cortex-a/armv8/spider/sample/iccom.c
+@@ -190,14 +190,6 @@ void iccom_init(void)
+ 	iccom_set_out_msg_reg(0x00000000UL);
+ }
+ 
+-FUNC(int, OS_APPL_CODE) main(void)
+-{
+-	Serial_Init();
+-	can_demo_init();
+-	StartOS(OSDEFAULTAPPMODE);
+-	return 0;
+-}
+-
+ TASK(iccom) {
+ 	iccom_init();
+ 	ms_sleep (200);
+diff --git a/examples/cortex-a/armv8/spider/sample/sample.c b/examples/cortex-a/armv8/spider/sample/sample.c
+new file mode 100644
+index 00000000..2ebdb6e7
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/sample.c
+@@ -0,0 +1,13 @@
++#include <string.h>
++#include "serial.h"
++
++extern int can_demo_init(void);
++
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	Serial_Init();
++	can_demo_init();
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
+diff --git a/examples/cortex-a/armv8/spider/sample/sample.oil b/examples/cortex-a/armv8/spider/sample/sample.oil
+index dff67114..3464ccf6 100644
+--- a/examples/cortex-a/armv8/spider/sample/sample.oil
++++ b/examples/cortex-a/armv8/spider/sample/sample.oil
+@@ -16,6 +16,7 @@ CPU iccom {
+ 
+     BUILD = TRUE {
+       TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "sample.c";
+       APP_SRC = "can_demo.c";
+       APP_SRC = "iccom.c";
+       APP_SRC = "iccom_ll.c";
+-- 
+2.25.1
+

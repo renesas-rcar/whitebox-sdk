@@ -1,6 +1,6 @@
-From 1d5ed3de8e3f9b15c6f0c7726d8c08d8a0445c13 Mon Sep 17 00:00:00 2001
+From 230f619ba39b4cf994653692b313178e03ece27b Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
-Date: Tue, 25 Jul 2023 13:34:24 +0900
+Date: Fri, 29 Sep 2023 12:51:41 +0900
 Subject: [PATCH 1/2] iccom : startup log output timing change
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
@@ -9,7 +9,7 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/examples/cortex-a/armv8/spider/iccom/iccom.c b/examples/cortex-a/armv8/spider/iccom/iccom.c
-index 4f0d38a4..c1cfcc34 100644
+index 4f0d38a4..d9e9d33b 100644
 --- a/examples/cortex-a/armv8/spider/iccom/iccom.c
 +++ b/examples/cortex-a/armv8/spider/iccom/iccom.c
 @@ -32,6 +32,19 @@ struct echo_command recv_pkt;
@@ -24,9 +24,9 @@ index 4f0d38a4..c1cfcc34 100644
 +
 +void ms_sleep(int ms)
 +{
-+        uint32 end;
-+        end = ms_time() + ms;
-+        while(end > ms_time());
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
 +}
 +
  static void print(uint8* data)
@@ -36,7 +36,7 @@ index 4f0d38a4..c1cfcc34 100644
  
  TASK(iccom) {
  	iccom_init();
-+        ms_sleep (200);
++	ms_sleep (200);
  	print(STARTUP_LOG);
  	TerminateTask();
  }

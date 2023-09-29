@@ -1,0 +1,1120 @@
+From d634fbdebefe71318b93a01ffd5bfba962f282a0 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 29 Sep 2023 13:08:08 +0900
+Subject: [PATCH 2/2] trampoline: Sample Projects Added
+
+-iccom and Benchmark integrated
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ .../cortex-a/armv8/spider/sample/benchmark.c  | 114 +++++++
+ .../cortex-a/armv8/spider/sample/build.sh     |  15 +
+ examples/cortex-a/armv8/spider/sample/iccom.c | 245 ++++++++++++++
+ examples/cortex-a/armv8/spider/sample/iccom.h |   9 +
+ .../armv8/spider/sample/iccom_commands.h      |  66 ++++
+ .../cortex-a/armv8/spider/sample/iccom_ll.c   | 165 ++++++++++
+ .../cortex-a/armv8/spider/sample/iccom_ll.h   |  42 +++
+ .../cortex-a/armv8/spider/sample/iodefine.h   | 307 ++++++++++++++++++
+ .../cortex-a/armv8/spider/sample/sample.oil   |  71 ++++
+ 9 files changed, 1034 insertions(+)
+ create mode 100644 examples/cortex-a/armv8/spider/sample/benchmark.c
+ create mode 100755 examples/cortex-a/armv8/spider/sample/build.sh
+ create mode 100644 examples/cortex-a/armv8/spider/sample/iccom.c
+ create mode 100644 examples/cortex-a/armv8/spider/sample/iccom.h
+ create mode 100644 examples/cortex-a/armv8/spider/sample/iccom_commands.h
+ create mode 100644 examples/cortex-a/armv8/spider/sample/iccom_ll.c
+ create mode 100644 examples/cortex-a/armv8/spider/sample/iccom_ll.h
+ create mode 100755 examples/cortex-a/armv8/spider/sample/iodefine.h
+ create mode 100644 examples/cortex-a/armv8/spider/sample/sample.oil
+
+diff --git a/examples/cortex-a/armv8/spider/sample/benchmark.c b/examples/cortex-a/armv8/spider/sample/benchmark.c
+new file mode 100644
+index 00000000..ece21106
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/benchmark.c
+@@ -0,0 +1,114 @@
++#include "tpl_os.h"
++
++uint8 shared_memory[16][16];
++uint8 result_array[4][17];
++
++uint32 g_counter = 0;
++
++extern volatile TickType tpl_time_counter; // 10msec/count 
++#define TICK_TO_MSEC(t)	(t*10)
++#define TICK_TO_SEC(t)	(t/100)
++void __nop(void) {}
++
++/**
++ * System Call function for newlib
++ */
++#include <stddef.h>
++#include <errno.h>
++#define HEAP_SIZE 4096
++static char _HEAP[HEAP_SIZE];
++static char* const _heap_region_start = &_HEAP[0];
++static char* const _heap_region_end = &_HEAP[HEAP_SIZE-1];
++void* _sbrk(int size) {
++	static char *curr_heap_end = _heap_region_start;
++	char        *prev_heap_end;
++
++	if( (curr_heap_end+size) > _heap_region_end ) {
++		return (char*)-1;
++	}
++	prev_heap_end = curr_heap_end;
++	curr_heap_end += size;
++
++	return (void *)prev_heap_end;
++}
++void _write(){}
++void _read(){}
++void _open(){}
++void _close(){}
++void _lseek(){}
++
++/**
++ * external functions
++ */
++extern void dhrystone_main(void);
++extern void coremark_main(void);
++
++void float_to_char(uint8 input_array[], float input) {
++	uint8 i, n;
++	uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++	float tmp;
++
++	for (i=0; i<16; ++i){
++		tmp = input;
++		if (i < 8) {
++			for(n=i+1; n<8;++n)
++				tmp = tmp / 10;
++		}
++		else {
++			for(n=7; n<i; ++n)
++				tmp = tmp * 10;
++		}
++
++		if((int)tmp%10 != 0 || i == 7)
++			ascii_offset = 0x30; // changed at once
++
++		input_array[i+(i/8)] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++	}
++	input_array[8] = '.';
++	input_array[16] = '\0';
++}
++void int_to_char(uint8 input_array[], int input) {
++	uint8 i, n;
++	uint8 ascii_offset = 0x20; // 0x30 = '0' / 0x20 = ' '
++	int tmp;
++
++	for (i=0; i<16; ++i){
++		tmp = input;
++		for(n=i+1; n<16;++n)
++			tmp = tmp / 10;
++		if((int)tmp%10 != 0)
++			ascii_offset = 0x30; // changed at once
++
++		input_array[i] = (ascii_offset + (int)tmp%10); // if (i==8) i+1, else i
++	}
++}
++
++// return msec
++uint32 ms_time() { return TICK_TO_MSEC(tpl_time_counter); }
++// return sec
++uint32 time() { return TICK_TO_SEC(tpl_time_counter); }
++
++void sec_sleep(int sec)
++{
++	uint32 end;
++	end = time() + sec;
++	while(end > time());
++}
++
++void ms_sleep(int ms)
++{
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
++}
++
++void benchmark()
++{
++	dhrystone_main();
++	ms_sleep(10000);
++
++	coremark_main();
++	sec_sleep(1);
++
++}
++
+diff --git a/examples/cortex-a/armv8/spider/sample/build.sh b/examples/cortex-a/armv8/spider/sample/build.sh
+new file mode 100755
+index 00000000..990c3317
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/build.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ sample.oil
++
++echo "*** Run Make ***"
++./make.py
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom.c b/examples/cortex-a/armv8/spider/sample/iccom.c
+new file mode 100644
+index 00000000..f1b5ef6b
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iccom.c
+@@ -0,0 +1,245 @@
++#include "tpl_os.h"
++#include "iccom.h"
++#include "iccom_ll.h"
++#include "iccom_commands.h"
++#include <string.h>
++#include "serial.h"
++
++#define APP_Task_iccom_START_SEC_CODE
++#include "tpl_memmap.h"
++
++#include "iccom_commands.h"
++
++extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
++extern void benchmark();
++
++/* ICCOM protocol */
++enum ICCOM_MSG {
++	ICCOM_MSG_INVALID,
++	ICCOM_MSG_INIT,
++	ICCOM_MSG_DATA,
++	ICCOM_MSG_ACK
++};
++
++#define ICCOM_BUF_MAX_SIZE		(TOTAL_CTA_SIZE/2)
++#define TIMER_TICK_INTERVAL_NS		(125U)
++#define TIMER_TICKS_PER_MS		(1000000U/TIMER_TICK_INTERVAL_NS)
++#define HOST_INT_CLEAR_TIMEOUT_MS	(500U*TIMER_TICKS_PER_MS)
++#define OS_NAME				"Trampoline"
++#define STARTUP_LOG			"[Coatex-R52] ICCOM: driver initialized\r\n"
++#define BENCH_SIZE			(17*14+1)
++#define BENCH_TOTAL_SIZE		BENCH_SIZE*2+1
++
++char bench_total[BENCH_TOTAL_SIZE];
++char bench_buf[BENCH_SIZE];
++char bench_buf2[BENCH_SIZE];
++
++uint8 iccom_initalized = 0;
++struct echo_command recv_pkt;
++
++void CallTerminateISR2(void);
++
++extern volatile TickType tpl_time_counter; // 10msec/count
++#define TICK_TO_MSEC(t) (t*10)
++
++extern void ms_sleep(int ms);
++
++void print(uint8* data)
++{
++	int i = 0;
++	size_t len = strlen(data);
++	for (i=0; i< len; i++)
++	{
++		Serial_Tx(*data);
++		data++;
++	}
++}
++
++static void iccom_notify_tx_data(size_t message)
++{
++	iccom_set_out_msg_reg((uint32)message);
++	iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_DATA | ICCOM_CTRL_BUFF_UPPER | ICCOM_CTRL_INT);
++}
++
++static void iccom_send_rx_data_ack(uint32 message)
++{
++	iccom_set_out_msg_reg(message);
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_ACK | ICCOM_CTRL_BUFF_BOTTOM | ICCOM_CTRL_INT);
++}
++
++static void iccom_send_initialization_ack(void)
++{
++	iccom_set_out_ctrl_reg(ICCOM_CTRL_INIT_COMPLETED | ICCOM_CTRL_INT);
++}
++
++static sint32 iccom_wait_for_out_interrupt_clear(uint32_t timeout_ms)
++{
++	uint32 out_ctrl_reg;
++	TickType start_val, curr_val;
++
++	start_val = tpl_time_counter;
++	do {
++		iccom_get_out_ctrl_reg(&out_ctrl_reg);
++		curr_val = tpl_time_counter;
++		// If the host processor doesn't clear the interrupt before the timeout
++		// then it's likely that the host application stopped/crashed and this
++		// clear will never happen. So we clear it on our side and return an
++		// error
++		if (curr_val - start_val > timeout_ms) {
++			iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++			return -1;
++		}
++	} while (out_ctrl_reg & ICCOM_CTRL_INT);
++
++	return 0;
++}
++
++static void iccom_send(uint8* data, size_t size, uint8_t copy_to_out_cta)
++{
++	// If this function is called with data already on the CTA buffer,
++	// then there is no need to update it
++	if (copy_to_out_cta) {
++		iccom_cta_write(data, size);
++	}
++	iccom_notify_tx_data(size);
++}
++
++static void iccom_handle_rx_msg(size_t size)
++{
++	struct command_header* in_pkt;
++	sint32 ret;
++
++	// Casting to the most simple structure in order to get the "cmd_id".
++	// Later the proper casting will be done
++	in_pkt = (struct command_header*) iccom_get_read_cta_ptr();
++	// copy packet before sending ACK
++	memcpy(&recv_pkt, in_pkt, size);
++	iccom_send_rx_data_ack((uint32)size);
++	ret = iccom_wait_for_out_interrupt_clear(HOST_INT_CLEAR_TIMEOUT_MS);
++	if (ret < 0) {
++		// In case of timeout then there's no reason to process the answer
++		// further since the host processor will not care about this
++		goto Exit;
++	}
++
++	switch (in_pkt->cmd_id) {
++		case NONE: {
++			// Nothing to do
++			break;
++		}
++
++		case BENCH: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++
++			// Just copy the data back
++			benchmark();
++			strcat(bench_total, bench_buf);
++			strcat(bench_total, bench_buf2);
++			memcpy(reply_pkt, bench_total, BENCH_TOTAL_SIZE);
++			iccom_send((uint8*)reply_pkt, BENCH_TOTAL_SIZE, 0);
++			break;
++		}
++
++		case ECHO: {
++			struct echo_reply* reply_pkt = (struct echo_reply *)iccom_cta_write_cta_ptr();
++
++			// Just copy the data back
++			memcpy(reply_pkt, &recv_pkt, size);
++			iccom_send((uint8*)reply_pkt, size, 0);
++			break;
++		}
++
++		case OS: {
++			struct echo_reply* reply_pkt = iccom_cta_write_cta_ptr();
++			memcpy(reply_pkt, OS_NAME, strlen(OS_NAME));
++			iccom_send((uint8*)reply_pkt, strlen(OS_NAME), 0);
++			break;
++		}
++
++		default:
++			break;
++	}
++Exit:
++	;
++}
++
++static void iccom_handle_ack_received(void)
++{
++	iccom_set_in_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++}
++
++enum ICCOM_MSG iccom_get_msg_type(uint32 control)
++{
++	if (control & ICCOM_CTRL_INIT_COMPLETED)
++		return ICCOM_MSG_INIT;
++	if (control & ICCOM_CTRL_DATA)
++		return ICCOM_MSG_DATA;
++	else
++		return ICCOM_MSG_ACK;
++}
++
++void iccom_init(void)
++{
++	/* Initialize the HW first*/
++	iccom_ll_init();
++	/* clear control register */
++	iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++	/* clear message register */
++	iccom_set_out_msg_reg(0x00000000UL);
++}
++
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	Serial_Init();
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++TASK(iccom) {
++	iccom_init();
++	ms_sleep (200);
++	print(STARTUP_LOG);
++	TerminateTask();
++}
++
++ISR(iccomInt)
++{
++	uint32 target_control = 0;
++	uint32 target_message = 0;
++	size_t rx_size = 0;
++
++	iccom_get_in_ctrl_reg(&target_control);
++	iccom_get_in_msg_reg(&target_message);
++
++	switch (iccom_get_msg_type(target_control)) {
++	case ICCOM_MSG_DATA:
++		rx_size = (size_t)target_message;
++		if (rx_size > ICCOM_BUF_MAX_SIZE)
++			rx_size = ICCOM_BUF_MAX_SIZE;
++		iccom_handle_rx_msg(rx_size);
++		break;
++	case ICCOM_MSG_ACK:
++		iccom_handle_ack_received();
++		break;
++	case ICCOM_MSG_INIT:
++		iccom_set_out_ctrl_reg(ICCOM_HW_CONTROL_INIT);
++		iccom_set_out_msg_reg(0x00000000UL);
++		iccom_initalized = 1;
++		iccom_send_initialization_ack();
++		break;
++	default:
++		// Unexpected message. Do we need to do something here?
++		break;
++	}
++
++	CallTerminateISR2();
++}
++
++FUNC(void, OS_CODE) ICCOM_INT_ClearFlag(void)
++{
++	iccom_clear_interrupt();
++}
++
++#define APP_Task_iccom_STOP_SEC_CODE
++#include "tpl_memmap.h"
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom.h b/examples/cortex-a/armv8/spider/sample/iccom.h
+new file mode 100644
+index 00000000..aa9481e7
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iccom.h
+@@ -0,0 +1,9 @@
++#ifndef __ICCOM_H__
++#define __ICCOM_H__
++
++#include "iccom_ll.h"
++#include <tpl_os_std_types.h>
++
++void iccom_init(void);
++
++#endif //__ICCOM_H__
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom_commands.h b/examples/cortex-a/armv8/spider/sample/iccom_commands.h
+new file mode 100644
+index 00000000..589692a7
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iccom_commands.h
+@@ -0,0 +1,66 @@
++/*
++ * This header file is shared between Linux and G4 and it includes all the
++ * known iccom commands and replies
++ */
++
++#ifndef __ICCOM_COMMANDS_H__
++#define __ICCOM_COMMANDS_H__
++
++/*
++ * CC-RH has different types compared to Linux, but since this file is shared
++ * it should compile on both systems
++ */
++#ifdef LINUX_TEST_APP
++	#include <stdint.h>
++#else
++	typedef uint8	uint8_t;
++	typedef uint16	uint16_t;
++	typedef uint32	uint32_t;
++	typedef sint32	int32_t;
++#endif
++
++enum iccom_command {
++	NONE = 0,
++	ECHO,
++	OS,
++	BENCH,
++};
++
++#define TOTAL_CTA_SIZE		0x2000
++#define ICCOM_BUF_MAX_SIZE	(TOTAL_CTA_SIZE/2) // Max size of each transaction (read/write)
++
++// this is the common header shared between all commands
++#define CMD_HEADER		\
++		uint8_t cmd_id;
++
++#pragma pack(1)
++struct command_header {
++	CMD_HEADER
++};
++
++#pragma pack(1)
++struct simple_reply_int32 {
++	CMD_HEADER
++	int32_t ret_val;
++};
++#pragma pack(1)
++struct simple_reply_uint32 {
++	CMD_HEADER
++	uint32_t ret_val;
++};
++
++#define MAX_ECHO_DATA_SIZE		((TOTAL_CTA_SIZE/2) - sizeof(uint8_t))
++
++#pragma pack(1)
++struct echo_command {
++	CMD_HEADER
++	uint8_t data[MAX_ECHO_DATA_SIZE];
++};
++
++#pragma pack(1)
++struct echo_reply {
++	CMD_HEADER
++	uint8_t data[MAX_ECHO_DATA_SIZE];
++};
++
++#endif //__ICCOM_COMMANDS_H__
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom_ll.c b/examples/cortex-a/armv8/spider/sample/iccom_ll.c
+new file mode 100644
+index 00000000..af2ba8b3
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iccom_ll.c
+@@ -0,0 +1,165 @@
++#include "iccom_ll.h"
++#include "iodefine.h"
++#include <string.h>
++//#include "Compiler.h"
++#include "tpl_compiler.h"
++
++uint32 ICCOM_CTA_MEMORY_CH0 = 0x47fc7000;
++uint32 ICCOM_CTA_MEMORY_CH1 = 0x47fc8000;
++
++#define GICD_ISENABLER     (0xf0000100)
++
++void iccom_ll_init(void)
++{
++	volatile uint32 val = 0;
++
++	/* Disable MFIS write protection */
++	MFIS0.MFISWPCNTR = 0xACCE0001;
++	do {
++		val = MFIS0.MFISWPCNTR;
++	} while (val != 0x00000001);
++
++	/* Enable Iccom interrupt (id 353)*/
++	uint32 int_d = 353;
++	*((volatile uint32 *)(GICD_ISENABLER + 4 * (int_d / 32)))  = 1 << (int_d % 32);
++}
++
++static void iccom_lock(ICCOM_CHANNEL channel)
++{
++	/* nothing at the moment */
++}
++
++static void iccom_unlock(ICCOM_CHANNEL channel)
++{
++	/* nothing at the moment */
++}
++
++/**
++ * Set MFIS CPU communication control register [i] G4MH[k] core to Cortex-A55
++ * CPU core(MFISAM[k]EICR[i])(i=0-7)(k=0-1).
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_set_out_ctrl_reg(uint32 val)
++{
++	MFIS0.MFISAREICR0 = val;
++}
++
++/**
++ * Get MFIS CPU communication control register [i] G4MH[k] core to Cortex-A55
++ * CPU core(MFISAM[k]EICR[i])(i=0-7)(k=0-1).
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_get_out_ctrl_reg(uint32 *pval)
++{
++	volatile uint32 reg = 0;
++	reg = MFIS0.MFISAREICR0;
++
++	if (NULL_PTR != pval) {
++		*pval = reg;
++	}
++}
++
++/**
++ * Clear the interruption bit
++ *
++ * MFIS CPU communication control register [i] Cortex-A55 CPU core to G4MH[k]
++ * core(MFISAM[k]IICR[i])(i=0-7)(k=0-1)
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_clear_interrupt(void)
++{
++	volatile uint32 reg = 0;
++	reg = MFIS0.MFISARIICR0;
++	reg &= ~(ICCOM_CTRL_INT);
++	MFIS0.MFISARIICR0 = reg;
++}
++
++/**
++ * Get MFIS CPU communication control register [i] Cortex-A55 CPU core to G4MH[k]
++ * core(MFISAM[k]IICR[i])(i=0-7)(k=0-1)
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_get_in_ctrl_reg(uint32 *pval)
++{
++	volatile uint32 reg = 0;
++	reg = MFIS0.MFISARIICR0;
++
++	if (NULL_PTR != pval) {
++		*pval = reg;
++	}
++}
++
++void iccom_set_in_ctrl_reg(uint32 val)
++{
++	MFIS0.MFISARIICR0 = val;
++}
++
++/**
++ * Set MFIS CPU communication message register [i] G4MH[k] core to Cortex-A55
++ * CPU core(MFISAM[k]EMBR[i])(i=0-7)(k=0-1)
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_set_out_msg_reg(uint32 val)
++{
++	MFIS0.MFISAREMBR0 = val;
++}
++
++/**
++ * Get MFIS CPU communication message register [i] Cortex-A55 CPU core to
++ * G4MH[k] core(MFISAM[k]IMBR[i])(i=0-7)(k=0-1)
++ *
++ * Support only CPU 0 to G4MH 0
++ */
++void iccom_get_in_msg_reg(uint32 *pval)
++{
++	volatile uint32 reg = 0;
++	reg = MFIS0.MFISARIMBR0;
++
++	if (NULL_PTR != pval) {
++		*pval = reg;
++	}
++}
++
++void iccom_clear_interrupt_locked(void)
++{
++	iccom_lock(ICCOM_CHANNEL_0);
++
++	iccom_clear_interrupt();
++
++	iccom_unlock(ICCOM_CHANNEL_0);
++}
++
++void iccom_cta_write(uint8 * buff, size_t size)
++{
++	void* ctaPtr = (void*)ICCOM_CTA_MEMORY_CH1;
++
++	if (buff == NULL_PTR)
++		return;
++
++	memcpy(ctaPtr, buff, size);
++}
++
++void iccom_cta_read(uint8 * buff, size_t size)
++{
++	void* ctaPtr = (void*)ICCOM_CTA_MEMORY_CH0;
++
++	if (buff == NULL)
++		return;
++
++	memcpy(buff, ctaPtr, size);
++}
++
++uint8* iccom_get_read_cta_ptr()
++{
++	return (uint8*)ICCOM_CTA_MEMORY_CH0;
++}
++
++uint8* iccom_cta_write_cta_ptr()
++{
++	return (uint8*)ICCOM_CTA_MEMORY_CH1;
++}
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom_ll.h b/examples/cortex-a/armv8/spider/sample/iccom_ll.h
+new file mode 100644
+index 00000000..6ee93142
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iccom_ll.h
+@@ -0,0 +1,42 @@
++#ifndef __ICCOM_LL_H__
++#define __ICCOM_LL_H__
++
++//#include <Platform_Types.h>
++#include <tpl_os_std_types.h>
++#include <stddef.h>
++
++static const uint32 ICCOM_HW_CONTROL_INIT = 0x00000000UL;
++
++// IMPORTANT: Keep these masks aligned between CA55 and G4MH
++#define ICCOM_CTRL_INT				(0x00000001U)
++#define ICCOM_CTRL_BUFF_UPPER		(0x00000002U)
++#define ICCOM_CTRL_BUFF_BOTTOM		(0x00000004U)
++#define ICCOM_CTRL_DATA				(0x00000008U)
++#define ICCOM_CTRL_ACK				(0x00000010U)
++#define ICCOM_CTRL_INIT_COMPLETED	(0x00000020U)
++
++typedef enum {
++	ICCOM_CHANNEL_0 = 0,
++} ICCOM_CHANNEL;
++
++/* MFIS HW */
++void iccom_ll_init(void);
++
++void iccom_set_out_ctrl_reg(uint32 val);
++void iccom_get_out_ctrl_reg(uint32 *pval);
++void iccom_set_in_ctrl_reg(uint32 val);
++void iccom_get_in_ctrl_reg(uint32 *pval);
++
++void iccom_set_out_msg_reg(uint32 val);
++void iccom_get_in_msg_reg(uint32 *pval);
++
++void iccom_clear_interrupt(void);
++void iccom_clear_interrupt_locked(void);
++
++void iccom_cta_read(uint8 * buff, size_t size);
++void iccom_cta_write(uint8 * buff, size_t size);
++
++uint8* iccom_get_read_cta_ptr(void);
++uint8* iccom_cta_write_cta_ptr(void);
++
++#endif //__ICCOM_LL_H__
+diff --git a/examples/cortex-a/armv8/spider/sample/iodefine.h b/examples/cortex-a/armv8/spider/sample/iodefine.h
+new file mode 100755
+index 00000000..c399b0b3
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/iodefine.h
+@@ -0,0 +1,307 @@
++/******************************************************************************/
++/* DISCLAIMER                                                                 */
++/* This software is supplied by Renesas Electronics Corporation and is only   */
++/* intended for use with Renesas products. No other uses are authorized.This  */
++/* software is owned by Renesas Electronics Corporation and is protected      */
++/* under all applicable laws, including copyright laws.                       */
++/* THIS SOFTWARE IS PROVIDED "AS IS" AND RENESAS MAKES NO WARRANTIES          */
++/* REGARDING THIS SOFTWARE, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING  */
++/* BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR */
++/* PURPOSE AND NON-INFRINGEMENT.  ALL SUCH WARRANTIES ARE EXPRESSLY           */
++/* DISCLAIMED.                                                                */
++/* TO THE MAXIMUM EXTENT PERMITTED NOT PROHIBITED BY LAW, NEITHER RENESAS     */
++/* ELECTRONICS CORPORATION NOR ANY OF ITS AFFILIATED COMPANIES SHALL BE       */
++/* LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL      */
++/* DAMAGES FOR ANY REASON RELATED TO THIS SOFTWARE, EVEN IF RENESAS OR ITS    */
++/* AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.           */
++/* Renesas reserves the right, without notice, to make changes to this        */
++/* software and to discontinue the availability of this software.             */
++/* By using this software, you agree to the additional terms and conditions   */
++/* found by accessing the following link:                                     */
++/* http://www.renesas.com/disclaimer                                          */
++/*                                                                            */
++/* Device     : RH/RH850G4MH2.0/R8A779F0                                      */
++/* File Name  : iodefine.h                                                    */
++/* Abstract   : Definition of I/O Register                                    */
++/* History    : E0.50b [Device File version]                                  */
++/* Options    : -df=C:\S4\Alpha-1\CS+forCCE8.07.00c_R-CarS4\CS+\CC\Device_Cus */
++/*              tom\RH850\Devicefile\DR8A779F0.DVF -o=C:\S4\Alpha-1\sample\sa */
++/*              mple\iodefine.h -def=off -f                                   */
++/* Date       : 2021/10/25                                                    */
++/* Version    : V1.14.00.01  [df2iodef.exe version]                           */
++/* This is a typical example.                                                 */
++/*                                                                            */
++/******************************************************************************/
++#ifndef __R8A779F0IODEFINE_HEADER__
++#define __R8A779F0IODEFINE_HEADER__
++
++struct __tag5473
++{                                                          /* Module           */
++    unsigned long  MFISLCKR0;                              /* MFISLCKR0        */
++    unsigned long  MFISLCKR1;                              /* MFISLCKR1        */
++    unsigned long  MFISLCKR2;                              /* MFISLCKR2        */
++    unsigned long  MFISLCKR3;                              /* MFISLCKR3        */
++    unsigned long  MFISLCKR4;                              /* MFISLCKR4        */
++    unsigned long  MFISLCKR5;                              /* MFISLCKR5        */
++    unsigned long  MFISLCKR6;                              /* MFISLCKR6        */
++    unsigned long  MFISLCKR7;                              /* MFISLCKR7        */
++    unsigned char  dummy15[480];                           /* Reserved         */
++    unsigned long  MFIEDCSIDADDR;                          /* MFIEDCSIDADDR    */
++    unsigned long  MFIEDCSIDWDATA;                         /* MFIEDCSIDWDATA   */
++    unsigned char  dummy16[824];                           /* Reserved         */
++    unsigned long  MFISOFTMDR;                             /* MFISOFTMDR       */
++    unsigned long  MFISBTSTSR;                             /* MFISBTSTSR       */
++    unsigned char  dummy17[284];                           /* Reserved         */
++    unsigned long  MFISLCKR8;                              /* MFISLCKR8        */
++    unsigned long  MFISLCKR9;                              /* MFISLCKR9        */
++    unsigned long  MFISLCKR10;                             /* MFISLCKR10       */
++    unsigned long  MFISLCKR11;                             /* MFISLCKR11       */
++    unsigned long  MFISLCKR12;                             /* MFISLCKR12       */
++    unsigned long  MFISLCKR13;                             /* MFISLCKR13       */
++    unsigned long  MFISLCKR14;                             /* MFISLCKR14       */
++    unsigned long  MFISLCKR15;                             /* MFISLCKR15       */
++    unsigned long  MFISLCKR16;                             /* MFISLCKR16       */
++    unsigned long  MFISLCKR17;                             /* MFISLCKR17       */
++    unsigned long  MFISLCKR18;                             /* MFISLCKR18       */
++    unsigned long  MFISLCKR19;                             /* MFISLCKR19       */
++    unsigned long  MFISLCKR20;                             /* MFISLCKR20       */
++    unsigned long  MFISLCKR21;                             /* MFISLCKR21       */
++    unsigned long  MFISLCKR22;                             /* MFISLCKR22       */
++    unsigned long  MFISLCKR23;                             /* MFISLCKR23       */
++    unsigned long  MFISLCKR24;                             /* MFISLCKR24       */
++    unsigned long  MFISLCKR25;                             /* MFISLCKR25       */
++    unsigned long  MFISLCKR26;                             /* MFISLCKR26       */
++    unsigned long  MFISLCKR27;                             /* MFISLCKR27       */
++    unsigned long  MFISLCKR28;                             /* MFISLCKR28       */
++    unsigned long  MFISLCKR29;                             /* MFISLCKR29       */
++    unsigned long  MFISLCKR30;                             /* MFISLCKR30       */
++    unsigned long  MFISLCKR31;                             /* MFISLCKR31       */
++    unsigned long  MFISLCKR32;                             /* MFISLCKR32       */
++    unsigned long  MFISLCKR33;                             /* MFISLCKR33       */
++    unsigned long  MFISLCKR34;                             /* MFISLCKR34       */
++    unsigned long  MFISLCKR35;                             /* MFISLCKR35       */
++    unsigned long  MFISLCKR36;                             /* MFISLCKR36       */
++    unsigned long  MFISLCKR37;                             /* MFISLCKR37       */
++    unsigned long  MFISLCKR38;                             /* MFISLCKR38       */
++    unsigned long  MFISLCKR39;                             /* MFISLCKR39       */
++    unsigned long  MFISLCKR40;                             /* MFISLCKR40       */
++    unsigned long  MFISLCKR41;                             /* MFISLCKR41       */
++    unsigned long  MFISLCKR42;                             /* MFISLCKR42       */
++    unsigned long  MFISLCKR43;                             /* MFISLCKR43       */
++    unsigned long  MFISLCKR44;                             /* MFISLCKR44       */
++    unsigned long  MFISLCKR45;                             /* MFISLCKR45       */
++    unsigned long  MFISLCKR46;                             /* MFISLCKR46       */
++    unsigned long  MFISLCKR47;                             /* MFISLCKR47       */
++    unsigned long  MFISLCKR48;                             /* MFISLCKR48       */
++    unsigned long  MFISLCKR49;                             /* MFISLCKR49       */
++    unsigned long  MFISLCKR50;                             /* MFISLCKR50       */
++    unsigned long  MFISLCKR51;                             /* MFISLCKR51       */
++    unsigned long  MFISLCKR52;                             /* MFISLCKR52       */
++    unsigned long  MFISLCKR53;                             /* MFISLCKR53       */
++    unsigned long  MFISLCKR54;                             /* MFISLCKR54       */
++    unsigned long  MFISLCKR55;                             /* MFISLCKR55       */
++    unsigned long  MFISLCKR56;                             /* MFISLCKR56       */
++    unsigned long  MFISLCKR57;                             /* MFISLCKR57       */
++    unsigned long  MFISLCKR58;                             /* MFISLCKR58       */
++    unsigned long  MFISLCKR59;                             /* MFISLCKR59       */
++    unsigned long  MFISLCKR60;                             /* MFISLCKR60       */
++    unsigned long  MFISLCKR61;                             /* MFISLCKR61       */
++    unsigned long  MFISLCKR62;                             /* MFISLCKR62       */
++    unsigned long  MFISLCKR63;                             /* MFISLCKR63       */
++    unsigned char  dummy18[180];                           /* Reserved         */
++    unsigned long  MFISCMPERRSTSR;                         /* MFISCMPERRSTSR   */
++    unsigned char  dummy19[68];                            /* Reserved         */
++    unsigned long  MFISWPCNTR;                             /* MFISWPCNTR       */
++    unsigned long  MFISWACNTR;                             /* MFISWACNTR       */
++    unsigned char  dummy20[60];                            /* Reserved         */
++    unsigned long  MFIERRINJ;                              /* MFIERRINJ        */
++    unsigned char  dummy21[2744];                          /* Reserved         */
++    unsigned long  MFISARIICR0;                            /* MFISARIICR0      */
++    unsigned char  dummy22[60];                            /* Reserved         */
++    unsigned long  MFISARIMBR0;                            /* MFISARIMBR0      */
++    unsigned char  dummy23[60];                            /* Reserved         */
++    unsigned long  MFISAM0IICR0;                           /* MFISAM0IICR0     */
++    unsigned char  dummy24[60];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR0;                           /* MFISAM0IMBR0     */
++    unsigned char  dummy25[188];                           /* Reserved         */
++    unsigned long  MFISAM1IICR0;                           /* MFISAM1IICR0     */
++    unsigned char  dummy26[60];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR0;                           /* MFISAM1IMBR0     */
++    unsigned char  dummy27[3652];                          /* Reserved         */
++    unsigned long  MFISARIICR1;                            /* MFISARIICR1      */
++    unsigned char  dummy28[56];                            /* Reserved         */
++    unsigned long  MFISARIMBR1;                            /* MFISARIMBR1      */
++    unsigned char  dummy29[64];                            /* Reserved         */
++    unsigned long  MFISAM0IICR1;                           /* MFISAM0IICR1     */
++    unsigned char  dummy30[56];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR1;                           /* MFISAM0IMBR1     */
++    unsigned char  dummy31[192];                           /* Reserved         */
++    unsigned long  MFISAM1IICR1;                           /* MFISAM1IICR1     */
++    unsigned char  dummy32[56];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR1;                           /* MFISAM1IMBR1     */
++    unsigned char  dummy33[3656];                          /* Reserved         */
++    unsigned long  MFISARIICR2;                            /* MFISARIICR2      */
++    unsigned char  dummy34[52];                            /* Reserved         */
++    unsigned long  MFISARIMBR2;                            /* MFISARIMBR2      */
++    unsigned char  dummy35[68];                            /* Reserved         */
++    unsigned long  MFISAM0IICR2;                           /* MFISAM0IICR2     */
++    unsigned char  dummy36[52];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR2;                           /* MFISAM0IMBR2     */
++    unsigned char  dummy37[196];                           /* Reserved         */
++    unsigned long  MFISAM1IICR2;                           /* MFISAM1IICR2     */
++    unsigned char  dummy38[52];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR2;                           /* MFISAM1IMBR2     */
++    unsigned char  dummy39[3660];                          /* Reserved         */
++    unsigned long  MFISARIICR3;                            /* MFISARIICR3      */
++    unsigned char  dummy40[48];                            /* Reserved         */
++    unsigned long  MFISARIMBR3;                            /* MFISARIMBR3      */
++    unsigned char  dummy41[72];                            /* Reserved         */
++    unsigned long  MFISAM0IICR3;                           /* MFISAM0IICR3     */
++    unsigned char  dummy42[48];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR3;                           /* MFISAM0IMBR3     */
++    unsigned char  dummy43[200];                           /* Reserved         */
++    unsigned long  MFISAM1IICR3;                           /* MFISAM1IICR3     */
++    unsigned char  dummy44[48];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR3;                           /* MFISAM1IMBR3     */
++    unsigned char  dummy45[3664];                          /* Reserved         */
++    unsigned long  MFISARIICR4;                            /* MFISARIICR4      */
++    unsigned char  dummy46[44];                            /* Reserved         */
++    unsigned long  MFISARIMBR4;                            /* MFISARIMBR4      */
++    unsigned char  dummy47[76];                            /* Reserved         */
++    unsigned long  MFISAM0IICR4;                           /* MFISAM0IICR4     */
++    unsigned char  dummy48[44];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR4;                           /* MFISAM0IMBR4     */
++    unsigned char  dummy49[204];                           /* Reserved         */
++    unsigned long  MFISAM1IICR4;                           /* MFISAM1IICR4     */
++    unsigned char  dummy50[44];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR4;                           /* MFISAM1IMBR4     */
++    unsigned char  dummy51[3668];                          /* Reserved         */
++    unsigned long  MFISARIICR5;                            /* MFISARIICR5      */
++    unsigned char  dummy52[40];                            /* Reserved         */
++    unsigned long  MFISARIMBR5;                            /* MFISARIMBR5      */
++    unsigned char  dummy53[80];                            /* Reserved         */
++    unsigned long  MFISAM0IICR5;                           /* MFISAM0IICR5     */
++    unsigned char  dummy54[40];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR5;                           /* MFISAM0IMBR5     */
++    unsigned char  dummy55[208];                           /* Reserved         */
++    unsigned long  MFISAM1IICR5;                           /* MFISAM1IICR5     */
++    unsigned char  dummy56[40];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR5;                           /* MFISAM1IMBR5     */
++    unsigned char  dummy57[3672];                          /* Reserved         */
++    unsigned long  MFISARIICR6;                            /* MFISARIICR6      */
++    unsigned char  dummy58[36];                            /* Reserved         */
++    unsigned long  MFISARIMBR6;                            /* MFISARIMBR6      */
++    unsigned char  dummy59[84];                            /* Reserved         */
++    unsigned long  MFISAM0IICR6;                           /* MFISAM0IICR6     */
++    unsigned char  dummy60[36];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR6;                           /* MFISAM0IMBR6     */
++    unsigned char  dummy61[212];                           /* Reserved         */
++    unsigned long  MFISAM1IICR6;                           /* MFISAM1IICR6     */
++    unsigned char  dummy62[36];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR6;                           /* MFISAM1IMBR6     */
++    unsigned char  dummy63[3676];                          /* Reserved         */
++    unsigned long  MFISARIICR7;                            /* MFISARIICR7      */
++    unsigned char  dummy64[32];                            /* Reserved         */
++    unsigned long  MFISARIMBR7;                            /* MFISARIMBR7      */
++    unsigned char  dummy65[88];                            /* Reserved         */
++    unsigned long  MFISAM0IICR7;                           /* MFISAM0IICR7     */
++    unsigned char  dummy66[32];                            /* Reserved         */
++    unsigned long  MFISAM0IMBR7;                           /* MFISAM0IMBR7     */
++    unsigned char  dummy67[216];                           /* Reserved         */
++    unsigned long  MFISAM1IICR7;                           /* MFISAM1IICR7     */
++    unsigned char  dummy68[32];                            /* Reserved         */
++    unsigned long  MFISAM1IMBR7;                           /* MFISAM1IMBR7     */
++    unsigned char  dummy69[3620];                          /* Reserved         */
++    unsigned long  MFISAREICR0;                            /* MFISAREICR0      */
++    unsigned char  dummy70[4];                             /* Reserved         */
++    unsigned long  MFISAREICR1;                            /* MFISAREICR1      */
++    unsigned char  dummy71[4];                             /* Reserved         */
++    unsigned long  MFISAREICR2;                            /* MFISAREICR2      */
++    unsigned char  dummy72[4];                             /* Reserved         */
++    unsigned long  MFISAREICR3;                            /* MFISAREICR3      */
++    unsigned char  dummy73[4];                             /* Reserved         */
++    unsigned long  MFISAREICR4;                            /* MFISAREICR4      */
++    unsigned char  dummy74[4];                             /* Reserved         */
++    unsigned long  MFISAREICR5;                            /* MFISAREICR5      */
++    unsigned char  dummy75[4];                             /* Reserved         */
++    unsigned long  MFISAREICR6;                            /* MFISAREICR6      */
++    unsigned char  dummy76[4];                             /* Reserved         */
++    unsigned long  MFISAREICR7;                            /* MFISAREICR7      */
++    unsigned char  dummy77[32];                            /* Reserved         */
++    unsigned long  MFISAREMBR0;                            /* MFISAREMBR0      */
++    unsigned long  MFISAREMBR1;                            /* MFISAREMBR1      */
++    unsigned long  MFISAREMBR2;                            /* MFISAREMBR2      */
++    unsigned long  MFISAREMBR3;                            /* MFISAREMBR3      */
++    unsigned long  MFISAREMBR4;                            /* MFISAREMBR4      */
++    unsigned long  MFISAREMBR5;                            /* MFISAREMBR5      */
++    unsigned long  MFISAREMBR6;                            /* MFISAREMBR6      */
++    unsigned long  MFISAREMBR7;                            /* MFISAREMBR7      */
++    unsigned char  dummy78[132];                           /* Reserved         */
++    unsigned long  MFISRM0EICR0;                           /* MFISRM0EICR0     */
++    unsigned char  dummy79[88];                            /* Reserved         */
++    unsigned long  MFISRM0EMBR0;                           /* MFISRM0EMBR0     */
++    unsigned char  dummy80[160];                           /* Reserved         */
++    unsigned long  MFISRM1EICR0;                           /* MFISRM1EICR0     */
++    unsigned char  dummy81[88];                            /* Reserved         */
++    unsigned long  MFISRM1EMBR0;                           /* MFISRM1EMBR0     */
++    unsigned char  dummy82[3616];                          /* Reserved         */
++    unsigned long  MFISAM0EICR0;                           /* MFISAM0EICR0     */
++    unsigned char  dummy83[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR1;                           /* MFISAM0EICR1     */
++    unsigned char  dummy84[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR2;                           /* MFISAM0EICR2     */
++    unsigned char  dummy85[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR3;                           /* MFISAM0EICR3     */
++    unsigned char  dummy86[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR4;                           /* MFISAM0EICR4     */
++    unsigned char  dummy87[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR5;                           /* MFISAM0EICR5     */
++    unsigned char  dummy88[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR6;                           /* MFISAM0EICR6     */
++    unsigned char  dummy89[4];                             /* Reserved         */
++    unsigned long  MFISAM0EICR7;                           /* MFISAM0EICR7     */
++    unsigned char  dummy90[32];                            /* Reserved         */
++    unsigned long  MFISAM0EMBR0;                           /* MFISAM0EMBR0     */
++    unsigned long  MFISAM0EMBR1;                           /* MFISAM0EMBR1     */
++    unsigned long  MFISAM0EMBR2;                           /* MFISAM0EMBR2     */
++    unsigned long  MFISAM0EMBR3;                           /* MFISAM0EMBR3     */
++    unsigned long  MFISAM0EMBR4;                           /* MFISAM0EMBR4     */
++    unsigned long  MFISAM0EMBR5;                           /* MFISAM0EMBR5     */
++    unsigned long  MFISAM0EMBR6;                           /* MFISAM0EMBR6     */
++    unsigned long  MFISAM0EMBR7;                           /* MFISAM0EMBR7     */
++    unsigned long  MFISRM0IICR0;                           /* MFISRM0IICR0     */
++    unsigned char  dummy91[60];                            /* Reserved         */
++    unsigned long  MFISRM0IMBR0;                           /* MFISRM0IMBR0     */
++    unsigned char  dummy92[3904];                          /* Reserved         */
++    unsigned long  MFISAM1EICR0;                           /* MFISAM1EICR0     */
++    unsigned char  dummy93[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR1;                           /* MFISAM1EICR1     */
++    unsigned char  dummy94[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR2;                           /* MFISAM1EICR2     */
++    unsigned char  dummy95[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR3;                           /* MFISAM1EICR3     */
++    unsigned char  dummy96[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR4;                           /* MFISAM1EICR4     */
++    unsigned char  dummy97[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR5;                           /* MFISAM1EICR5     */
++    unsigned char  dummy98[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR6;                           /* MFISAM1EICR6     */
++    unsigned char  dummy99[4];                             /* Reserved         */
++    unsigned long  MFISAM1EICR7;                           /* MFISAM1EICR7     */
++    unsigned char  dummy100[32];                           /* Reserved         */
++    unsigned long  MFISAM1EMBR0;                           /* MFISAM1EMBR0     */
++    unsigned long  MFISAM1EMBR1;                           /* MFISAM1EMBR1     */
++    unsigned long  MFISAM1EMBR2;                           /* MFISAM1EMBR2     */
++    unsigned long  MFISAM1EMBR3;                           /* MFISAM1EMBR3     */
++    unsigned long  MFISAM1EMBR4;                           /* MFISAM1EMBR4     */
++    unsigned long  MFISAM1EMBR5;                           /* MFISAM1EMBR5     */
++    unsigned long  MFISAM1EMBR6;                           /* MFISAM1EMBR6     */
++    unsigned long  MFISAM1EMBR7;                           /* MFISAM1EMBR7     */
++    unsigned long  MFISRM1IICR0;                           /* MFISRM1IICR0     */
++    unsigned char  dummy101[60];                           /* Reserved         */
++    unsigned long  MFISRM1IMBR0;                           /* MFISRM1IMBR0     */
++};
++
++#define MFIS0     (*(volatile struct __tag5473 *)0xE62600C0) /* MFIS0 */
++
++#endif
+diff --git a/examples/cortex-a/armv8/spider/sample/sample.oil b/examples/cortex-a/armv8/spider/sample/sample.oil
+new file mode 100644
+index 00000000..162bb872
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/sample.oil
+@@ -0,0 +1,71 @@
++OIL_VERSION = "4.2";
++
++IMPLEMENTATION trampoline {
++  TASK {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++
++  ISR {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++};
++
++CPU iccom {
++  OS config {
++    STATUS = EXTENDED;
++
++    BUILD = TRUE {
++      TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "iccom.c";
++      APP_SRC = "iccom_ll.c";
++      APP_SRC = "benchmark.c";
++      APP_SRC = "dhrystone/dhry_1.c";
++      APP_SRC = "dhrystone/dhry_2.c";
++      APP_SRC = "coremark/barebones/core_portme.c";
++      APP_SRC = "coremark/core_list_join.c";
++      APP_SRC = "coremark/core_main.c";
++      APP_SRC = "coremark/core_matrix.c";
++      APP_SRC = "coremark/core_state.c";
++      APP_SRC = "coremark/core_util.c";
++      APP_NAME = "sample_exe.elf";
++      CFLAGS  = "-O3";
++      CFLAGS  = "-DHSCIF_1843200BPS";
++      LDFLAGS = "-Map=iccom.map";
++      COMPILER = "arm-none-eabi-gcc";
++      CPPCOMPILER = "arm-none-eabi-g++";
++      ASSEMBLER = "arm-none-eabi-as";
++      LINKER = "arm-none-eabi-ld";
++      COPIER = "arm-none-eabi-objcopy";
++      SYSTEM = PYTHON;
++      CFLAGS="-Wno-stringop-truncation"; // Avoid strncpy warnings
++      CFLAGS="-Wno-return-type -Wno-implicit-int -Wno-implicit-function-declaration"; // Avoid dhrystone warnings
++      CFLAGS="-DTIME=TIME";
++      // CFLAGS="-DCOREMARK_DEBUG"; // for Debug
++      CFLAGS="-I./coremark -I./coremark/barebones -DITERATIONS=30000";
++
++      LIBRARY = serial;
++    };
++    SYSTEM_CALL = TRUE;
++    MEMMAP = TRUE {
++      COMPILER = gcc;
++      LINKER = gnu_ld { SCRIPT = "script.ld"; };
++      ASSEMBLER = gnu_as;
++      MEMORY_PROTECTION = FALSE;
++    };
++  };
++
++  APPMODE std {};
++
++  TASK iccom {
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  ISR iccomInt {
++    CATEGORY = 2;
++    PRIORITY = 1;
++    SOURCE = ICCOM_INT;
++  };
++};
+-- 
+2.25.1
+

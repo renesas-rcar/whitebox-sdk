@@ -1,0 +1,151 @@
+--- dhry_1.c.org	2023-09-21 21:52:48.346874027 +0900
++++ dhry_1.c	2023-09-21 22:03:10.914061314 +0900
+@@ -14,10 +14,21 @@
+  *
+  ****************************************************************************
+  */
+-
+ #include "dhry.h"
+ 
++#include "tpl_os.h"
+ /* Global Variables: */
++#include <string.h>
++#include <stdlib.h>
++extern void __nop(void);
++#define printf(...) __nop()
++#include <stddef.h>
++#define NUMBER_OF_RUNS (10000000)
++//#define NUMBER_OF_RUNS (5000000)
++extern uint8 shared_memory[16][16];
++extern uint8 result_array[4][17];
++extern void float_to_char(uint8 input_array[], float input);
++extern void int_to_char(uint8 input_array[], int input);
+ 
+ Rec_Pointer     Ptr_Glob,
+                 Next_Ptr_Glob;
+@@ -28,7 +39,7 @@
+ int             Arr_1_Glob [50];
+ int             Arr_2_Glob [50] [50];
+ 
+-extern char     *malloc ();
++extern void     *malloc ();
+ Enumeration     Func_1 ();
+   /* forward declaration necessary since Enumeration may not simply be int */
+ 
+@@ -69,8 +80,9 @@
+ 
+ /* end of variables for time measurement */
+ 
++extern void print(uint8* data);
+ 
+-main ()
++dhrystone_main ()
+ /*****/
+ 
+   /* main program, corresponds to procedures        */
+@@ -84,8 +96,9 @@
+         Str_30          Str_1_Loc;
+         Str_30          Str_2_Loc;
+   REG   int             Run_Index;
+-  REG   int             Number_Of_Runs;
+-
++  REG   int             Number_Of_Runs = NUMBER_OF_RUNS;
++  int                   i;
++  char                  buf[17];
+   /* Initializations */
+ 
+   Next_Ptr_Glob = (Rec_Pointer) malloc (sizeof (Rec_Type));
+@@ -118,6 +131,7 @@
+     printf ("Program compiled without 'register' attribute\n");
+     printf ("\n");
+   }
++  /*
+   printf ("Please give the number of runs through the benchmark: ");
+   {
+     int n;
+@@ -125,8 +139,9 @@
+     Number_Of_Runs = n;
+   }
+   printf ("\n");
+-
+-  printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
++  */
++  strncpy ((char*)&shared_memory[0], "DHRYSTONE PROG  ", 16);
++  strncpy ((char*)&shared_memory[1], "is now running", 16);
+ 
+   /***************/
+   /* Start timer */
+@@ -143,8 +158,11 @@
+   Begin_Time = clock();
+ #endif
+ 
++  strncpy ((char*)&shared_memory[3], "Run Index:     ", 16);
+   for (Run_Index = 1; Run_Index <= Number_Of_Runs; ++Run_Index)
+   {
++    // int_to_char(&result_array[0], Run_Index);
++    // strcpy (&shared_memory[ 4], result_array[0]      );
+ 
+     Proc_5();
+     Proc_4();
+@@ -192,7 +210,7 @@
+   /**************/
+   /* Stop timer */
+   /**************/
+-  
++
+ #ifdef TIMES
+   times (&time_info);
+   End_Time = (long) time_info.tms_utime;
+@@ -261,6 +279,7 @@
+ 
+   if (User_Time < Too_Small_Time)
+   {
++    strncpy ((char*)&shared_memory[3], "TooSmall error  ", 16);
+     printf ("Measured time too small to obtain meaningful results\n");
+     printf ("Please increase number of runs\n");
+     printf ("\n");
+@@ -277,11 +296,39 @@
+     Dhrystones_Per_Second = ((float) HZ * (float) Number_Of_Runs)
+                         / (float) User_Time;
+ #endif
+-    printf ("Microseconds for one run through Dhrystone: ");
+-    printf ("%6.1f \n", Microseconds);
+-    printf ("Dhrystones per Second:                      ");
+-    printf ("%6.1f \n", Dhrystones_Per_Second);
+-    printf ("\n");
++    // printf ("Microseconds for one run through Dhrystone: ");
++    // printf ("%6.1f \n", Microseconds);
++    // printf ("Dhrystones per Second:                      ");
++    // printf ("%6.1f \n", Dhrystones_Per_Second);
++    // printf ("\n");
++    strncpy ((char*)&shared_memory[ 1], "                ", 16);
++    strncpy ((char*)&shared_memory[ 2], "Result          ", 16);
++    strncpy ((char*)&shared_memory[ 3], "----------------", 16);
++    strncpy ((char*)&shared_memory[ 4], "msec/dhrystone  ", 16);
++    float_to_char((uint8*)&result_array[0], Microseconds);
++    strncpy ((char*)&shared_memory[ 5], (char*)result_array[0]      , 16);
++    strncpy ((char*)&shared_memory[ 6], "Dhrystone/sec   ", 16);
++    float_to_char((uint8*)&result_array[1], Dhrystones_Per_Second);
++    strncpy ((char*)&shared_memory[ 7], (char*)result_array[1]     , 16);
++    strncpy ((char*)&shared_memory[ 8], "DMIPS(VAX MIPS) ", 16);
++    float_to_char((uint8*)&result_array[2], Dhrystones_Per_Second/1757.0);
++    strncpy ((char*)&shared_memory[ 9], (char*)result_array[2]      , 16);
++    strncpy ((char*)&shared_memory[10], "MIPS/MHz @1060MHz", 16);
++    float_to_char((uint8*)&result_array[3], Dhrystones_Per_Second/1757.0/1060.0);
++    strncpy ((char*)&shared_memory[11], (char*)result_array[3]      , 16);
++    strncpy ((char*)&shared_memory[12], "                ", 16);
++    strncpy ((char*)&shared_memory[13], "                ", 16);
++
++    buf[17] = '\0';
++    for(i=0; i<14;++i){
++      strncpy(buf, (char*)shared_memory[i], 16);
++      printf("%s", buf);
++      print(buf);
++      if (i != 0)
++      {
++        print("\r\n");
++      }
++    }
+   }
+   
+ }
