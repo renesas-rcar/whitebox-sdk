@@ -107,14 +107,9 @@ mkdir -p deploy
 cp mcu/deploy/g4mh.srec deploy/App_CDD_ICCOM_S4_Sample_G4MH.srec
 cp realtime_cpu/deploy/cr52.srec deploy/App_CDD_ICCOM_S4_Sample_CR52.srec
 cp application_cpu/work/full.img.gz deploy/
-if [[ "$1" == "spider" ]]; then
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec deploy/bl31.srec
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec deploy/tee.srec
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf.srec deploy/u-boot-elf.srec
-elif [[ "$1" == "s4sk" ]]; then
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec deploy/
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec deploy/
-    cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec deploy/
-fi
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec deploy/
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec deploy/
+cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec deploy/
+
 ls -l deploy
 
