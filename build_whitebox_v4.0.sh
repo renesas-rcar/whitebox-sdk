@@ -52,7 +52,9 @@ if [[ $# < 1 ]] ; then
     echo -e "\e[31mERROR: Please select a board to build\e[m"
     Usage; exit
 fi
-if [[ "$1" == "all" ]]; then
+if [[ "$1" == "-h" ]]; then
+    Usage; exit
+elif [[ "$1" == "all" ]]; then
     build_all; exit
 elif [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
     echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
