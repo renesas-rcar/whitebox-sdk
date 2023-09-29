@@ -26,7 +26,7 @@ Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and e
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v4.0.sh  <BOARD>
+	./build_whitebox_v4.1.sh  <BOARD>
 
 `BOARD` is "spider" or "s4sk"
 
