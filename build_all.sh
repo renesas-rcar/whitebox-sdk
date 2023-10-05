@@ -50,8 +50,8 @@ proc_args () {
 #================================================
 proc_args $@
 
-CLEAN_BUILD_FLAG=true ${SCRIPT_DIR}/build_h3.sh
-CLEAN_BUILD_FLAG=true ${SCRIPT_DIR}/build_s4.sh $TARGET_BOARD
+${SCRIPT_DIR}/build_h3.sh -c
+${SCRIPT_DIR}/build_s4.sh $TARGET_BOARD -c
 
 # deploy
 DEPLOY_DIR=${SCRIPT_DIR}/deploy_${TARGET_BOARD}

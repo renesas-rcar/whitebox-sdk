@@ -19,7 +19,8 @@ Usage() {
     echo "Usage:"
     echo "    $0 [options]"
     echo "options:"
-    echo "    -c: Build with Starter Kit + CCPF-SK(Default is enabled)"
+    echo "    -c: Enable clean build flag"
+    echo "    -e: Build with Starter Kit + CCPF-SK(Default is enabled)"
     echo "    -s: Build with Starter Kit only(Default is disabled)"
     echo "    -h: Show this usage"
     echo "options(development purpose only. not supported and tested)"
@@ -29,10 +30,11 @@ Usage() {
 }
 
 # Proc arguments
-while getopts "cshmnp" OPT
+while getopts "ceshmnp" OPT
 do
   case $OPT in
-    c) USING_EXT_BOARD=ccpf;;
+    c) CLEAN_BUILD_FLAG=true;;
+    e) USING_EXT_BOARD=ccpf;;
     s) USING_EXT_BOARD=no;;
     m) MACHINE=m3ulcb; SOC=m3 ;;
     n) ENABLE_MMP=no;;

@@ -19,6 +19,7 @@ Usage() {
     echo "board:"
     for i in ${BOARD_LIST[@]}; do echo "  - $i"; done
     echo "option:"
+    echo "    -c: Enable clean build flag"
     echo "    -h: Show this usage"
 }
 
@@ -36,9 +37,10 @@ proc_args () {
         Usage; exit;
     fi
 
-    while getopts "h" OPT
+    while getopts "ch" OPT
     do
         case $OPT in
+            c) CLEAN_BUILD_FLAG=true;;
             h) Usage; exit;;
             *) echo Unsupported option; Usage; exit;;
         esac
