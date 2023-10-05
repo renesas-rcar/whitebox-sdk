@@ -1,4 +1,4 @@
-DESCRIPTION = "Translator from Driving Simlator to COVESA CVII server"
+DESCRIPTION = "Network configuration using as Host PC"
 
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
