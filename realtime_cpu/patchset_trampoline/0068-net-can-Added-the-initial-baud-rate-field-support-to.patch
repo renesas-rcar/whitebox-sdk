@@ -1,0 +1,26 @@
+From c87164e7a9da6256aa13142a2050eb9c17e50f70 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Wed, 20 Sep 2023 18:12:42 +0200
+Subject: [PATCH 68/70] net: can: Added the 'initial baud rate' field support
+ to a CAN controller.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ net/can/Can_GeneralTypes.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/can/Can_GeneralTypes.h b/net/can/Can_GeneralTypes.h
+index 8b8c1063..69b2163c 100644
+--- a/net/can/Can_GeneralTypes.h
++++ b/net/can/Can_GeneralTypes.h
+@@ -88,6 +88,7 @@ typedef struct
+ struct tpl_can_controller_t
+ {
+ 	uint32 base_address;
++	tpl_can_baud_rate_t initial_baud_rate;
+ 	int (*init)(struct tpl_can_controller_t *ctrl, void *data);
+ 	int (*set_baudrate)(struct tpl_can_controller_t *ctrl, tpl_can_baud_rate_t baud_rate);
+ 	Std_ReturnType (*transmit)(struct tpl_can_controller_t *ctrl, const Can_PduType *pdu_info);
+-- 
+2.34.1
+

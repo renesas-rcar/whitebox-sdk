@@ -1,0 +1,327 @@
+From b08a59f06e000eb9f4bde9b8233e5c4e6c24a6e2 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Thu, 21 Sep 2023 17:46:07 +0200
+Subject: [PATCH 63/70] spider: basic ethernet example (without lwip use) that
+ answer to ping requests on every IP addresses
+
+---
+ .../armv8/spider/ethernet_basic/build.sh      |  15 ++
+ .../armv8/spider/ethernet_basic/eth.oil       |  93 +++++++++
+ .../armv8/spider/ethernet_basic/main.c        | 182 ++++++++++++++++++
+ 3 files changed, 290 insertions(+)
+ create mode 100755 examples/cortex-a/armv8/spider/ethernet_basic/build.sh
+ create mode 100644 examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+ create mode 100644 examples/cortex-a/armv8/spider/ethernet_basic/main.c
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet_basic/build.sh b/examples/cortex-a/armv8/spider/ethernet_basic/build.sh
+new file mode 100755
+index 00000000..7c6f7158
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/ethernet_basic/build.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ eth.oil
++
++echo "*** Run Make ***"
++./make.py
+diff --git a/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil b/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+new file mode 100644
+index 00000000..9a176659
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+@@ -0,0 +1,93 @@
++OIL_VERSION = "4.2";
++
++IMPLEMENTATION trampoline {
++  TASK {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++
++  ISR {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++};
++
++CPU eth {
++  OS config {
++    STATUS = EXTENDED;
++
++    BUILD = TRUE {
++      TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "main.c";
++      APP_NAME = "eth_exe.elf";
++      CFLAGS  = "-O0 -g -DHSCIF_1843200BPS";
++      LDFLAGS = "-Map=eth_exe.map";
++      COMPILER = "arm-none-eabi-gcc";
++      CPPCOMPILER = "arm-none-eabi-g++";
++      ASSEMBLER = "arm-none-eabi-as";
++      LINKER = "arm-none-eabi-ld";
++      COPIER = "arm-none-eabi-objcopy";
++      SYSTEM = PYTHON;
++      LIBRARY = serial;
++      LIBRARY = ethernet;
++    };
++    SYSTEM_CALL = TRUE;
++    MEMMAP = TRUE {
++      COMPILER = gcc;
++      LINKER = gnu_ld { SCRIPT = "script.ld"; };
++      ASSEMBLER = gnu_as;
++      MEMORY_PROTECTION = FALSE;
++    };
++  };
++
++  APPMODE std {};
++
++  TASK sample_init {
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK echo {
++    PRIORITY = 1;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK gwca1_rx_tx_task { 
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  ISR gwca1_rx_tx_int {
++    CATEGORY = 1;
++    PRIORITY = 3;
++    SOURCE = GWCA1_RX_TX_INT;
++  };
++
++  ISR gwca1_rx_ts_int {
++    CATEGORY = 1;
++    PRIORITY = 4;
++    SOURCE = GWCA1_RX_TS_INT;
++  };
++
++  ISR coma_err_int {
++    CATEGORY = 1;
++    PRIORITY = 5;
++    SOURCE = COMA_ERR_INT;
++  };
++
++  ISR gwca1_err_int {
++    CATEGORY = 1;
++    PRIORITY = 6;
++    SOURCE = GWCA1_ERR_INT;
++  };
++
++  ISR etha0_err_int {
++    CATEGORY = 1;
++    PRIORITY = 7;
++    SOURCE = ETHA0_ERR_INT;
++  };
++};
+diff --git a/examples/cortex-a/armv8/spider/ethernet_basic/main.c b/examples/cortex-a/armv8/spider/ethernet_basic/main.c
+new file mode 100644
+index 00000000..fc7b35c7
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/ethernet_basic/main.c
+@@ -0,0 +1,182 @@
++#include "tpl_os.h"
++#include "utils.h"
++#include "eth_serdes.h"
++#include "rswitch.h"
++#include "eth_gptp.h"
++#include "serial.h"
++#include "string.h"
++
++#define APP_Task_sample_init_START_SEC_CODE
++#include "tpl_memmap.h"
++
++uint8 tmp_buffer[1600];
++uint16 tmp_buffer_len = 0;
++
++// Is this the right section for the main function??
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++void eth_callback(uint8 *data, uint16 len)
++{
++	/* Copy the data into the local buffer and then activate the Echo task */
++	memcpy(tmp_buffer, data, len);
++	tmp_buffer_len = len;
++	ActivateTask(echo);
++}
++
++TASK(sample_init) {
++	int ret;
++
++	Serial_Init();
++
++	rswitch_enable_clock_and_reset();
++	port_init();
++	// Interrupt initializazion done by Trampoline
++	eth_disable_fuse_ovr();
++
++	ret = eth_serdes_initialize();
++	if (ret != 0) {
++		debug_msg("Error in eth_serdes_initialize");
++		goto exit;
++	}
++	debug_msg("SERDES initialization done");
++
++	ret = rswitch_init();
++	if (ret != 0) {
++		debug_msg("Error in rswitch_init\n");
++		goto exit;
++	}
++	debug_msg("RSwitch initialization done");
++
++	debug_msg("Initialize gPTP");
++	eth_gptp_init();
++
++	ret = rswitch_open();
++	if (ret != 0) {
++		debug_msg("Error in rswitch_open\n");
++		goto exit;
++	}
++	debug_msg("RSwitch open completed");
++
++	rswitch_regiter_data_received_callback(eth_callback);
++
++	debug_msg("Initialization completed");
++exit:
++	TerminateTask();
++}
++
++#define APP_Task_sample_init_STOP_SEC_CODE
++#include "tpl_memmap.h"
++
++#define APP_Task_echo_START_SEC_CODE
++#include "tpl_memmap.h"
++
++TASK(echo)
++{
++	int ret;
++	uint8 src_mac[6];
++	uint8 dst_mac[6];
++
++#if 0 /* set to 1 if debug logs are needed */
++	debug_msg("## Echo task ##");
++	debug_msg("Received:");
++	debug_print_buffer(tmp_buffer, tmp_buffer_len);
++#endif
++
++	/* check if protocol = ARP */
++	if ((tmp_buffer[12]==0x08)&&(tmp_buffer[13]==0x06)) {
++		/* Swap MAC addresses */
++		memcpy(dst_mac, &tmp_buffer[6], 6);
++		memcpy(&tmp_buffer[0], dst_mac, 6);
++		/* Send our MAC address */
++		tmp_buffer[6] = 0x2E;
++		tmp_buffer[7] = 0x09;
++		tmp_buffer[8] = 0x0A;
++		tmp_buffer[9] = 0x00;
++		tmp_buffer[10] = 0x00;
++		tmp_buffer[11] = 0x00;
++
++		/* Swap MAC addresses */
++		memcpy(src_mac, &tmp_buffer[22], 6);
++		memcpy(&tmp_buffer[32], src_mac, 6);
++		/* Send our MAC address */
++		tmp_buffer[22] = 0x2E;
++		tmp_buffer[23] = 0x09;
++		tmp_buffer[24] = 0x0A;
++		tmp_buffer[25] = 0x00;
++		tmp_buffer[26] = 0x00;
++		tmp_buffer[27] = 0x00;
++
++		/* Swap IP addresses */
++		memcpy(src_mac, &tmp_buffer[28], 4);
++		memcpy(dst_mac, &tmp_buffer[38], 4);
++		memcpy(&tmp_buffer[28], dst_mac, 4);
++		memcpy(&tmp_buffer[38], src_mac, 4);
++
++		/* Answer arp */
++		tmp_buffer[21] = 2;
++	}
++
++	/* Check if protocol = ICMP (ping) */
++	if ((tmp_buffer[12]==0x08)&&(tmp_buffer[13]==0x00)&&(tmp_buffer[23]==0x01)) {
++		/* Switch mac addresses */
++		memcpy(src_mac, &tmp_buffer[0], 6);
++		memcpy(dst_mac, &tmp_buffer[6], 6);
++		memcpy(&tmp_buffer[0], dst_mac, 6);
++		memcpy(&tmp_buffer[6], src_mac, 6);
++
++		/* Switch IP addresses */
++		memcpy(src_mac, &tmp_buffer[26], 4);
++		memcpy(dst_mac, &tmp_buffer[30], 4);
++		memcpy(&tmp_buffer[26], dst_mac, 4);
++		memcpy(&tmp_buffer[30], src_mac, 4);
++
++		/***************************/
++		/* Compute header checksum */
++		/***************************/
++		/* Clear checksum */
++		tmp_buffer[24] = 0x0;
++		tmp_buffer[25] = 0x0;
++		/* Compute sum */
++		uint32 checksum = 0x0;
++		for(uint8 i=0; i<10; i++) {
++			checksum += tmp_buffer[14+2*i] * 0x100;
++			checksum += tmp_buffer[15+2*i];
++		}
++		/* Compute carry */
++		while(checksum > 0xffff) {
++			checksum = (checksum & 0xffff) + (checksum >> 16);
++		}
++		/* Compute the ones' complement */
++		checksum = 0xffff - checksum;
++		/* Update checksum field */
++		tmp_buffer[24] = (checksum >> 8) & 0xff;
++		tmp_buffer[25] = checksum & 0xff;
++
++		/* Answer ping */
++		tmp_buffer[34] = 0;
++
++		/* ICMP checksum */
++		/* We only modify the ICMP type for 0x8 (ping request) to 0x0 (ping answer) */
++		/* so, no need to compute the checksum, only need to add 8 to it */
++		if(tmp_buffer[36]>=0xf8) tmp_buffer[37] = tmp_buffer[37]+1;
++		tmp_buffer[36] = tmp_buffer[36] + 8;
++	}
++
++	ret = rswitch_send_data(tmp_buffer, tmp_buffer_len);
++	if (ret != 0) {
++		debug_msg("Send data back: FAILED");
++	}
++
++	/* Clear the data for the next iteration */
++	memset(tmp_buffer, 0, sizeof(tmp_buffer));
++	tmp_buffer_len = 0;
++
++	TerminateTask();
++}
++
++#define APP_Task_echo_STOP_SEC_CODE
++#include "tpl_memmap.h"
+\ No newline at end of file
+-- 
+2.34.1
+

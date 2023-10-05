@@ -1,0 +1,68 @@
+From 1059306cbba17251053bf15c61af62bd0a219300 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Thu, 21 Sep 2023 17:26:32 +0200
+Subject: [PATCH 60/70] spider: fix enabling/disabling interrupts function
+
+---
+ machines/cortex-a/tpl_machine_arm.c | 38 +++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
+
+diff --git a/machines/cortex-a/tpl_machine_arm.c b/machines/cortex-a/tpl_machine_arm.c
+index a34fd870..91b1a0df 100644
+--- a/machines/cortex-a/tpl_machine_arm.c
++++ b/machines/cortex-a/tpl_machine_arm.c
+@@ -115,14 +115,15 @@ FUNC(void, OS_CODE) tpl_release_task_lock (void)
+  */
+ void tpl_enable_interrupts(void)
+ {
+-  /* unlock is scheduled to next switch back to task */
+-  __asm__
+-  (
+-  "mrs r0, spsr ;"
+-  "bic r0, r0, #0b11000000 ;"
+-  "msr spsr, r0 ;"
+-  : : : "r0" // clobbered register
+-  );
++  __asm__ volatile ("CPSIE IF"); /* Enable interrupts */
++  // /* unlock is scheduled to next switch back to task */
++  // __asm__
++  // (
++  // "mrs r0, spsr ;"
++  // "bic r0, r0, #0b11000000 ;"
++  // "msr spsr, r0 ;"
++  // : : : "r0" // clobbered register
++  // );
+ 
+ }
+ 
+@@ -132,16 +133,17 @@ void tpl_enable_interrupts(void)
+ void tpl_disable_interrupts(void)
+ {
+ 
+-  __asm__
+-  (
+-  "mrs r0, cpsr ;"
+-  "orr r0, r0, #0b11000000 ;"
+-  "msr cpsr, r0 ;"
+-  "mrs r0, spsr ;" // interrupts remain locked in user space
+-  "orr r0, r0, #0b11000000 ;"
+-  "msr spsr, r0"
+-  : : : "r0" // clobbered register
+-  );
++  __asm__ volatile ("CPSID IF"); /* Disable interrupts */
++  // __asm__
++  // (
++  // "mrs r0, cpsr ;"
++  // "orr r0, r0, #0b11000000 ;"
++  // "msr cpsr, r0 ;"
++  // "mrs r0, spsr ;" // interrupts remain locked in user space
++  // "orr r0, r0, #0b11000000 ;"
++  // "msr spsr, r0"
++  // : : : "r0" // clobbered register
++  // );
+ 
+ }
+ 
+-- 
+2.34.1
+

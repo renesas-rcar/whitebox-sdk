@@ -1,0 +1,194 @@
+From 4f926ce15241d5e46700484cc62d5f986f0c076b Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Fri, 22 Sep 2023 11:15:02 +0200
+Subject: [PATCH 53/70] spider: move lwip-port/ethernet files in driver folder
+ for spider board
+
+---
+ .../armv8/spider/ethernet/build_lwip.sh       | 39 -------------------
+ .../spider/ethernet/lwip-port/toolchain.cmake | 19 ---------
+ .../spider/drivers}/ethernet/err_codes.h      |  0
+ .../armv8/spider/drivers}/ethernet/eth_gptp.c |  0
+ .../armv8/spider/drivers}/ethernet/eth_gptp.h |  0
+ .../spider/drivers}/ethernet/eth_serdes.c     |  0
+ .../spider/drivers}/ethernet/eth_serdes.h     |  0
+ .../armv8/spider/drivers}/ethernet/pfcmap.h   |  0
+ .../armv8/spider/drivers}/ethernet/rswitch.c  |  0
+ .../armv8/spider/drivers}/ethernet/rswitch.h  |  0
+ .../spider/drivers}/ethernet/rswitch_regs.h   |  0
+ .../armv8/spider/drivers}/ethernet/utils.c    |  0
+ .../armv8/spider/drivers}/ethernet/utils.h    |  0
+ .../armv8/spider/drivers/lwip_port}/arch/cc.h |  0
+ .../armv8/spider/drivers/lwip_port}/ethif.c   |  0
+ .../armv8/spider/drivers/lwip_port}/ethif.h   |  0
+ .../spider/drivers/lwip_port}/lwipopts.h      |  0
+ .../spider/drivers/lwip_port}/sys_arch.c      |  0
+ .../armv8/spider/drivers/serial}/printf.c     |  0
+ .../armv8/spider/drivers/serial}/printf.h     |  0
+ 20 files changed, 58 deletions(-)
+ delete mode 100755 examples/cortex-a/armv8/spider/ethernet/build_lwip.sh
+ delete mode 100644 examples/cortex-a/armv8/spider/ethernet/lwip-port/toolchain.cmake
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/err_codes.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/eth_gptp.c (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/eth_gptp.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/eth_serdes.c (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/eth_serdes.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/pfcmap.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/rswitch.c (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/rswitch.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/rswitch_regs.h (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/utils.c (100%)
+ rename {examples/cortex-a/armv8/spider => machines/cortex-a/armv8/spider/drivers}/ethernet/utils.h (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet/lwip-port => machines/cortex-a/armv8/spider/drivers/lwip_port}/arch/cc.h (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet/lwip-port => machines/cortex-a/armv8/spider/drivers/lwip_port}/ethif.c (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet/lwip-port => machines/cortex-a/armv8/spider/drivers/lwip_port}/ethif.h (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet/lwip-port => machines/cortex-a/armv8/spider/drivers/lwip_port}/lwipopts.h (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet/lwip-port => machines/cortex-a/armv8/spider/drivers/lwip_port}/sys_arch.c (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet => machines/cortex-a/armv8/spider/drivers/serial}/printf.c (100%)
+ rename {examples/cortex-a/armv8/spider/ethernet => machines/cortex-a/armv8/spider/drivers/serial}/printf.h (100%)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/build_lwip.sh b/examples/cortex-a/armv8/spider/ethernet/build_lwip.sh
+deleted file mode 100755
+index 502cdde5..00000000
+--- a/examples/cortex-a/armv8/spider/ethernet/build_lwip.sh
++++ /dev/null
+@@ -1,39 +0,0 @@
+-#!/usr/bin/env bash
+-
+-#stop on errors
+-set -e
+-
+-function remove_items() {
+-	ITEMS="$1"
+-
+-	for ITEM in $ITEMS; do
+-		if [ $(ls $ITEM 2>/dev/null) ]; then
+-			echo "Removing $ITEM"
+-			rm $ITEM
+-		fi
+-	done
+-}
+-
+-# Remove old libraries that will be replaced with the new build
+-remove_items "liblwipallapps.a liblwipcore.a liblwipmbedtls.a"
+-
+-# Move to LwIP folder and create the build folder
+-cd lwip
+-
+-if [[ -d "build" ]]; then
+-	echo "Removing LwIP build folder"
+-	rm -r build
+-fi
+-
+-mkdir build
+-cd build
+-
+-cmake -DCMAKE_TOOLCHAIN_FILE:PATH="../../lwip-port/toolchain.cmake" ..
+-
+-# Build only required libraries (no example)
+-make -j lwipcore lwipallapps lwipmbedtls
+-
+-echo "Copying LwIP static libraries to local folder"
+-cp liblwipcore.a ../..
+-cp liblwipallapps.a ../..
+-cp liblwipmbedtls.a ../..
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/toolchain.cmake b/examples/cortex-a/armv8/spider/ethernet/lwip-port/toolchain.cmake
+deleted file mode 100644
+index 45306551..00000000
+--- a/examples/cortex-a/armv8/spider/ethernet/lwip-port/toolchain.cmake
++++ /dev/null
+@@ -1,19 +0,0 @@
+-set(CMAKE_SYSTEM_NAME Generic)
+-
+-set(CMAKE_C_COMPILER "arm-none-eabi-gcc")
+-
+-set(CMAKE_C_FLAGS "-std=c99 -mcpu=cortex-r52 -mfloat-abi=soft -O0 -g")
+-set(CMAKE_EXE_LINKER_FLAGS "-nostdlib")
+-
+-set(LWIP_COMPILER_FLAGS -std=c99 -mcpu=cortex-r52 -mfloat-abi=soft -O0 -g)
+-
+-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+-
+-set(LWIP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+-set (LWIP_INCLUDE_DIRS
+-    "${LWIP_DIR}/src/include"
+-    "${LWIP_DIR}/../lwip-port"
+-    "${LWIP_DIR}/.."
+-)
+diff --git a/examples/cortex-a/armv8/spider/ethernet/err_codes.h b/machines/cortex-a/armv8/spider/drivers/ethernet/err_codes.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/err_codes.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/err_codes.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth_gptp.c b/machines/cortex-a/armv8/spider/drivers/ethernet/eth_gptp.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/eth_gptp.c
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/eth_gptp.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth_gptp.h b/machines/cortex-a/armv8/spider/drivers/ethernet/eth_gptp.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/eth_gptp.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/eth_gptp.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth_serdes.c b/machines/cortex-a/armv8/spider/drivers/ethernet/eth_serdes.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/eth_serdes.c
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/eth_serdes.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth_serdes.h b/machines/cortex-a/armv8/spider/drivers/ethernet/eth_serdes.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/eth_serdes.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/eth_serdes.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/pfcmap.h b/machines/cortex-a/armv8/spider/drivers/ethernet/pfcmap.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/pfcmap.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/pfcmap.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/rswitch.c b/machines/cortex-a/armv8/spider/drivers/ethernet/rswitch.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/rswitch.c
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/rswitch.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/rswitch.h b/machines/cortex-a/armv8/spider/drivers/ethernet/rswitch.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/rswitch.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/rswitch.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/rswitch_regs.h b/machines/cortex-a/armv8/spider/drivers/ethernet/rswitch_regs.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/rswitch_regs.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/rswitch_regs.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.c b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/utils.c
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/utils.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.h b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/utils.h
+rename to machines/cortex-a/armv8/spider/drivers/ethernet/utils.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/arch/cc.h b/machines/cortex-a/armv8/spider/drivers/lwip_port/arch/cc.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/lwip-port/arch/cc.h
+rename to machines/cortex-a/armv8/spider/drivers/lwip_port/arch/cc.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/ethif.c b/machines/cortex-a/armv8/spider/drivers/lwip_port/ethif.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/lwip-port/ethif.c
+rename to machines/cortex-a/armv8/spider/drivers/lwip_port/ethif.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/ethif.h b/machines/cortex-a/armv8/spider/drivers/lwip_port/ethif.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/lwip-port/ethif.h
+rename to machines/cortex-a/armv8/spider/drivers/lwip_port/ethif.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/lwipopts.h b/machines/cortex-a/armv8/spider/drivers/lwip_port/lwipopts.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/lwip-port/lwipopts.h
+rename to machines/cortex-a/armv8/spider/drivers/lwip_port/lwipopts.h
+diff --git a/examples/cortex-a/armv8/spider/ethernet/lwip-port/sys_arch.c b/machines/cortex-a/armv8/spider/drivers/lwip_port/sys_arch.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/lwip-port/sys_arch.c
+rename to machines/cortex-a/armv8/spider/drivers/lwip_port/sys_arch.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/printf.c b/machines/cortex-a/armv8/spider/drivers/serial/printf.c
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/printf.c
+rename to machines/cortex-a/armv8/spider/drivers/serial/printf.c
+diff --git a/examples/cortex-a/armv8/spider/ethernet/printf.h b/machines/cortex-a/armv8/spider/drivers/serial/printf.h
+similarity index 100%
+rename from examples/cortex-a/armv8/spider/ethernet/printf.h
+rename to machines/cortex-a/armv8/spider/drivers/serial/printf.h
+-- 
+2.34.1
+

@@ -1,0 +1,328 @@
+From 55ba3288e76a2edcd6748810a4a8734ebc4c4482 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Tue, 4 Jul 2023 10:19:04 +0200
+Subject: [PATCH 46/70] debug: add printf capability
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ .../cortex-a/armv8/spider/ethernet/eth.oil    |   4 +-
+ .../cortex-a/armv8/spider/ethernet/main.c     |  15 +-
+ .../cortex-a/armv8/spider/ethernet/printf.c   | 188 ++++++++++++++++++
+ .../cortex-a/armv8/spider/ethernet/printf.h   |   4 +
+ .../cortex-a/armv8/spider/ethernet/utils.h    |   7 +-
+ 5 files changed, 213 insertions(+), 5 deletions(-)
+ create mode 100644 examples/cortex-a/armv8/spider/ethernet/printf.c
+ create mode 100644 examples/cortex-a/armv8/spider/ethernet/printf.h
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth.oil b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+index a6372054..d16eaffd 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/eth.oil
++++ b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+@@ -21,8 +21,9 @@ CPU eth {
+       APP_SRC = "eth_serdes.c";
+       APP_SRC = "rswitch.c";
+       APP_SRC = "eth_gptp.c";
++      APP_SRC = "printf.c";
+       APP_NAME = "eth_exe.elf";
+-      CFLAGS  = "-O0";
++      CFLAGS  = "-O0 -g -DHSCIF_1843200BPS";
+       LDFLAGS = "-Map=eth_exe.map";
+       COMPILER = "arm-none-eabi-gcc";
+       CPPCOMPILER = "arm-none-eabi-g++";
+@@ -30,6 +31,7 @@ CPU eth {
+       LINKER = "arm-none-eabi-ld";
+       COPIER = "arm-none-eabi-objcopy";
+       SYSTEM = PYTHON;
++      LIBRARY = serial;
+     };
+     SYSTEM_CALL = TRUE;
+     MEMMAP = TRUE {
+diff --git a/examples/cortex-a/armv8/spider/ethernet/main.c b/examples/cortex-a/armv8/spider/ethernet/main.c
+index f87c247b..2ffba132 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/main.c
++++ b/examples/cortex-a/armv8/spider/ethernet/main.c
+@@ -3,12 +3,11 @@
+ #include "eth_serdes.h"
+ #include "rswitch.h"
+ #include "eth_gptp.h"
++#include "serial.h"
+ 
+ #define APP_Task_sample_init_START_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+-extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
+-
+ // Is this the right section for the main function??
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+@@ -19,31 +18,41 @@ FUNC(int, OS_APPL_CODE) main(void)
+ TASK(sample_init) {
+ 	int ret;
+ 
++	Serial_Init();
++
+ 	rswitch_enable_clock_and_reset();
+ 	port_init();
+ 	// Interrupt initializazion done by Trampoline
+ 	eth_disable_fuse_ovr();
+ 
++	debug_msg("Initialize SERDES");
+ 	ret = eth_serdes_initialize();
+ 	if (ret != 0) {
+-		debug_msg("Error in eth_serdes_initialize\n");
++		debug_msg("Error in eth_serdes_initialize");
+ 		goto exit;
+ 	}
++	debug_msg("SERDES initialization done");
+ 
++	debug_msg("Initialize RSwitch");
+ 	ret = rswitch_init();
+ 	if (ret != 0) {
+ 		debug_msg("Error in rswitch_init\n");
+ 		goto exit;
+ 	}
++	debug_msg("RSwitch initialization done");
+ 
++	debug_msg("Initialize gPTP");
+ 	eth_gptp_init();
+ 
++	debug_msg("RSwitch open");
+ 	ret = rswitch_open();
+ 	if (ret != 0) {
+ 		debug_msg("Error in rswitch_open\n");
+ 		goto exit;
+ 	}
++	debug_msg("RSwitch completed");
+ 
++	debug_msg("Initialization completed");
+ exit:
+ 	TerminateTask();
+ }
+diff --git a/examples/cortex-a/armv8/spider/ethernet/printf.c b/examples/cortex-a/armv8/spider/ethernet/printf.c
+new file mode 100644
+index 00000000..a53e9a86
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/ethernet/printf.c
+@@ -0,0 +1,188 @@
++/*
++    Copyright 2001-2021 Georges Menie
++    https://www.menie.org/georges/embedded/small_printf_source_code.html
++
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU Lesser General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public License
++    along with this program; if not, write to the Free Software
++    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++*/
++
++#include "printf.h"
++#include "serial.h"
++
++static void printchar(char **str, int c)
++{
++    if (str) {
++        **str = c;
++        ++(*str);
++    } else {
++        Serial_Tx(c);
++    }
++}
++
++#define PAD_RIGHT 1
++#define PAD_ZERO 2
++
++static int prints(char **out, const char *string, int width, int pad)
++{
++	register int pc = 0, padchar = ' ';
++
++	if (width > 0) {
++		register int len = 0;
++		register const char *ptr;
++		for (ptr = string; *ptr; ++ptr) ++len;
++		if (len >= width) width = 0;
++		else width -= len;
++		if (pad & PAD_ZERO) padchar = '0';
++	}
++	if (!(pad & PAD_RIGHT)) {
++		for ( ; width > 0; --width) {
++			printchar (out, padchar);
++			++pc;
++		}
++	}
++	for ( ; *string ; ++string) {
++		printchar (out, *string);
++		++pc;
++	}
++	for ( ; width > 0; --width) {
++		printchar (out, padchar);
++		++pc;
++	}
++
++	return pc;
++}
++
++/* the following should be enough for 32 bit int */
++#define PRINT_BUF_LEN 12
++
++static int printi(char **out, int i, int b, int sg, int width, int pad, int letbase)
++{
++	char print_buf[PRINT_BUF_LEN];
++	register char *s;
++	register int t, neg = 0, pc = 0;
++	register unsigned int u = i;
++
++	if (i == 0) {
++		print_buf[0] = '0';
++		print_buf[1] = '\0';
++		return prints (out, print_buf, width, pad);
++	}
++
++	if (sg && b == 10 && i < 0) {
++		neg = 1;
++		u = -i;
++	}
++
++	s = print_buf + PRINT_BUF_LEN-1;
++	*s = '\0';
++
++	while (u) {
++		t = u % b;
++		if( t >= 10 )
++			t += letbase - '0' - 10;
++		*--s = t + '0';
++		u /= b;
++	}
++
++	if (neg) {
++		if( width && (pad & PAD_ZERO) ) {
++			printchar (out, '-');
++			++pc;
++			--width;
++		}
++		else {
++			*--s = '-';
++		}
++	}
++
++	return pc + prints (out, s, width, pad);
++}
++
++static int print(char **out, int *varg)
++{
++	register int width, pad;
++	register int pc = 0;
++	register char *format = (char *)(*varg++);
++	char scr[2];
++
++	for (; *format != 0; ++format) {
++		if (*format == '%') {
++			++format;
++			width = pad = 0;
++			if (*format == '\0') break;
++			if (*format == '%') goto out;
++			if (*format == '-') {
++				++format;
++				pad = PAD_RIGHT;
++			}
++			while (*format == '0') {
++				++format;
++				pad |= PAD_ZERO;
++			}
++			for ( ; *format >= '0' && *format <= '9'; ++format) {
++				width *= 10;
++				width += *format - '0';
++			}
++			if( *format == 's' ) {
++				register char *s = *((char **)varg++);
++				pc += prints (out, s?s:"(null)", width, pad);
++				continue;
++			}
++			if( *format == 'd' ) {
++				pc += printi (out, *varg++, 10, 1, width, pad, 'a');
++				continue;
++			}
++			if( *format == 'x' ) {
++				pc += printi (out, *varg++, 16, 0, width, pad, 'a');
++				continue;
++			}
++			if( *format == 'X' ) {
++				pc += printi (out, *varg++, 16, 0, width, pad, 'A');
++				continue;
++			}
++			if( *format == 'u' ) {
++				pc += printi (out, *varg++, 10, 0, width, pad, 'a');
++				continue;
++			}
++			if( *format == 'c' ) {
++				/* char are converted to int then pushed on the stack */
++				scr[0] = *varg++;
++				scr[1] = '\0';
++				pc += prints (out, scr, width, pad);
++				continue;
++			}
++		}
++		else {
++		out:
++			printchar (out, *format);
++			++pc;
++		}
++	}
++	if (out) **out = '\0';
++	return pc;
++}
++
++/* assuming sizeof(void *) == sizeof(int) */
++
++int debug_printf(const char *format, ...)
++{
++	register int *varg = (int *)(&format);
++	return print(0, varg);
++}
++
++int debug_sprintf(char *out, const char *format, ...)
++{
++	register int *varg = (int *)(&format);
++	return print(&out, varg);
++}
+\ No newline at end of file
+diff --git a/examples/cortex-a/armv8/spider/ethernet/printf.h b/examples/cortex-a/armv8/spider/ethernet/printf.h
+new file mode 100644
+index 00000000..c1ad80b9
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/ethernet/printf.h
+@@ -0,0 +1,4 @@
++#include "tpl_os.h"
++
++int debug_printf(const char *format, ...);
++int debug_sprintf(char *out, const char *format, ...);
+\ No newline at end of file
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.h b/examples/cortex-a/armv8/spider/ethernet/utils.h
+index 4ddd9b03..e6850119 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/utils.h
++++ b/examples/cortex-a/armv8/spider/ethernet/utils.h
+@@ -2,8 +2,13 @@
+ #define _UTILS_H_
+ 
+ #include "tpl_os.h"
++#include "printf.h"
+ 
+-#define debug_msg(...)    do {} while(0) // TODO
++#define debug_msg(...) \
++        do { \
++            debug_printf(__VA_ARGS__); \
++            debug_printf("\n\r"); \
++        } while(0)
+ 
+ #define BIT(x)      (1UL << x)
+ #define BITS_PER_TYPE(x)    (sizeof(x) * 8)
+-- 
+2.34.1
+

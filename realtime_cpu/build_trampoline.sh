@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 GITHUB_URL=https://github.com/TrampolineRTOS/trampoline
-COMMIT=c16eaa6dc14f0648ba9507bb9cfe030786c5ad57
+COMMIT=5deaff4941cb086e25859743973af019f2bad27c
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
 
 export PATH=~/.local/bin:$PATH
@@ -59,10 +59,13 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     git reset --hard ${COMMIT} ; git clean -df
 
     # prepare Benchmarks code
+    rm -rf examples/cortex-a/armv8
     git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
     if [ "$1" == "s4sk" ]; then
         git am ${SCRIPT_DIR}/patchset_trampoline_s4sk/*.patch
     fi
+    git submodule init
+    git submodule update net/ethernet/lwip
 
     # Dhrystone
     cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
@@ -106,4 +109,23 @@ chmod +x ./build.sh
 ./build.sh
 mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
+
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip
+chmod +x ./build.sh
+./build.sh
+mkdir -p ${SCRIPT_DIR}/deploy
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 lwip_exe.elf $SCRIPT_DIR/deploy/cr52_lwip.srec
+
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic
+chmod +x ./build.sh
+./build.sh
+mkdir -p ${SCRIPT_DIR}/deploy
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth_basic.srec
+
+# build can demo
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/can_demo
+chmod +x ./build.sh
+./build.sh
+mkdir -p ${SCRIPT_DIR}/deploy
+arm-none-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 can_demo_exe.elf $SCRIPT_DIR/deploy/cr52_can_demo.srec
 

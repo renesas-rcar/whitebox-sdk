@@ -1,0 +1,109 @@
+From 240f338ea41974bc4cbbbe9f4a4ec7ff6ef88b86 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Fri, 22 Sep 2023 11:27:27 +0200
+Subject: [PATCH 54/70] spider: define 'ethernet' and 'lwip' libraries
+
+---
+ .../config/cortex-a/armv8/spider/config.oil   | 78 ++++++++++++++++++-
+ 1 file changed, 76 insertions(+), 2 deletions(-)
+
+diff --git a/goil/templates/config/cortex-a/armv8/spider/config.oil b/goil/templates/config/cortex-a/armv8/spider/config.oil
+index 910f904f..90ccb01f 100755
+--- a/goil/templates/config/cortex-a/armv8/spider/config.oil
++++ b/goil/templates/config/cortex-a/armv8/spider/config.oil
+@@ -5,7 +5,9 @@ IMPLEMENTATION spider {
+     BOOLEAN [
+       TRUE {
+         ENUM [
+-          serial
++          serial,
++          ethernet,
++          lwip
+         ] LIBRARY[];
+       },
+       FALSE
+@@ -58,8 +60,80 @@ CPU spider {
+ 
+   LIBRARY serial {
+     PATH = "cortex-a/armv8/spider/drivers/serial";
+-    CHEADER = "serial.h";
+     CFILE = "serial.c";
++    CFILE = "printf.c";
++  };
++
++  LIBRARY ethernet {
++    PATH = "cortex-a/armv8/spider/drivers/ethernet";
++    NEEDS = serial;
++
++    CFILE = "utils.c";
++    CFILE = "rswitch.c";
++    CFILE = "eth_serdes.c";
++    CFILE = "eth_gptp.c";
++  };
++
++  LIBRARY lwip_port {
++    NEEDS = ethernet;
++    PATH = "cortex-a/armv8/spider/drivers/lwip_port";
++
++    CFILE = "sys_arch.c";
++    CFILE = "ethif.c";
++  };
++
++  LIBRARY lwip {
++    NEEDS = lwip_port;
++    PATH = "../net/ethernet/lwip/src/include";
++
++    // The minimum set of files needed for lwIP.
++    CFILE = "../core/init.c";
++    CFILE = "../core/def.c";
++    CFILE = "../core/dns.c";
++    CFILE = "../core/inet_chksum.c";
++    CFILE = "../core/ip.c";
++    CFILE = "../core/mem.c";
++    CFILE = "../core/memp.c";
++    CFILE = "../core/netif.c";
++    CFILE = "../core/pbuf.c";
++    CFILE = "../core/raw.c";
++    CFILE = "../core/stats.c";
++    CFILE = "../core/sys.c";
++    CFILE = "../core/altcp.c";
++    CFILE = "../core/altcp_alloc.c";
++    CFILE = "../core/altcp_tcp.c";
++    CFILE = "../core/tcp.c";
++    CFILE = "../core/tcp_in.c";
++    CFILE = "../core/tcp_out.c";
++    CFILE = "../core/timeouts.c";
++    CFILE = "../core/udp.c";
++
++    // lwipcore4
++    CFILE = "../core/ipv4/acd.c";
++    CFILE = "../core/ipv4/autoip.c";
++    CFILE = "../core/ipv4/dhcp.c";
++    CFILE = "../core/ipv4/etharp.c";
++    CFILE = "../core/ipv4/icmp.c";
++    CFILE = "../core/ipv4/igmp.c";
++    CFILE = "../core/ipv4/ip4_frag.c";
++    CFILE = "../core/ipv4/ip4.c";
++    CFILE = "../core/ipv4/ip4_addr.c";
++
++    // APIFILES: The files which implement the sequential and socket APIs.
++    CFILE = "../api/api_lib.c";
++    CFILE = "../api/api_msg.c";
++    CFILE = "../api/err.c";
++    //CFILE = "../api/if_api.c";
++    CFILE = "../api/netbuf.c";
++    CFILE = "../api/netdb.c";
++    CFILE = "../api/netifapi.c";
++    //CFILE = "../api/sockets.c";
++    CFILE = "../api/tcpip.c";
++
++    // Files implementing various generic network interface functions
++    CFILE = "../netif/ethernet.c";
++    CFILE = "../netif/bridgeif.c";
++    CFILE = "../netif/bridgeif_fdb.c";
+   };
+ 
+   POSTBUILD all {
+-- 
+2.34.1
+

@@ -1,0 +1,335 @@
+From 8ea83746abbe4b006d8c6c67ce411b1029fb0437 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 12 Jul 2023 19:11:18 +0200
+Subject: [PATCH 50/70] rswitch: adding support for transmission
+
+A sample task is also added which simply echoes back the data
+that it receives.
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ .../armv8/spider/ethernet/err_codes.h         |  4 +-
+ .../cortex-a/armv8/spider/ethernet/eth.oil    |  7 ++
+ .../cortex-a/armv8/spider/ethernet/main.c     | 56 ++++++++++-
+ .../cortex-a/armv8/spider/ethernet/rswitch.c  | 95 ++++++++++++++++---
+ .../cortex-a/armv8/spider/ethernet/rswitch.h  |  5 +
+ 5 files changed, 151 insertions(+), 16 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/err_codes.h b/examples/cortex-a/armv8/spider/ethernet/err_codes.h
+index 6bfc7b43..ca307be8 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/err_codes.h
++++ b/examples/cortex-a/armv8/spider/ethernet/err_codes.h
+@@ -1,6 +1,8 @@
+ #ifndef _ERR_CODES_H_
+ #define _ERR_CODES_H_
+ 
+-#define ERR_TIMEOUT     (-1)
++#define ERR_TIMEOUT               (-1)
++#define ERR_BUFF_TOO_LARGE        (-2)
++#define ERR_TX_FAILURE            (-3)
+ 
+ #endif /* _ERR_CODES_H_ */
+\ No newline at end of file
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth.oil b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+index 87437a74..47b1798e 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/eth.oil
++++ b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+@@ -51,6 +51,13 @@ CPU eth {
+     SCHEDULE = FULL;
+   };
+ 
++  TASK echo {
++    PRIORITY = 1;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
+   ISR gwca1_rx_tx_int {
+     CATEGORY = 2;
+     PRIORITY = 1;
+diff --git a/examples/cortex-a/armv8/spider/ethernet/main.c b/examples/cortex-a/armv8/spider/ethernet/main.c
+index 047058b7..577a7c94 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/main.c
++++ b/examples/cortex-a/armv8/spider/ethernet/main.c
+@@ -4,10 +4,14 @@
+ #include "rswitch.h"
+ #include "eth_gptp.h"
+ #include "serial.h"
++#include "string.h"
+ 
+ #define APP_Task_sample_init_START_SEC_CODE
+ #include "tpl_memmap.h"
+ 
++uint8 tmp_buffer[1600];
++uint16 tmp_buffer_len = 0;
++
+ // Is this the right section for the main function??
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+@@ -15,6 +19,14 @@ FUNC(int, OS_APPL_CODE) main(void)
+ 	return 0;
+ }
+ 
++void eth_callback(uint8 *data, uint16 len)
++{
++	/* Copy the data into the local buffer and then activate the Echo task */
++	memcpy(tmp_buffer, data, len);
++	tmp_buffer_len = len;
++	ActivateTask(echo);
++}
++
+ TASK(sample_init) {
+ 	int ret;
+ 
+@@ -25,7 +37,6 @@ TASK(sample_init) {
+ 	// Interrupt initializazion done by Trampoline
+ 	eth_disable_fuse_ovr();
+ 
+-	debug_msg("Initialize SERDES");
+ 	ret = eth_serdes_initialize();
+ 	if (ret != 0) {
+ 		debug_msg("Error in eth_serdes_initialize");
+@@ -33,7 +44,6 @@ TASK(sample_init) {
+ 	}
+ 	debug_msg("SERDES initialization done");
+ 
+-	debug_msg("Initialize RSwitch");
+ 	ret = rswitch_init();
+ 	if (ret != 0) {
+ 		debug_msg("Error in rswitch_init\n");
+@@ -44,13 +54,14 @@ TASK(sample_init) {
+ 	debug_msg("Initialize gPTP");
+ 	eth_gptp_init();
+ 
+-	debug_msg("RSwitch open");
+ 	ret = rswitch_open();
+ 	if (ret != 0) {
+ 		debug_msg("Error in rswitch_open\n");
+ 		goto exit;
+ 	}
+-	debug_msg("RSwitch completed");
++	debug_msg("RSwitch open completed");
++
++	rswitch_regiter_data_received_callback(eth_callback);
+ 
+ 	debug_msg("Initialization completed");
+ exit:
+@@ -58,4 +69,41 @@ exit:
+ }
+ 
+ #define APP_Task_sample_init_STOP_SEC_CODE
++#include "tpl_memmap.h"
++
++#define APP_Task_echo_START_SEC_CODE
++#include "tpl_memmap.h"
++
++TASK(echo)
++{
++	int ret;
++	uint8 src_mac[6];
++	uint8 dst_mac[6];
++
++	debug_msg("## Echo task ##");
++
++	debug_msg("Received:");
++	debug_print_buffer(tmp_buffer, tmp_buffer_len);
++
++	/* Swap MAC addresses just to play a little with the data */
++	memcpy(src_mac, &tmp_buffer[0], 6);
++	memcpy(dst_mac, &tmp_buffer[6], 6);
++	memcpy(&tmp_buffer[0], dst_mac, 6);
++	memcpy(&tmp_buffer[6], src_mac, 6);
++
++	ret = rswitch_send_data(tmp_buffer, tmp_buffer_len);
++	if (ret != 0) {
++		debug_msg("Send data back: FAILED");
++	} else {
++		debug_msg("Send data back: SUCCESS");
++	}
++
++	/* Clear the data for the next iteration */
++	memset(tmp_buffer, 0, sizeof(tmp_buffer));
++	tmp_buffer_len = 0;
++
++	TerminateTask();
++}
++
++#define APP_Task_echo_STOP_SEC_CODE
+ #include "tpl_memmap.h"
+\ No newline at end of file
+diff --git a/examples/cortex-a/armv8/spider/ethernet/rswitch.c b/examples/cortex-a/armv8/spider/ethernet/rswitch.c
+index d44ac123..dc0cc965 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/rswitch.c
++++ b/examples/cortex-a/armv8/spider/ethernet/rswitch.c
+@@ -270,6 +270,9 @@ struct rswitch_device {
+  * that doesn't work, so we will redeclare it here... */
+ extern FUNC(void, OS_CODE) CallTerminateISR2(void);
+ 
++/* This is the callback function that is invoked every time some data is received */
++rx_callback_fn rx_cb = NULL;
++
+ #define RSWITCH_TIMEOUT_MS  10000
+ static int rswitch_reg_wait(uint32 addr, uint32 mask, uint32 expected)
+ {
+@@ -522,6 +525,9 @@ static void rswitch_gwca_chain_format(struct rswitch_device *rswitch,
+             ring->dptrh = 0x00;
+             ring->die_dt = DT_FEMPTY | DIE;
+         } else {
++            ring->info_ds = 0;
++            ring->dptrl = (uint32) c->data_buffers[i];
++            ring->dptrh = 0x00;
+             ring->die_dt = DT_EEMPTY | DIE;
+         }
+     }
+@@ -558,6 +564,9 @@ static void rswitch_gwca_chain_ts_format(struct rswitch_device *rswitch,
+             ring->dptrh = 0x00;
+             ring->die_dt = DT_FEMPTY | DIE;
+         } else {
++            ring->info_ds = 0;
++            ring->dptrl = (uint32) c->data_buffers[i];
++            ring->dptrh = 0x00;
+             ring->die_dt = DT_EEMPTY | DIE;
+         }
+     }
+@@ -819,6 +828,52 @@ int rswitch_open(void)
+     return 0;
+ }
+ 
++int rswitch_send_data(uint8 *buf, uint16 size)
++{
++    struct rswitch_gwca_chain *chain = &rsw_dev.gwca->tx_chain;
++    struct rswitch_ext_desc *desc;
++    uint8 *dest_buf;
++
++    /* Temporary code: try to fit into a single packet. This can be extended
++     * in the future but it requires code to handle data splitting. */
++    if (size > PKT_BUF_SZ) {
++        debug_msg("Error: transmitted buffer is too large");
++        return ERR_BUFF_TOO_LARGE;
++    }
++
++    /* Pick the 1st not used descriptor that can be used for transmission */
++    desc = &chain->ring[chain->next_index];
++    /* Check that this descriptor is REALLY free */
++    if (desc->die_dt != (DT_EEMPTY | DIE)) {
++        debug_msg("Error: invalid descriptor selected for transmission");
++        return ERR_TX_FAILURE;
++    }
++    /* Prepare the descriptor */
++    desc->die_dt = DT_FSINGLE | DIE;
++    desc->info_ds = size & 0xFFF;
++    /* Copy data to be transmitted */
++    dest_buf = (uint8 *) desc->dptrl;
++    memcpy(dest_buf, buf, size);
++
++    /* Start transmission */
++    rswitch_modify(rsw_dev.gwca->base_addr + GWTRC0, 0, BIT(chain->chain_index));
++
++    /* Move to the next item in the list. */
++    chain->next_index++;
++    /* The last item is a LINKFIX and we know that, so we wrap back
++     * to the 1st item earlier. */
++    if (chain->next_index >= chain->num_ring - 1) {
++        chain->next_index = 0;
++    }
++
++    return 0;
++}
++
++void rswitch_regiter_data_received_callback(rx_callback_fn func)
++{
++    rx_cb = func;
++}
++
+ /* Determine which chain (rx or tx) generated the interrupt */
+ static void rswitch_get_interrupt_source_and_clear()
+ {
+@@ -855,9 +910,11 @@ static void rswitch_get_interrupt_source_and_clear()
+ ISR(gwca1_rx_tx_int)
+ {
+     struct rswitch_gwca_chain *chain;
+-    struct rswitch_ext_ts_desc *desc;
++    struct rswitch_ext_ts_desc *ts_desc;
++    struct rswitch_ext_desc *desc;
+     uint8 *data_ptr;
+     uint16 data_len;
++    int i;
+ 
+     debug_msg("%s", __func__);
+ 
+@@ -865,22 +922,28 @@ ISR(gwca1_rx_tx_int)
+     if (chain->irq_triggered != 0) {
+         /* Go through the descriptors chain to parse received data */
+         while (1) {
+-            desc = &(chain->ts_ring[chain->next_index]);
++            ts_desc = &(chain->ts_ring[chain->next_index]);
+             /* Stop once we get to a descriptor that was not modified */
+-            if (desc->die_dt == (DT_FEMPTY | DIE)) {
++            if (ts_desc->die_dt == (DT_FEMPTY | DIE)) {
+                 break;
+             }
+             /* We know that "dptrh" is always 0x0 so we ignore it intentionally */
+-            data_ptr = (uint8 *) desc->dptrl;
+-            data_len = (desc->info_ds) & 0xFFF;
+-            debug_print_buffer(data_ptr, data_len);
++            data_ptr = (uint8 *) ts_desc->dptrl;
++            data_len = (ts_desc->info_ds) & 0xFFF;
++            /* If the callback is present then call it, otherwise just print
++             * the data */
++            if (rx_cb != NULL) {
++                rx_cb(data_ptr, data_len);
++            } else {
++                debug_print_buffer(data_ptr, data_len);
++            }
+             /* Reset the data buffer */
+             memset(data_ptr, 0, PKT_BUF_SZ_ALIGN);
+             /* Reset the descriptor so that it can be used again in the next round */
+-            memset(desc, 0, sizeof(*desc));
+-            desc->die_dt = (DT_FEMPTY | DIE);
+-            desc->info_ds = PKT_BUF_SZ;
+-            desc->dptrl = (uint32) data_ptr;
++            memset(ts_desc, 0, sizeof(*ts_desc));
++            ts_desc->die_dt = (DT_FEMPTY | DIE);
++            ts_desc->info_ds = PKT_BUF_SZ;
++            ts_desc->dptrl = (uint32) data_ptr;
+             /* Move to the next item in the list. */
+             chain->next_index++;
+             /* The last item is a LINKFIX and we know that, so we wrap back
+@@ -898,7 +961,17 @@ ISR(gwca1_rx_tx_int)
+ 
+     chain = &rsw_dev.gwca->tx_chain;
+     if (chain->irq_triggered) {
+-        // TODO: restore the descriptors that have been used to send the data
++        /* Here we reset all the descriptors and data buffers of the TX chain.
++         * It works only if 1 descriptor is transmitted at a time.
++         * TODO: improve to handle transmissions of multiple descriptors. */
++        for (i = 0; i < chain->num_ring - 1; i++) {
++            desc = &(chain->ring[i]);
++            desc->die_dt = DT_EEMPTY | DIE;
++            desc->info_ds = 0;
++            desc->info1 = 0;
++            data_ptr = (uint8 *) desc->dptrl;
++            memset(data_ptr, 0, PKT_BUF_SZ_ALIGN);
++        }
+         chain->irq_triggered = 0;
+     }
+     CallTerminateISR2();
+diff --git a/examples/cortex-a/armv8/spider/ethernet/rswitch.h b/examples/cortex-a/armv8/spider/ethernet/rswitch.h
+index fee6f633..520f6e9a 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/rswitch.h
++++ b/examples/cortex-a/armv8/spider/ethernet/rswitch.h
+@@ -4,4 +4,9 @@
+ int rswitch_init(void);
+ int rswitch_open(void);
+ 
++typedef void (*rx_callback_fn)(uint8 *buf, uint16 len);
++
++void rswitch_regiter_data_received_callback(rx_callback_fn func);
++int rswitch_send_data(uint8 *buf, uint16 size);
++
+ #endif /* _ETH_H_ */
+\ No newline at end of file
+-- 
+2.34.1
+

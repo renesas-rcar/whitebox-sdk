@@ -1,0 +1,49 @@
+From 1962b47b3881593023eed7536559a377632f6ede Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 12 Jul 2023 14:41:28 +0200
+Subject: [PATCH 48/70] debug: add function to print raw buffer
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ examples/cortex-a/armv8/spider/ethernet/utils.c | 13 +++++++++++++
+ examples/cortex-a/armv8/spider/ethernet/utils.h |  2 ++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.c b/examples/cortex-a/armv8/spider/ethernet/utils.c
+index 3f6b23f3..f2453907 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/utils.c
++++ b/examples/cortex-a/armv8/spider/ethernet/utils.c
+@@ -140,4 +140,17 @@ void port_init(void)
+ void enable_int(uint32 num)
+ {
+ 	*((volatile uint32 *)(GICD_ISENABLER + 4 * (num / 32)))  = 1 << (num % 32);
++}
++
++void debug_print_buffer(uint8 *buf, uint32 len)
++{
++    uint32 i = 0;
++
++    for (i = 0; i < len; i++) {
++        if ((i != 0) && ((i % 16) == 0)) {
++            debug_printf("\n\r");
++        }
++        debug_printf("%02x ", buf[i]);
++    }
++    debug_printf("\n\r");
+ }
+\ No newline at end of file
+diff --git a/examples/cortex-a/armv8/spider/ethernet/utils.h b/examples/cortex-a/armv8/spider/ethernet/utils.h
+index e6850119..4eedbf8b 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/utils.h
++++ b/examples/cortex-a/armv8/spider/ethernet/utils.h
+@@ -38,4 +38,6 @@ uint32 get_time(void);
+ uint32 get_elapsed_time(uint32 start_val);
+ void ms_delay(uint32 value);
+ 
++void debug_print_buffer(uint8 *buf, uint32 len);
++
+ #endif /* _UTILS_H_ */
+\ No newline at end of file
+-- 
+2.34.1
+

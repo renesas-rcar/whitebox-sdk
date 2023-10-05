@@ -1,0 +1,215 @@
+From ce35c730d0f7b97e55d1fa6c799f65ec9a2865de Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Thu, 21 Sep 2023 17:30:45 +0200
+Subject: [PATCH 62/70] spider: add lwip example with NO_SYS undefined
+
+---
+ examples/cortex-a/armv8/spider/lwip/build.sh |  15 +++
+ examples/cortex-a/armv8/spider/lwip/lwip.c   |  57 ++++++++++
+ examples/cortex-a/armv8/spider/lwip/lwip.oil | 108 +++++++++++++++++++
+ 3 files changed, 180 insertions(+)
+ create mode 100755 examples/cortex-a/armv8/spider/lwip/build.sh
+ create mode 100755 examples/cortex-a/armv8/spider/lwip/lwip.c
+ create mode 100755 examples/cortex-a/armv8/spider/lwip/lwip.oil
+
+diff --git a/examples/cortex-a/armv8/spider/lwip/build.sh b/examples/cortex-a/armv8/spider/lwip/build.sh
+new file mode 100755
+index 00000000..f793eabe
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/lwip/build.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ lwip.oil
++
++echo "*** Run Make ***"
++./make.py
+diff --git a/examples/cortex-a/armv8/spider/lwip/lwip.c b/examples/cortex-a/armv8/spider/lwip/lwip.c
+new file mode 100755
+index 00000000..7c1cc2f1
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/lwip/lwip.c
+@@ -0,0 +1,57 @@
++#include "tpl_os.h"
++
++#include "serial.h"
++#include "printf.h"
++#include "utils.h"
++
++#include "ethif.h"
++
++/* lwIP core includes */
++#include "lwip/opt.h"
++#include "lwip/dhcp.h"
++#include "lwip/tcpip.h"
++
++struct netif this_netif;
++
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	Serial_Init();
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++#define DHCP 0
++
++TASK(lwip)
++{
++	debug_msg("init: call");
++	struct netif this_netif;
++	ip4_addr_t ip4_addr, net_mask, gateway;
++
++	debug_msg("init ethernet low level");
++	rswitch_enable_clock_and_reset();
++	port_init();
++
++	debug_msg("ethernet_init_inside_thread");
++	tcpip_init(NULL,NULL);
++
++	IP4_ADDR(&ip4_addr, 192, 168, 1, 2);
++	IP4_ADDR(&net_mask, 255, 255, 255, 0);
++	IP4_ADDR(&gateway, 192, 168, 1, 255);
++#if DHCP==1
++	netif_add( &this_netif, NULL, &net_mask, NULL, NULL, ethif_init, tcpip_input);
++#else
++	netif_add( &this_netif, &ip4_addr, &net_mask, NULL, NULL, ethif_init, tcpip_input);
++#endif
++
++	netif_set_up(&this_netif);
++
++#if DHCP==1
++	dhcp_start(&this_netif);
++#endif
++
++	debug_msg("init: done");
++
++  	TerminateTask();
++}
++
+diff --git a/examples/cortex-a/armv8/spider/lwip/lwip.oil b/examples/cortex-a/armv8/spider/lwip/lwip.oil
+new file mode 100755
+index 00000000..fb66d29a
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/lwip/lwip.oil
+@@ -0,0 +1,108 @@
++OIL_VERSION = "4.0";
++
++IMPLEMENTATION trampoline {
++
++    /* This fix the default STACKSIZE of tasks */
++    TASK {
++        UINT32 STACKSIZE = 2000 ;
++    } ;
++
++    /* This fix the default STACKSIZE of ISRs */
++    ISR {
++        UINT32 STACKSIZE = 2000 ;
++    } ;
++};
++
++CPU lwip {
++  OS config {
++    STATUS = EXTENDED;
++
++    BUILD = TRUE {
++      TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "lwip.c";
++
++      APP_NAME = "lwip_exe.elf";
++      CFLAGS  = "-O0 -DHSCIF_1843200BPS -ggdb";
++      LDFLAGS = "-Map=lwip.map";
++      COMPILER = "arm-none-eabi-gcc";
++      CPPCOMPILER = "arm-none-eabi-g++";
++      ASSEMBLER = "arm-none-eabi-as";
++      LINKER = "arm-none-eabi-ld";
++      COPIER = "arm-none-eabi-objcopy";
++      SYSTEM = PYTHON;
++
++      LIBRARY = serial;
++      LIBRARY = lwip;
++    };
++    SYSTEM_CALL = TRUE;
++    MEMMAP = TRUE {
++      COMPILER = gcc;
++      LINKER = gnu_ld { SCRIPT = "script.ld"; };
++      ASSEMBLER = gnu_as;
++      MEMORY_PROTECTION = FALSE;
++    };
++  };
++
++  APPMODE std {};
++
++  TASK lwip { 
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  /* LWIP needs */
++  EVENT lwip_sync {
++    MASK = AUTO;
++  };
++
++  TASK tcpip_task { 
++    PRIORITY = 1;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++    EVENT = lwip_sync;
++  };
++
++  /* eth driver needs */
++  TASK gwca1_rx_tx_task { 
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++    EVENT = lwip_sync;
++  };
++
++  ISR gwca1_rx_tx_int {
++    CATEGORY = 1;
++    PRIORITY = 3;
++    SOURCE = GWCA1_RX_TX_INT;
++  };
++
++  ISR gwca1_rx_ts_int {
++    CATEGORY = 1;
++    PRIORITY = 4;
++    SOURCE = GWCA1_RX_TS_INT;
++  };
++
++  ISR coma_err_int {
++    CATEGORY = 1;
++    PRIORITY = 5;
++    SOURCE = COMA_ERR_INT;
++  };
++
++  ISR gwca1_err_int {
++    CATEGORY = 1;
++    PRIORITY = 6;
++    SOURCE = GWCA1_ERR_INT;
++  };
++
++  ISR etha0_err_int {
++    CATEGORY = 1;
++    PRIORITY = 7;
++    SOURCE = ETHA0_ERR_INT;
++  };
++
++};
++
+-- 
+2.34.1
+

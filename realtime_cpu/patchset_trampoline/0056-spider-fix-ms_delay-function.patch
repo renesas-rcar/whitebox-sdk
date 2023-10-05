@@ -1,0 +1,32 @@
+From ccb7091af8239d3406381532092ff9dbea118b14 Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Fri, 22 Sep 2023 11:30:29 +0200
+Subject: [PATCH 56/70] spider: fix ms_delay() function
+
+---
+ machines/cortex-a/armv8/spider/drivers/ethernet/utils.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/machines/cortex-a/armv8/spider/drivers/ethernet/utils.c b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.c
+index f2453907..c3941441 100644
+--- a/machines/cortex-a/armv8/spider/drivers/ethernet/utils.c
++++ b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.c
+@@ -86,7 +86,7 @@ void ms_delay(uint32 value)
+ {
+     uint32 start_time = get_time();
+ 
+-    while((get_elapsed_time(start_time) - start_time) < value);
++    while(get_elapsed_time(start_time) < value);
+ }
+ 
+ void port_init(void)
+@@ -153,4 +153,4 @@ void debug_print_buffer(uint8 *buf, uint32 len)
+         debug_printf("%02x ", buf[i]);
+     }
+     debug_printf("\n\r");
+-}
+\ No newline at end of file
++}
+-- 
+2.34.1
+

@@ -1,0 +1,49 @@
+From 0a9edd873244961dde5b858869ff936f68b4b0ba Mon Sep 17 00:00:00 2001
+From: Florian Sylvestre <fsylvestre@baylibre.com>
+Date: Fri, 22 Sep 2023 11:29:41 +0200
+Subject: [PATCH 55/70] spider: fix utils.h/printf.h files to use correct
+ headers
+
+---
+ machines/cortex-a/armv8/spider/drivers/ethernet/utils.h | 4 ++--
+ machines/cortex-a/armv8/spider/drivers/serial/printf.h  | 7 +++++--
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/machines/cortex-a/armv8/spider/drivers/ethernet/utils.h b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.h
+index de0d73aa..790177f6 100644
+--- a/machines/cortex-a/armv8/spider/drivers/ethernet/utils.h
++++ b/machines/cortex-a/armv8/spider/drivers/ethernet/utils.h
+@@ -1,7 +1,7 @@
+ #ifndef _UTILS_H_
+ #define _UTILS_H_
+ 
+-#include "../../../../../../machines/virt-v7/tpl_os_std_types.h"
++#include "tpl_os_types.h"
+ #include "printf.h"
+ 
+ #define debug_msg(...) \
+@@ -38,4 +38,4 @@ void ms_delay(uint32 value);
+ 
+ void debug_print_buffer(uint8 *buf, uint32 len);
+ 
+-#endif /* _UTILS_H_ */
+\ No newline at end of file
++#endif /* _UTILS_H_ */
+diff --git a/machines/cortex-a/armv8/spider/drivers/serial/printf.h b/machines/cortex-a/armv8/spider/drivers/serial/printf.h
+index 783dda2e..aea99a83 100644
+--- a/machines/cortex-a/armv8/spider/drivers/serial/printf.h
++++ b/machines/cortex-a/armv8/spider/drivers/serial/printf.h
+@@ -1,4 +1,7 @@
+-#include "../../../../../../machines/virt-v7/tpl_os_std_types.h"
++#ifndef __PRINTF_H__
++#define __PRINTF_H__
+ 
+ int debug_printf(const char *format, ...);
+-int debug_sprintf(char *out, const char *format, ...);
+\ No newline at end of file
++int debug_sprintf(char *out, const char *format, ...);
++
++#endif
+-- 
+2.34.1
+

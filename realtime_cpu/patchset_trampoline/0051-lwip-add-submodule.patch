@@ -1,0 +1,33 @@
+From e17eca1201d6ff6c8b7c3185bc020938036e6db2 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Tue, 5 Sep 2023 12:06:42 +0200
+Subject: [PATCH 51/70] lwip: add submodule
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ .gitmodules       | 3 +++
+ net/ethernet/lwip | 1 +
+ 2 files changed, 4 insertions(+)
+ create mode 160000 net/ethernet/lwip
+
+diff --git a/.gitmodules b/.gitmodules
+index e2382d00..b8b3692e 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -4,3 +4,6 @@
+ [submodule "machines/riscv/pulpino/pulpino"]
+ 	path = machines/riscv/pulpino/pulpino
+ 	url = https://github.com/Instrumented-Pulpino/pulpino.git	
++[submodule "net/ethernet/lwip"]
++	path = net/ethernet/lwip
++	url = https://git.savannah.nongnu.org/git/lwip.git
+diff --git a/net/ethernet/lwip b/net/ethernet/lwip
+new file mode 160000
+index 00000000..84fde1eb
+--- /dev/null
++++ b/net/ethernet/lwip
+@@ -0,0 +1 @@
++Subproject commit 84fde1ebbfe35b3125fc2d89b8a456cbacf148e9
+-- 
+2.34.1
+

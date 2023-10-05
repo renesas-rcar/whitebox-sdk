@@ -1,0 +1,234 @@
+From c87ac0c2093330a893e16f85de1cb07ea4ae5578 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Thu, 21 Sep 2023 10:58:52 +0200
+Subject: [PATCH 70/70] examples: spider: Added a CAN demo application that
+ waits for a frame, increments the ID and the payload bytes, then send it
+ back.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ .../cortex-a/armv8/spider/can_demo/.gitignore |  4 +
+ .../cortex-a/armv8/spider/can_demo/README.md  | 40 ++++++++
+ .../cortex-a/armv8/spider/can_demo/can_demo.c | 91 +++++++++++++++++++
+ .../armv8/spider/can_demo/can_demo.oil        | 53 +++++++++++
+ 4 files changed, 188 insertions(+)
+ create mode 100644 examples/cortex-a/armv8/spider/can_demo/.gitignore
+ create mode 100644 examples/cortex-a/armv8/spider/can_demo/README.md
+ create mode 100644 examples/cortex-a/armv8/spider/can_demo/can_demo.c
+ create mode 100644 examples/cortex-a/armv8/spider/can_demo/can_demo.oil
+
+diff --git a/examples/cortex-a/armv8/spider/can_demo/.gitignore b/examples/cortex-a/armv8/spider/can_demo/.gitignore
+new file mode 100644
+index 00000000..7ea252ff
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/can_demo/.gitignore
+@@ -0,0 +1,4 @@
++can_demo/
++can_demo_exe*
++*.map
++*.py
+diff --git a/examples/cortex-a/armv8/spider/can_demo/README.md b/examples/cortex-a/armv8/spider/can_demo/README.md
+new file mode 100644
+index 00000000..33d11f35
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/can_demo/README.md
+@@ -0,0 +1,40 @@
++# Trampoline CAN demo example
++
++This example allows to test the Trampoline CAN stack on the Spider board.
++
++## Hardware setup
++
++Connect a CAN probe to the Spider board CAN0 SUB-D 9 connector (CN13A).
++
++For the test, we used a Kvaser USBcan Pro 2xHS v2 connected to a Windows 10 PC running the Kvaser CanKing software.
++As the Kvaser probe does not provide CAN bus terminating resistors, we made a little adaptation PCB with terminating resistors.
++For that, we cut in half two DB-9 cables and kept the two female parts.
++On the PCB, we wired the DB-9 pins 7 together (the CAN high signal), the DB-9 pins 2 together (the CAN low signal) and the DB-9 pins 3 together (the CAN ground).
++Between the DB-9 pin 7 and pin 3 we soldered a 60 ohms resistors, we also added a second 60 ohms resistors between the DB-9 pin 2 and pin 3.
++
++## Software setup
++
++The Kvaser CanKing CAN bus configuration is as follow :
++* Bus speed : 125 Kbit/s.
++* Sample point : 75% (Tseg1 = 11, TSeg2 = 4).
++* SWJ (Synchronization Jump Width) : 4.
++
++No configuration is needed on the CAN demo application side.
++
++## Building
++
++On Linux :
++```
++cd examples/cortex-a/armv8/spider/can_demo
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ can_demo.oil
++./make.py
++```
++
++## Running
++
++Before starting the CAN demo application, connect the hardware setup and configure the Kvaser CanKing application as described in the above paragraphs.
++Then, click the CanKing `Go On Bus` button.
++Now, you can run the CAN demo application.
++
++The CAN demo application starts by sending a CAN frame with the CAN ID `0x123` and the string payload `Ready!`.
++After that, it waits for a CAN frame to be received. When a frame is received, it increments the CAN ID and all the payload bytes, then it sends the frame back.
+diff --git a/examples/cortex-a/armv8/spider/can_demo/can_demo.c b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+new file mode 100644
+index 00000000..8cf40893
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+@@ -0,0 +1,91 @@
++/**
++ * @file can_demo.c
++ *
++ * @section desc File description
++ *
++ * Echo the received CAN frames after incrementing the CAN ID and the payload
++ * bytes.
++ *
++ * @section copyright Copyright
++ *
++ * Trampoline OS
++ *
++ * Trampoline is copyright (c) IRCCyN 2005+
++ * Trampoline is protected by the French intellectual property law.
++ *
++ * (C) BayLibre 2023
++ *
++ * This software is distributed under the Lesser GNU Public Licence
++ *
++ *  @section infos File informations
++ *
++ *  $Date$
++ *  $Rev$
++ *  $Author$
++ *  $URL$
++ */
++#include <Can.h>
++#include <CanIf.h>
++#include <stdio.h>
++#include <string.h>
++#include <tpl_os.h>
++
++int main(void)
++{
++	// Statically list the CAN controllers to use in the application
++	static tpl_can_controller_t *can_controllers[] =
++	{
++		&spider_can_controller_0,
++		NULL
++	};
++	static Can_ConfigType can_config_type =
++	{
++		can_controllers
++	};
++	int ret;
++
++	// Initialize the CAN module 0 channel 0 at 125 Kbit/s (the default baud rate)
++	ret = Can_Init(&can_config_type);
++	if (ret)
++		return -1;
++
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++TASK(can_task)
++{
++	Can_PduType can_pdu, *pointer_can_pdu;
++	PduInfoType pdu_info;
++	uint8 payload[64];
++	int i;
++
++	// Send a frame to tell that the program is ready
++	can_pdu.id = 0x123 | TPL_CAN_ID_TYPE_STANDARD;
++	can_pdu.sdu = payload;
++	strcpy((char *) can_pdu.sdu, "Ready!");
++	can_pdu.length = strlen((char *) can_pdu.sdu);
++	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduLength = sizeof(can_pdu);// + can_pdu.length;
++	CanIf_Transmit(0, &pdu_info);
++
++	// Wait for a frame, then increment its ID and payload and send it back
++	while (1)
++	{
++		if (CanIf_ReadRxPduData(0, &pdu_info) == E_OK)
++		{
++			// Make sure the payload size is compatible with CAN 2.0
++			pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
++			if (pointer_can_pdu->length > 8)
++				continue;
++
++			// Increment the CAN ID and the payload bytes
++			pointer_can_pdu->id++;
++			for (i = 0; i < pointer_can_pdu->length; i++)
++				pointer_can_pdu->sdu[i]++;
++
++			// Send the incremented frame back
++			CanIf_Transmit(0, &pdu_info);
++		}
++	}
++}
+diff --git a/examples/cortex-a/armv8/spider/can_demo/can_demo.oil b/examples/cortex-a/armv8/spider/can_demo/can_demo.oil
+new file mode 100644
+index 00000000..0e4956f1
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/can_demo/can_demo.oil
+@@ -0,0 +1,53 @@
++OIL_VERSION = "4.2";
++
++IMPLEMENTATION trampoline {
++	/* This fix the default STACKSIZE of tasks */
++	TASK {
++		UINT32 STACKSIZE = 1000 ;
++	};
++
++	/* This fix the default STACKSIZE of ISRs */
++	ISR {
++		UINT32 STACKSIZE = 1000 ;
++	};
++};
++
++CPU can_task {
++	OS config {
++		STATUS = EXTENDED;
++		BUILD = TRUE {
++			TRAMPOLINE_BASE_PATH = "../../../../..";
++			APP_SRC = "can_demo.c";
++			APP_NAME = "can_demo_exe.elf";
++			CFLAGS  = "-O0 -g -DHSCIF_1843200BPS -W -Wall";
++			LDFLAGS = "-Map=can_demo.map";
++			COMPILER = "arm-none-eabi-gcc";
++			CPPCOMPILER = "arm-none-eabi-g++";
++			ASSEMBLER = "arm-none-eabi-as";
++			LINKER = "arm-none-eabi-ld";
++			COPIER = "arm-none-eabi-objcopy";
++			SYSTEM = PYTHON;
++			LIBRARY = serial; // TODO remove after tests
++			LIBRARY = can;
++		};
++
++		SYSTEM_CALL = TRUE;
++		MEMMAP = TRUE {
++			COMPILER = gcc;
++			LINKER = gnu_ld { SCRIPT = "script.ld"; };
++			ASSEMBLER = gnu_as;
++			MEMORY_PROTECTION = FALSE;
++		};
++	};
++  
++	APPMODE stdAppmode {};
++
++	TASK can_task {
++		PRIORITY = 1;
++		AUTOSTART = TRUE {
++			APPMODE = stdAppmode;
++		};
++		ACTIVATION = 1;
++		SCHEDULE = FULL;
++	};
++};
+-- 
+2.34.1
+

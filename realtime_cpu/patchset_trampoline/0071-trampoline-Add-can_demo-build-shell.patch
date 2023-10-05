@@ -1,0 +1,35 @@
+From a415ea25775a0a281d4231ca0145ad08a8914c9a Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Mon, 2 Oct 2023 14:30:36 +0900
+Subject: [PATCH] trampoline: Add can_demo build shell
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/cortex-a/armv8/spider/can_demo/build.sh | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100755 examples/cortex-a/armv8/spider/can_demo/build.sh
+
+diff --git a/examples/cortex-a/armv8/spider/can_demo/build.sh b/examples/cortex-a/armv8/spider/can_demo/build.sh
+new file mode 100755
+index 00000000..87af6ed1
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/can_demo/build.sh
+@@ -0,0 +1,15 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -e
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=cortex-a/armv8/spider --templates=../../../../../goil/templates/ can_demo.oil
++
++echo "*** Run Make ***"
++./make.py
+-- 
+2.25.1
+
