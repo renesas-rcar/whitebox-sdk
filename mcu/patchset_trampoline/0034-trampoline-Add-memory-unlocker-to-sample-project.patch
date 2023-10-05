@@ -1,0 +1,165 @@
+From 7cd0146d9fe253e0843d93992014aabcd4777c20 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Wed, 4 Oct 2023 12:56:03 +0900
+Subject: [PATCH] trampoline: Add memory unlocker to sample project
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ .../sample/cs_plus_rcar_download_all.py       |  4 +-
+ examples/renesas/sample/iccom.c               |  2 +
+ examples/renesas/sample/memory_unlocker.c     | 40 ++++++++++++++++++
+ examples/renesas/sample/memory_unlocker.h     | 42 +++++++++++++++++++
+ examples/renesas/sample/sample.oil            |  3 +-
+ 5 files changed, 88 insertions(+), 3 deletions(-)
+ create mode 100644 examples/renesas/sample/memory_unlocker.c
+ create mode 100644 examples/renesas/sample/memory_unlocker.h
+
+diff --git a/examples/renesas/sample/cs_plus_rcar_download_all.py b/examples/renesas/sample/cs_plus_rcar_download_all.py
+index 9de4d4e3..41c8d600 100644
+--- a/examples/renesas/sample/cs_plus_rcar_download_all.py
++++ b/examples/renesas/sample/cs_plus_rcar_download_all.py
+@@ -22,9 +22,9 @@ debugger.Register.SetValue("CSRM1.CSRM1CSIFCODE", 0x12B9B0A0)
+ debugger.Register.SetValue("CSRM2.CSRM2CSIFCODE", 0x12B9B0A0)
+ #time.sleep(1)
+ print "Download Trampoline/Hello_world"
+-debugger.Download.LoadModule("_build/iccom_exe.abs", downloadOption = DownloadOption.SymbolOnly, append = False, flashErase = False, vendorType = VendorType.Auto)
++debugger.Download.LoadModule("_build/sample_exe.abs", downloadOption = DownloadOption.SymbolOnly, append = False, flashErase = False, vendorType = VendorType.Auto)
+ print "Download Trampoline/Hello_world (RUN)"
+-debugger.Download.Hex("_build/iccom_exe.run", offset = 0xF0000000, append = True, flashErase = False)
++debugger.Download.Hex("_build/sample_exe.run", offset = 0xF0000000, append = True, flashErase = False)
+ print "CSRM 0x12B9B0A1"
+ debugger.Register.SetValue("CSRM0.CSRM0CSIFCODE", 0x12B9B0A1)
+ debugger.Register.SetValue("CSRM1.CSRM1CSIFCODE", 0x12B9B0A1)
+diff --git a/examples/renesas/sample/iccom.c b/examples/renesas/sample/iccom.c
+index 886e30a2..bd00ab5d 100644
+--- a/examples/renesas/sample/iccom.c
++++ b/examples/renesas/sample/iccom.c
+@@ -10,6 +10,7 @@
+ 
+ extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
+ extern void benchmark();
++extern void memory_unlocker(void);
+ 
+ /* ICCOM protocol */
+ enum ICCOM_MSG {
+@@ -171,6 +172,7 @@ void iccom_init(void)
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+ 	iccom_init();
++	memory_unlocker();
+ 	StartOS(OSDEFAULTAPPMODE);
+ 	return 0;
+ }
+diff --git a/examples/renesas/sample/memory_unlocker.c b/examples/renesas/sample/memory_unlocker.c
+new file mode 100644
+index 00000000..5324b680
+--- /dev/null
++++ b/examples/renesas/sample/memory_unlocker.c
+@@ -0,0 +1,40 @@
++/** @file memory_unlocker.c
++ * Enable registers access for certain peripherals from the Application Domain.
++ */
++#include <tpl_os.h>
++#include "memory_unlocker.h"
++
++void memory_unlocker(void)
++{
++	int channel;
++
++	// Issue an AXI bus stop request
++	STBY_CTRL = 0x00000001;
++
++	// P-Bus group 2
++	PBG20KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	PBG20PROT0_m(2) = 0x000000D0; // STBC PBG protection release
++	PBG20PROT1_m(2) = 0x040000FF; // STBC PBG protection release SPID=0~7 enable
++	PBG21PROT0_m(1) = 0x000000D0; // Port configuration register PBG protection release
++	PBG21PROT1_m(1) = 0x040000FF; // Port configuration register PBG protection release　SPID=0~7 enable
++
++	// P-Bus group 7
++	PBG70KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	PBG70PROT0_m(3) = 0x000000D0; // RIIC0 PBG protection release
++	PBG70PROT1_m(3) = 0x000000FF; // RIIC0 PBG protection release SPID=0~7 enable
++
++	// P-Bus group 8
++	PBG80KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	for (channel = 0; channel < 8; channel++) // Channels 2 to 9 are the RSCFD0 CAN0 to CAN7
++		PBG80PROT0_m(channel + 2) = 0x000000D3;
++	PBG80PROT0_m(10) = 0x000000D3; // RSCFD0 common registers
++	PBG80PROT0_m(12) = 0x000000D3; // RSCFD0 global registers
++
++	// H-Bus
++	HBGKCPROT_PFS = PROTECTION_DISABLE_KEY; // Write protect release
++	HBGPROT0_PFS = 0x000000D0; // HBG_PFS protection release
++	HBGPROT1_PFS = 0x000000FF; // HBG_PFS protection release　SPID=0~7 enable
++
++	// Standby Controller
++	MSRKCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++}
+diff --git a/examples/renesas/sample/memory_unlocker.h b/examples/renesas/sample/memory_unlocker.h
+new file mode 100644
+index 00000000..02741bf1
+--- /dev/null
++++ b/examples/renesas/sample/memory_unlocker.h
+@@ -0,0 +1,42 @@
++#ifndef H_MEMORY_UNLOCKER_H
++#define H_MEMORY_UNLOCKER_H
++
++#define PROTECTION_DISABLE_KEY 0xA5A5A501
++
++// Register base addresses
++#define MCCR_SELB1_base 0xF8F18200
++#define PBG20_base  0xFFDE0B00 // P-Bus Group 2L
++#define PBG21_base 0xFFDE0C00 // P-Bus Group 2L
++#define PBGERRSLV20_base 0xFFDE1000 // P-Bus Group 2L
++#define PBG70_base 0xFFF49400 // P-Bus Group 7
++#define PBGERRSLV70_base 0xFFF4A000 // P-Bus Group 7
++#define PBG80_base 0xFFF29300 // P-Bus Group 8
++#define PBGERRSLV80_base 0xFFF2A000 // P-Bus Group 8
++#define HBGERRSLV_PFS_base 0xF8F19700
++#define STBC_base 0xFF981000
++#define HBG_PFS_base 0xF8F12700
++
++// Register addresses
++#define STBY_CTRL (*(volatile unsigned long  *) (MCCR_SELB1_base + 0x0034))
++
++#define PBG20KCPROT (*(volatile unsigned long *) (PBGERRSLV20_base + 0x18))
++#define PBG20PROT0_m(m) (*(volatile unsigned long *) (PBG20_base + 0x0 + 0x8 * (m)))
++#define PBG20PROT1_m(m) (*(volatile unsigned long *) (PBG20_base + 0x4 + 0x8 * (m)))
++#define PBG21PROT0_m(m) (*(volatile unsigned long *) (PBG21_base + 0x0 + 0x8 * (m)))
++#define PBG21PROT1_m(m) (*(volatile unsigned long *) (PBG21_base + 0x4 + 0x8 * (m)))
++
++#define PBG70KCPROT (*(volatile unsigned long *) (PBGERRSLV70_base + 0x18))
++#define PBG70PROT0_m(m) (*(volatile unsigned long *) (PBG70_base + 0x0 + 0x8 * (m)))
++#define PBG70PROT1_m(m) (*(volatile unsigned long *) (PBG70_base + 0x4 + 0x8 * (m)))
++
++#define PBG80KCPROT (*(volatile unsigned long *) (PBGERRSLV80_base + 0x18))
++#define PBG80PROT0_m(m) (*(volatile unsigned long *) (PBG80_base + 0x0 + 0x8 * (m)))
++#define PBG80PROT1_m(m) (*(volatile unsigned long *) (PBG80_base + 0x4 + 0x8 * (m)))
++
++#define HBGKCPROT_PFS (*(volatile unsigned long *) (HBGERRSLV_PFS_base + 0x18))
++#define HBGPROT0_PFS (*(volatile unsigned long *) (HBG_PFS_base))
++#define HBGPROT1_PFS (*(volatile unsigned long *) (HBG_PFS_base + 0x4))
++
++#define MSRKCPROT (*(volatile unsigned long *) (STBC_base + 0x710))
++
++#endif
+diff --git a/examples/renesas/sample/sample.oil b/examples/renesas/sample/sample.oil
+index b2361511..c77a9370 100644
+--- a/examples/renesas/sample/sample.oil
++++ b/examples/renesas/sample/sample.oil
+@@ -18,9 +18,10 @@ CPU iccom {
+     
+     BUILD = TRUE {
+       TRAMPOLINE_BASE_PATH = "../../../";
++      APP_NAME = "sample_exe";
++      APP_SRC = "memory_unlocker.c";
+       APP_SRC = "iccom.c";
+       APP_SRC = "iccom_ll.c"; 
+-      APP_NAME = "sample_exe";
+       APP_SRC = "benchmark.c";
+       APP_SRC = "dhrystone/dhry_1.c";
+       APP_SRC = "dhrystone/dhry_2.c";
+-- 
+2.25.1
+
