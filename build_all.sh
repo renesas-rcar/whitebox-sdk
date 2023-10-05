@@ -1,7 +1,6 @@
 #!/bin/bash -eu
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
-DEPLOY_DIR=${SCRIPT_DIR}/deploy
 TARGET_BOARD=""
 BOARD_LIST=("spider" "s4sk")
 
@@ -55,6 +54,7 @@ CLEAN_BUILD_FLAG=true ${SCRIPT_DIR}/build_h3.sh
 CLEAN_BUILD_FLAG=true ${SCRIPT_DIR}/build_s4.sh $TARGET_BOARD
 
 # deploy
+DEPLOY_DIR=${SCRIPT_DIR}/deploy_${TARGET_BOARD}
 rm -rf ${DEPLOY_DIR} && mkdir -p ${DEPLOY_DIR}
 cp -r -t ${DEPLOY_DIR} \
     ${SCRIPT_DIR}/work/h3_build/*img.gz \

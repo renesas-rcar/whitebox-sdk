@@ -3,5 +3,5 @@
 /work
 /proprietary/*.zip
 /proprietary/*.gz
-/deploy
+/deploy*
 
