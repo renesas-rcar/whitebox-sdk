@@ -1,0 +1,170 @@
+From 2977367a04e5eb508b22e650fdbaf368aac3fdb7 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Wed, 4 Oct 2023 13:44:29 +0900
+Subject: [PATCH] trampoline: Add can_demo to sample project
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ .../cortex-a/armv8/spider/sample/can_demo.c   | 89 +++++++++++++++++++
+ examples/cortex-a/armv8/spider/sample/iccom.c |  2 +
+ .../cortex-a/armv8/spider/sample/sample.oil   | 13 ++-
+ 3 files changed, 103 insertions(+), 1 deletion(-)
+ create mode 100644 examples/cortex-a/armv8/spider/sample/can_demo.c
+
+diff --git a/examples/cortex-a/armv8/spider/sample/can_demo.c b/examples/cortex-a/armv8/spider/sample/can_demo.c
+new file mode 100644
+index 00000000..4d03249a
+--- /dev/null
++++ b/examples/cortex-a/armv8/spider/sample/can_demo.c
+@@ -0,0 +1,89 @@
++/**
++ * @file can_demo.c
++ *
++ * @section desc File description
++ *
++ * Echo the received CAN frames after incrementing the CAN ID and the payload
++ * bytes.
++ *
++ * @section copyright Copyright
++ *
++ * Trampoline OS
++ *
++ * Trampoline is copyright (c) IRCCyN 2005+
++ * Trampoline is protected by the French intellectual property law.
++ *
++ * (C) BayLibre 2023
++ *
++ * This software is distributed under the Lesser GNU Public Licence
++ *
++ *  @section infos File informations
++ *
++ *  $Date$
++ *  $Rev$
++ *  $Author$
++ *  $URL$
++ */
++#include <Can.h>
++#include <CanIf.h>
++#include <stdio.h>
++#include <string.h>
++#include <tpl_os.h>
++
++int can_demo_init(void)
++{
++	// Statically list the CAN controllers to use in the application
++	static tpl_can_controller_t *can_controllers[] =
++	{
++		&spider_can_controller_0,
++		NULL
++	};
++	static Can_ConfigType can_config_type =
++	{
++		can_controllers
++	};
++	int ret;
++
++	// Initialize the CAN module 0 channel 0 at 125 Kbit/s (the default baud rate)
++	ret = Can_Init(&can_config_type);
++	if (ret)
++		return -1;
++
++}
++
++TASK(can_task)
++{
++	Can_PduType can_pdu, *pointer_can_pdu;
++	PduInfoType pdu_info;
++	uint8 payload[64];
++	int i;
++
++	// Send a frame to tell that the program is ready
++	can_pdu.id = 0x123 | TPL_CAN_ID_TYPE_STANDARD;
++	can_pdu.sdu = payload;
++	strcpy((char *) can_pdu.sdu, "Ready!");
++	can_pdu.length = strlen((char *) can_pdu.sdu);
++	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduLength = sizeof(can_pdu);// + can_pdu.length;
++	CanIf_Transmit(0, &pdu_info);
++
++	// Wait for a frame, then increment its ID and payload and send it back
++	while (1)
++	{
++		if (CanIf_ReadRxPduData(0, &pdu_info) == E_OK)
++		{
++			// Make sure the payload size is compatible with CAN 2.0
++			pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
++			if (pointer_can_pdu->length > 8)
++				continue;
++
++			// Increment the CAN ID and the payload bytes
++			pointer_can_pdu->id++;
++			for (i = 0; i < pointer_can_pdu->length; i++)
++				pointer_can_pdu->sdu[i]++;
++
++			// Send the incremented frame back
++			CanIf_Transmit(0, &pdu_info);
++		}
++	}
++}
+diff --git a/examples/cortex-a/armv8/spider/sample/iccom.c b/examples/cortex-a/armv8/spider/sample/iccom.c
+index f1b5ef6b..8947725d 100644
+--- a/examples/cortex-a/armv8/spider/sample/iccom.c
++++ b/examples/cortex-a/armv8/spider/sample/iccom.c
+@@ -12,6 +12,7 @@
+ 
+ extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
+ extern void benchmark();
++extern int can_demo_init(void);
+ 
+ /* ICCOM protocol */
+ enum ICCOM_MSG {
+@@ -192,6 +193,7 @@ void iccom_init(void)
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+ 	Serial_Init();
++	can_demo_init();
+ 	StartOS(OSDEFAULTAPPMODE);
+ 	return 0;
+ }
+diff --git a/examples/cortex-a/armv8/spider/sample/sample.oil b/examples/cortex-a/armv8/spider/sample/sample.oil
+index 41d6f49a..370f9868 100644
+--- a/examples/cortex-a/armv8/spider/sample/sample.oil
++++ b/examples/cortex-a/armv8/spider/sample/sample.oil
+@@ -16,6 +16,7 @@ CPU iccom {
+ 
+     BUILD = TRUE {
+       TRAMPOLINE_BASE_PATH = "../../../../..";
++      APP_SRC = "can_demo.c";
+       APP_SRC = "iccom.c";
+       APP_SRC = "iccom_ll.c";
+       APP_SRC = "benchmark.c";
+@@ -42,8 +43,9 @@ CPU iccom {
+       CFLAGS="-DTIME=TIME";
+       // CFLAGS="-DCOREMARK_DEBUG"; // for Debug
+       CFLAGS="-I./coremark -I./coremark/barebones -DITERATIONS=30000";
+-
++      LIBRARY = can;
+       LIBRARY = serial;
++
+     };
+     SYSTEM_CALL = TRUE;
+     MEMMAP = TRUE {
+@@ -63,6 +65,15 @@ CPU iccom {
+     SCHEDULE = FULL;
+   };
+ 
++  TASK can_task {
++    PRIORITY = 1;
++    AUTOSTART = TRUE {
++            APPMODE = std;
++    };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
+   ISR iccomInt {
+     CATEGORY = 2;
+     PRIORITY = 1;
+-- 
+2.25.1
+
