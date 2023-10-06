@@ -215,7 +215,7 @@ parameters:
           bsp-wayland:
             builder:
               conf:
-                - [IMAGE_INSTALL_append, " autostart-cluster-app gen3-network"]
+                - [IMAGE_INSTALL_append, " autostart-browser gen3-network"]
     "yes":
       overrides:
         components:
