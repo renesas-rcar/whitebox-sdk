@@ -1,0 +1,27 @@
+From b815c6a8e11d61dcb59854afa627178687462755 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 8 Sep 2023 16:25:24 +0900
+Subject: [PATCH 4/6] config: spider: Add config for ufs
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ configs/r8a779f0_spider_defconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/configs/r8a779f0_spider_defconfig b/configs/r8a779f0_spider_defconfig
+index 7615e3db52..dcbf5357a0 100644
+--- a/configs/r8a779f0_spider_defconfig
++++ b/configs/r8a779f0_spider_defconfig
+@@ -64,3 +64,9 @@ CONFIG_DM_SPI=y
+ CONFIG_RENESAS_RPC_SPI=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
+ CONFIG_ENV_OVERWRITE=y
++
++CONFIG_SCSI=y
++CONFIG_DM_SCSI=y
++CONFIG_CMD_SCSI=y
++CONFIG_UFS=y
++CONFIG_RENESAS_UFS=y
+-- 
+2.34.1
+

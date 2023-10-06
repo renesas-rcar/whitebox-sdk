@@ -1,0 +1,452 @@
+From 97313803371f0b5c520530fff6a86692fd15b876 Mon Sep 17 00:00:00 2001
+From: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
+Date: Fri, 21 Apr 2023 11:13:10 +0300
+Subject: [PATCH 3/6] ufs: port linux driver for rcar ufshcd
+
+Signed-off-by: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
+---
+ drivers/ufs/Kconfig         |   7 +
+ drivers/ufs/Makefile        |   1 +
+ drivers/ufs/cdns-platform.c |   6 +-
+ drivers/ufs/renesas-ufs.c   | 386 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 397 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/ufs/renesas-ufs.c
+
+diff --git a/drivers/ufs/Kconfig b/drivers/ufs/Kconfig
+index c2aafd3020..265ef8e025 100644
+--- a/drivers/ufs/Kconfig
++++ b/drivers/ufs/Kconfig
+@@ -14,6 +14,13 @@ config CADENCE_UFS
+ 	  This selects the platform driver for the Cadence UFS host
+ 	  controller present on present TI's J721e devices.
+ 
++config RENESAS_UFS
++	bool "Renesas platform driver for UFS"
++	depends on UFS
++        help
++	  This selects the platform driver for the Renesas UFS host
++	  controller present on some R-Car Gen4 devices.
++
+ config TI_J721E_UFS
+ 	bool "Glue Layer driver for UFS on TI J721E devices"
+ 	help
+diff --git a/drivers/ufs/Makefile b/drivers/ufs/Makefile
+index 62ed016608..ca4d699185 100644
+--- a/drivers/ufs/Makefile
++++ b/drivers/ufs/Makefile
+@@ -6,3 +6,4 @@
+ obj-$(CONFIG_UFS) += ufs.o ufs-uclass.o
+ obj-$(CONFIG_CADENCE_UFS) += cdns-platform.o
+ obj-$(CONFIG_TI_J721E_UFS) += ti-j721e-ufs.o
++obj-$(CONFIG_RENESAS_UFS) += renesas-ufs.o
+diff --git a/drivers/ufs/cdns-platform.c b/drivers/ufs/cdns-platform.c
+index bad1bf7de5..3910cd4da2 100644
+--- a/drivers/ufs/cdns-platform.c
++++ b/drivers/ufs/cdns-platform.c
+@@ -1,8 +1,8 @@
+-// SPDX-License-Identifier: GPL-2.0+
++// spdx-license-identifier: gpl-2.0+
+ /**
+- * cdns-platform.c - Platform driver for Cadence UFSHCI device
++ * cdns-platform.c - platform driver for cadence ufshci device
+  *
+- * Copyright (C) 2019 Texas Instruments Incorporated - http://www.ti.com
++ * copyright (c) 2019 texas instruments incorporated - http://www.ti.com
+  */
+ 
+ #include <clk.h>
+diff --git a/drivers/ufs/renesas-ufs.c b/drivers/ufs/renesas-ufs.c
+new file mode 100644
+index 0000000000..22e90c0385
+--- /dev/null
++++ b/drivers/ufs/renesas-ufs.c
+@@ -0,0 +1,386 @@
++// spdx-license-identifier: gpl-2.0+
++/**
++ * Renesas UFS host controller driver
++ * Copyright (C) 2022 Renesas Electronics Corporation
++ * Copyright (c) 2023, EPAM Systems Inc.
++ */
++
++#include <asm/io.h>
++#include <clk.h>
++#include <dm.h>
++#include <dm/device_compat.h>
++#include <linux/bug.h>
++#include <linux/delay.h>
++#include <linux/iopoll.h>
++#include <ufs.h>
++
++#include "ufs.h"
++
++enum {
++	SET_PHY_INDEX_LO = 0,
++	SET_PHY_INDEX_HI,
++	TIMER_INDEX,
++	MAX_INDEX
++};
++
++enum ufs_renesas_init_param_mode {
++	MODE_RESTORE,
++	MODE_SET,
++	MODE_SAVE,
++	MODE_POLL,
++	MODE_WAIT,
++	MODE_WRITE,
++};
++
++#define PARAM_RESTORE(_reg, _index) \
++		{ .mode = MODE_RESTORE, .reg = _reg, .index = _index }
++#define PARAM_SET(_index, _set) \
++		{ .mode = MODE_SET, .index = _index, .u.set = _set }
++#define PARAM_SAVE(_reg, _mask, _index) \
++		{ .mode = MODE_SAVE, .reg = _reg, .mask = (u32)(_mask), \
++		  .index = _index }
++#define PARAM_POLL(_reg, _expected, _mask) \
++		{ .mode = MODE_POLL, .reg = _reg, .u.expected = _expected, \
++		  .mask = (u32)(_mask) }
++#define PARAM_WAIT(_delay_us) \
++		{ .mode = MODE_WAIT, .u.delay_us = _delay_us }
++
++#define PARAM_WRITE(_reg, _val) \
++		{ .mode = MODE_WRITE, .reg = _reg, .u.val = _val }
++
++#define PARAM_WRITE_D0_D4(_d0, _d4) \
++		PARAM_WRITE(0xd0, _d0),	PARAM_WRITE(0xd4, _d4)
++
++#define PARAM_WRITE_800_80C_POLL(_addr, _data_800)		\
++		PARAM_WRITE_D0_D4(0x0000080c, 0x00000100),	\
++		PARAM_WRITE_D0_D4(0x00000800, ((_data_800) << 16) | BIT(8) | (_addr)), \
++		PARAM_WRITE(0xd0, 0x0000080c),			\
++		PARAM_POLL(0xd4, BIT(8), BIT(8))
++
++#define PARAM_RESTORE_800_80C_POLL(_index)			\
++		PARAM_WRITE_D0_D4(0x0000080c, 0x00000100),	\
++		PARAM_WRITE(0xd0, 0x00000800),			\
++		PARAM_RESTORE(0xd4, _index),			\
++		PARAM_WRITE(0xd0, 0x0000080c),			\
++		PARAM_POLL(0xd4, BIT(8), BIT(8))
++
++#define PARAM_WRITE_804_80C_POLL(_addr, _data_804)		\
++		PARAM_WRITE_D0_D4(0x0000080c, 0x00000100),	\
++		PARAM_WRITE_D0_D4(0x00000804, ((_data_804) << 16) | BIT(8) | (_addr)), \
++		PARAM_WRITE(0xd0, 0x0000080c),			\
++		PARAM_POLL(0xd4, BIT(8), BIT(8))
++
++#define PARAM_WRITE_828_82C_POLL(_data_828)			\
++		PARAM_WRITE_D0_D4(0x0000082c, 0x0f000000),	\
++		PARAM_WRITE_D0_D4(0x00000828, _data_828),	\
++		PARAM_WRITE(0xd0, 0x0000082c),			\
++		PARAM_POLL(0xd4, _data_828, _data_828)
++
++#define PARAM_WRITE_PHY(_addr16, _data16)			\
++		PARAM_WRITE(0xf0, 1),				\
++		PARAM_WRITE_800_80C_POLL(0x16, (_addr16) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x17, ((_addr16) >> 8) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x18, (_data16) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x19, ((_data16) >> 8) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x1c, 0x01),		\
++		PARAM_WRITE_828_82C_POLL(0x0f000000),		\
++		PARAM_WRITE(0xf0, 0)
++
++#define PARAM_SET_PHY(_addr16, _data16)				\
++		PARAM_WRITE(0xf0, 1),				\
++		PARAM_WRITE_800_80C_POLL(0x16, (_addr16) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x17, ((_addr16) >> 8) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x1c, 0x01),		\
++		PARAM_WRITE_828_82C_POLL(0x0f000000),		\
++		PARAM_WRITE_804_80C_POLL(0x1a, 0),		\
++		PARAM_WRITE(0xd0, 0x00000808),			\
++		PARAM_SAVE(0xd4, 0xff, SET_PHY_INDEX_LO),	\
++		PARAM_WRITE_804_80C_POLL(0x1b, 0),		\
++		PARAM_WRITE(0xd0, 0x00000808),			\
++		PARAM_SAVE(0xd4, 0xff, SET_PHY_INDEX_HI),	\
++		PARAM_WRITE_828_82C_POLL(0x0f000000),		\
++		PARAM_WRITE(0xf0, 0),				\
++		PARAM_WRITE(0xf0, 1),				\
++		PARAM_WRITE_800_80C_POLL(0x16, (_addr16) & 0xff), \
++		PARAM_WRITE_800_80C_POLL(0x17, ((_addr16) >> 8) & 0xff), \
++		PARAM_SET(SET_PHY_INDEX_LO, ((_data16 & 0xff) << 16) | BIT(8) | 0x18), \
++		PARAM_RESTORE_800_80C_POLL(SET_PHY_INDEX_LO),	\
++		PARAM_SET(SET_PHY_INDEX_HI, (((_data16 >> 8) & 0xff) << 16) | BIT(8) | 0x19), \
++		PARAM_RESTORE_800_80C_POLL(SET_PHY_INDEX_HI),	\
++		PARAM_WRITE_800_80C_POLL(0x1c, 0x01),		\
++		PARAM_WRITE_828_82C_POLL(0x0f000000),		\
++		PARAM_WRITE(0xf0, 0)
++
++#define PARAM_INDIRECT_WRITE(_gpio, _addr, _data_800)		\
++		PARAM_WRITE(0xf0, _gpio),			\
++		PARAM_WRITE_800_80C_POLL(_addr, _data_800),	\
++		PARAM_WRITE_828_82C_POLL(0x0f000000),		\
++		PARAM_WRITE(0xf0, 0)
++
++#define PARAM_INDIRECT_POLL(_gpio, _addr, _expected, _mask)	\
++		PARAM_WRITE(0xf0, _gpio),			\
++		PARAM_WRITE_800_80C_POLL(_addr, 0),		\
++		PARAM_WRITE(0xd0, 0x00000808),			\
++		PARAM_POLL(0xd4, _expected, _mask),		\
++		PARAM_WRITE(0xf0, 0)
++
++struct ufs_renesas_init_param {
++	enum ufs_renesas_init_param_mode mode;
++	u32 reg;
++	union {
++		u32 expected;
++		u32 delay_us;
++		u32 set;
++		u32 val;
++	} u;
++	u32 mask;
++	u32 index;
++};
++
++static const struct ufs_renesas_init_param ufs_param[] = {
++	PARAM_WRITE(0xc0, 0x49425308),
++	PARAM_WRITE_D0_D4(0x00000104, 0x00000002),
++	PARAM_WAIT(1),
++	PARAM_WRITE_D0_D4(0x00000828, 0x00000200),
++	PARAM_WAIT(1),
++	PARAM_WRITE_D0_D4(0x00000828, 0x00000000),
++	PARAM_WRITE_D0_D4(0x00000104, 0x00000001),
++	PARAM_WRITE_D0_D4(0x00000940, 0x00000001),
++	PARAM_WAIT(1),
++	PARAM_WRITE_D0_D4(0x00000940, 0x00000000),
++
++	PARAM_WRITE(0xc0, 0x49425308),
++	PARAM_WRITE(0xc0, 0x41584901),
++
++	PARAM_WRITE_D0_D4(0x0000080c, 0x00000100),
++	PARAM_WRITE_D0_D4(0x00000804, 0x00000000),
++	PARAM_WRITE(0xd0, 0x0000080c),
++	PARAM_POLL(0xd4, BIT(8), BIT(8)),
++
++	PARAM_WRITE(REG_CONTROLLER_ENABLE, 0x00000001),
++
++	PARAM_WRITE(0xd0, 0x00000804),
++	PARAM_POLL(0xd4, BIT(8) | BIT(6) | BIT(0), BIT(8) | BIT(6) | BIT(0)),
++
++	PARAM_WRITE(0xd0, 0x00000d00),
++	PARAM_SAVE(0xd4, 0x0000ffff, TIMER_INDEX),
++	PARAM_WRITE(0xd4, 0x00000000),
++	PARAM_WRITE_D0_D4(0x0000082c, 0x0f000000),
++	PARAM_WRITE_D0_D4(0x00000828, 0x08000000),
++	PARAM_WRITE(0xd0, 0x0000082c),
++	PARAM_POLL(0xd4, BIT(27), BIT(27)),
++	PARAM_WRITE(0xd0, 0x00000d2c),
++	PARAM_POLL(0xd4, BIT(0), BIT(0)),
++
++	/* phy setup */
++	PARAM_INDIRECT_WRITE(1, 0x01, 0x001f),
++	PARAM_INDIRECT_WRITE(7, 0x5d, 0x0014),
++	PARAM_INDIRECT_WRITE(7, 0x5e, 0x0014),
++	PARAM_INDIRECT_WRITE(7, 0x0d, 0x0003),
++	PARAM_INDIRECT_WRITE(7, 0x0e, 0x0007),
++	PARAM_INDIRECT_WRITE(7, 0x5f, 0x0003),
++	PARAM_INDIRECT_WRITE(7, 0x60, 0x0003),
++	PARAM_INDIRECT_WRITE(7, 0x5b, 0x00a6),
++	PARAM_INDIRECT_WRITE(7, 0x5c, 0x0003),
++
++	PARAM_INDIRECT_POLL(7, 0x3c, 0, BIT(7)),
++	PARAM_INDIRECT_POLL(7, 0x4c, 0, BIT(4)),
++
++	PARAM_INDIRECT_WRITE(1, 0x32, 0x0080),
++	PARAM_INDIRECT_WRITE(1, 0x1f, 0x0001),
++	PARAM_INDIRECT_WRITE(0, 0x2c, 0x0001),
++	PARAM_INDIRECT_WRITE(0, 0x32, 0x0087),
++
++	PARAM_INDIRECT_WRITE(1, 0x4d, 0x0061),
++	PARAM_INDIRECT_WRITE(4, 0x9b, 0x0009),
++	PARAM_INDIRECT_WRITE(4, 0xa6, 0x0005),
++	PARAM_INDIRECT_WRITE(4, 0xa5, 0x0058),
++	PARAM_INDIRECT_WRITE(1, 0x39, 0x0027),
++	PARAM_INDIRECT_WRITE(1, 0x47, 0x004c),
++
++	PARAM_INDIRECT_WRITE(7, 0x0d, 0x0002),
++	PARAM_INDIRECT_WRITE(7, 0x0e, 0x0007),
++
++	PARAM_WRITE_PHY(0x0028, 0x0061),
++	PARAM_WRITE_PHY(0x4014, 0x0061),
++	PARAM_SET_PHY(0x401c, BIT(2)),
++	PARAM_WRITE_PHY(0x4000, 0x0000),
++	PARAM_WRITE_PHY(0x4001, 0x0000),
++
++	PARAM_WRITE_PHY(0x10ae, 0x0001),
++	PARAM_WRITE_PHY(0x10ad, 0x0000),
++	PARAM_WRITE_PHY(0x10af, 0x0001),
++	PARAM_WRITE_PHY(0x10b6, 0x0001),
++	PARAM_WRITE_PHY(0x10ae, 0x0000),
++
++	PARAM_WRITE_PHY(0x10ae, 0x0001),
++	PARAM_WRITE_PHY(0x10ad, 0x0000),
++	PARAM_WRITE_PHY(0x10af, 0x0002),
++	PARAM_WRITE_PHY(0x10b6, 0x0001),
++	PARAM_WRITE_PHY(0x10ae, 0x0000),
++
++	PARAM_WRITE_PHY(0x10ae, 0x0001),
++	PARAM_WRITE_PHY(0x10ad, 0x0080),
++	PARAM_WRITE_PHY(0x10af, 0x0000),
++	PARAM_WRITE_PHY(0x10b6, 0x0001),
++	PARAM_WRITE_PHY(0x10ae, 0x0000),
++
++	PARAM_WRITE_PHY(0x10ae, 0x0001),
++	PARAM_WRITE_PHY(0x10ad, 0x0080),
++	PARAM_WRITE_PHY(0x10af, 0x001a),
++	PARAM_WRITE_PHY(0x10b6, 0x0001),
++	PARAM_WRITE_PHY(0x10ae, 0x0000),
++
++	PARAM_INDIRECT_WRITE(7, 0x70, 0x0016),
++	PARAM_INDIRECT_WRITE(7, 0x71, 0x0016),
++	PARAM_INDIRECT_WRITE(7, 0x72, 0x0014),
++	PARAM_INDIRECT_WRITE(7, 0x73, 0x0014),
++	PARAM_INDIRECT_WRITE(7, 0x74, 0x0000),
++	PARAM_INDIRECT_WRITE(7, 0x75, 0x0000),
++	PARAM_INDIRECT_WRITE(7, 0x76, 0x0010),
++	PARAM_INDIRECT_WRITE(7, 0x77, 0x0010),
++	PARAM_INDIRECT_WRITE(7, 0x78, 0x00ff),
++	PARAM_INDIRECT_WRITE(7, 0x79, 0x0000),
++
++	PARAM_INDIRECT_WRITE(7, 0x19, 0x0007),
++
++	PARAM_INDIRECT_WRITE(7, 0x1a, 0x0007),
++
++	PARAM_INDIRECT_WRITE(7, 0x24, 0x000c),
++
++	PARAM_INDIRECT_WRITE(7, 0x25, 0x000c),
++
++	PARAM_INDIRECT_WRITE(7, 0x62, 0x0000),
++	PARAM_INDIRECT_WRITE(7, 0x63, 0x0000),
++	PARAM_INDIRECT_WRITE(7, 0x5d, 0x0014),
++	PARAM_INDIRECT_WRITE(7, 0x5e, 0x0017),
++	PARAM_INDIRECT_WRITE(7, 0x5d, 0x0004),
++	PARAM_INDIRECT_WRITE(7, 0x5e, 0x0017),
++	PARAM_INDIRECT_POLL(7, 0x55, 0, BIT(6)),
++	PARAM_INDIRECT_POLL(7, 0x41, 0, BIT(7)),
++	/* end of phy setup */
++
++	PARAM_WRITE(0xf0, 0),
++	PARAM_WRITE(0xd0, 0x00000d00),
++	PARAM_RESTORE(0xd4, TIMER_INDEX),
++};
++
++
++static void ufs_renesas_reg_control(struct ufs_hba *hba,
++				    const struct ufs_renesas_init_param *p)
++{
++	static u32 save[MAX_INDEX];
++	int ret;
++	u32 val;
++
++	WARN_ON(p->index >= MAX_INDEX);
++
++	switch (p->mode) {
++	case MODE_RESTORE:
++		ufshcd_writel(hba, save[p->index], p->reg);
++		break;
++	case MODE_SET:
++		save[p->index] |= p->u.set;
++		break;
++	case MODE_SAVE:
++		save[p->index] = ufshcd_readl(hba, p->reg) & p->mask;
++		break;
++	case MODE_POLL:
++		ret = readl_poll_sleep_timeout(hba->mmio_base + p->reg,
++					       val,
++					       (val & p->mask) == p->u.expected,
++					       10, 1000);
++		if (ret)
++			dev_err(hba->dev, "%s: poll failed %d (%08x, %08x, %08x)\n",
++				__func__, ret, val, p->mask, p->u.expected);
++		break;
++	case MODE_WAIT:
++		if (p->u.delay_us > 1000)
++			mdelay(DIV_ROUND_UP(p->u.delay_us, 1000));
++		else
++			udelay(p->u.delay_us);
++		break;
++	case MODE_WRITE:
++		ufshcd_writel(hba, p->u.val, p->reg);
++		break;
++	default:
++		break;
++	}
++}
++
++static int rcar_ufs_init(struct ufs_hba *hba)
++{
++	int ret;
++	struct clk clk;
++	const struct ufs_renesas_init_param *p;
++
++	ret = clk_get_by_index(hba->dev, 0, &clk);
++	if (ret < 0) {
++		dev_err(dev, "failed to get host clock\n");
++		return ret;
++	}
++
++	ret = clk_enable(&clk);
++	if (ret) {
++		dev_err(dev, "failed to enable host clock\n");
++		return ret;
++	}
++
++	for (p = ufs_param; p < ufs_param + ARRAY_SIZE(ufs_param); p++)
++		ufs_renesas_reg_control(hba, p);
++
++	return 0;
++}
++
++static struct ufs_hba_ops rcar_pltfm_hba_ops = {
++	.init = rcar_ufs_init,
++};
++
++static int rcar_ufs_pltfm_probe(struct udevice *dev)
++{
++	int err = ufshcd_probe(dev, &rcar_pltfm_hba_ops);
++	if (err)
++		dev_err(dev, "ufshcd_probe() failed %d\n", err);
++
++	return err;
++}
++
++static int rcar_ufs_pltfm_remove(struct udevice *dev)
++{
++	int err;
++	u32 val;
++	struct ufs_hba *hba = dev_get_uclass_priv(dev);
++
++	ufshcd_writel(hba, CONTROLLER_DISABLE,  REG_CONTROLLER_ENABLE);
++	err = readl_poll_sleep_timeout(hba->mmio_base + REG_CONTROLLER_ENABLE,
++				       val,
++				       (val & CONTROLLER_ENABLE) == CONTROLLER_DISABLE,
++				       10, 1000);
++	if (err)
++		dev_err(dev, "%s: Controller disable failed\n", __func__);
++	return err;
++}
++
++static int rcar_ufs_pltfm_bind(struct udevice *dev)
++{
++	struct udevice *scsi_dev;
++
++	return ufs_scsi_bind(dev, &scsi_dev);
++}
++
++static const struct udevice_id rcar_ufs_pltfm_ids[] = {
++	{
++		.compatible = "renesas,r8a779f0-ufs",
++	},
++	{},
++};
++
++U_BOOT_DRIVER(rcar_ufs_pltfm) = {
++	.name		= "rcar-ufs-pltfm",
++	.id		= UCLASS_UFS,
++	.of_match	= rcar_ufs_pltfm_ids,
++	.probe		= rcar_ufs_pltfm_probe,
++	.remove		= rcar_ufs_pltfm_remove,
++	.bind		= rcar_ufs_pltfm_bind,
++	.flags		= DM_FLAG_ACTIVE_DMA | DM_FLAG_OS_PREPARE,
++};
+-- 
+2.34.1
+
