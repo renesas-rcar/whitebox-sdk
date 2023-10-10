@@ -6,6 +6,8 @@
     "yes":
       default: true
       overrides:
+        variables:
+          USE_UFS: "0"
         components:
           dom0:
             builder:
@@ -31,6 +33,7 @@
                 - [IMAGE_INSTALL_append, " monitoring-vissv2server"]
                 - [IMAGE_INSTALL_append, " api-server"]
                 - [IMAGE_INSTALL_append, " rps-setup"]
+                - [USE_UFS, "%{USE_UFS}"]
                 # For development
                 - [IMAGE_INSTALL_append, " vim curl htop"]
               layers:
@@ -55,4 +58,17 @@
             - type: git
               url: "https://github.com/renesas-rcar/whitebox-sdk.git"
               rev: "v4.0"
+
+  USING_UFS_AS_STORAGE:
+    desc: "Using UFS instead of eMMC/SD card"
+    "yes":
+      default: true
+      overrides:
+        variables:
+          USE_UFS: "1"
+        images:
+          full:
+            sector_size: 4096
+    "no":
+      desk: "Nothing to do"
 
