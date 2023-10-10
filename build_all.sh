@@ -21,24 +21,29 @@ Usage() {
 # Check commandline args
 #================================================
 proc_args () {
-    for board in ${BOARD_LIST[*]}; do
-        if [[ "$board" == "$1" ]]; then
-            TARGET_BOARD=$1
-            shift 1
-        fi
-    done
-    if [[ -z ${TARGET_BOARD} ]]; then
-        Usage; exit;
-    fi
-
     while getopts "h" OPT
     do
         case $OPT in
             h) Usage; exit;;
             *) echo Unsupported option; Usage; exit;;
         esac
-            echo $OPT
     done
+
+    if [[ $# < 1 ]] ; then
+        echo -e "\e[31mERROR: Please select a board to build\e[m"
+        Usage; exit
+    fi
+
+    for board in ${BOARD_LIST[*]}; do
+        if [[ "$board" == "$1" ]]; then
+            TARGET_BOARD=$1
+            shift 1
+            break
+        fi
+    done
+    if [[ -z ${TARGET_BOARD} ]]; then
+        Usage; exit;
+    fi
 }
 
 #================================================
