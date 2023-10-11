@@ -1,5 +1,5 @@
 [Unit]
-Description=service file for autostart cluster application with chromium
+Description=service file for autostart chromium
 After=network.target
 
 [Service]
@@ -8,7 +8,7 @@ RemainAfterExit=yes
 Environment=Display=:0
 Environment=XDG_RUNTIME_DIR=/run/user/0
 EnvironmentFile=/var/autostart-browser.config
-ExecStart=chromium --no-sandbox --kiosk --oobe-skip-postlogin --autoplay-policy=no-user-gesture-required --alsa-output-device=${AUDIO_OUT} --url ${APP_URL}:${APP_PORT}?serverAddr=${SERVER_IP}&serverPort=${SERVER_PORT}&${DEBUG}
+ExecStart=chromium --no-sandbox --kiosk --incognito --oobe-skip-postlogin --autoplay-policy=no-user-gesture-required --alsa-output-device=${AUDIO_OUT} --url ${APP_URL}:${APP_PORT}?serverAddr=${SERVER_IP}&serverPort=${SERVER_PORT}&${DEBUG}
 
 [Install]
 WantedBy=multi-user.target
