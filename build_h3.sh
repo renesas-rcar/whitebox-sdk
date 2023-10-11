@@ -71,7 +71,14 @@ if [[ ${ENABLE_MMP} == "yes" ]]; then
     fi
 fi
 
-moulin ../../rcar-gen3-ulcb.yaml \
+# To avoid increasing network usage, using local repository
+cp -f ../../rcar-gen3-ulcb.yaml ./
+if [[ -d $SCRIPT_DIR/work/repo ]]; then
+    bash ../../setup_local_repository.sh
+    sed -i -e 's|url: ".*://.*/|url: "../repo/|' -e 's/\.git//' ./rcar-gen3-ulcb.yaml
+fi
+
+moulin ./rcar-gen3-ulcb.yaml \
     --MACHINE=${MACHINE} \
     --USING_EXT_BOARD=${USING_EXT_BOARD} \
     --ENABLE_DEMO=${ENABLE_DEMO} \

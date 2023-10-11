@@ -157,6 +157,11 @@ build_sw() {
 
     # Build image
     cd ${SCRIPT_DIR}/work/s4_build
+    # To avoid increasing network usage, using local repository
+    if [[ -d $SCRIPT_DIR/work/repo ]]; then
+        bash ../../setup_local_repository.sh
+        sed -i -e 's|url: ".*://.*/|url: "../repo/|' -e 's/\.git//' ./aos-rcar-gen4-demo.yaml
+    fi
     moulin ./aos-rcar-gen4-demo.yaml \
         --TARGET_BOARD ${TARGET_BOARD} \
         --BUILD_DOMD_SDK no \
