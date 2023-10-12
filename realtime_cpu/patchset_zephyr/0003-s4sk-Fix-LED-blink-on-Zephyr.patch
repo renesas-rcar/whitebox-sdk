@@ -1,0 +1,28 @@
+From 8fd2393b1eba942b9fa8f15f8012fda3c69c3209 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Thu, 12 Oct 2023 12:14:48 +0900
+Subject: [PATCH] s4sk: Fix LED blink on Zephyr
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts b/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
+index 945a0418bf..f96b412086 100644
+--- a/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
++++ b/boards/arm/rcar_s4sk/rcar_s4sk_cr52.dts
+@@ -21,8 +21,8 @@
+ 
+ 	leds {
+ 		compatible = "gpio-leds";
+-		user_led: led_8 {
+-			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
++		user_led: led_9 {
++			gpios = <&gpio4 0 GPIO_ACTIVE_HIGH>;
+ 			label = "User LED";
+ 		};
+ 	};
+-- 
+2.25.1
+
