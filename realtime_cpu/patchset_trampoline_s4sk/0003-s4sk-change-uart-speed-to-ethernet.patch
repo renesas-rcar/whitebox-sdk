@@ -1,0 +1,54 @@
+From f100d5cc2795c330e9d9614b30edbcbd8aff49b7 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 13 Oct 2023 14:07:58 +0900
+Subject: [PATCH] s4sk: change uart speed to ethernet
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/cortex-a/armv8/spider/ethernet/eth.oil       | 2 +-
+ examples/cortex-a/armv8/spider/ethernet_basic/eth.oil | 2 +-
+ examples/cortex-a/armv8/spider/lwip/lwip.oil          | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/eth.oil b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+index 69ffc958..ca23a777 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/eth.oil
++++ b/examples/cortex-a/armv8/spider/ethernet/eth.oil
+@@ -18,7 +18,7 @@ CPU eth {
+       TRAMPOLINE_BASE_PATH = "../../../../..";
+       APP_SRC = "main.c";
+       APP_NAME = "eth_exe.elf";
+-      CFLAGS  = "-O0 -g -DHSCIF_1843200BPS -DNO_SYS";
++      CFLAGS  = "-O0 -g -DHSCIF_921600BPS -DNO_SYS";
+       LDFLAGS = "-Map=eth_exe.map";
+       COMPILER = "arm-none-eabi-gcc";
+       CPPCOMPILER = "arm-none-eabi-g++";
+diff --git a/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil b/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+index 9a176659..b224eed9 100644
+--- a/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
++++ b/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+@@ -18,7 +18,7 @@ CPU eth {
+       TRAMPOLINE_BASE_PATH = "../../../../..";
+       APP_SRC = "main.c";
+       APP_NAME = "eth_exe.elf";
+-      CFLAGS  = "-O0 -g -DHSCIF_1843200BPS";
++      CFLAGS  = "-O0 -g -DHSCIF_921600BPS";
+       LDFLAGS = "-Map=eth_exe.map";
+       COMPILER = "arm-none-eabi-gcc";
+       CPPCOMPILER = "arm-none-eabi-g++";
+diff --git a/examples/cortex-a/armv8/spider/lwip/lwip.oil b/examples/cortex-a/armv8/spider/lwip/lwip.oil
+index fb66d29a..7d0f5ae8 100755
+--- a/examples/cortex-a/armv8/spider/lwip/lwip.oil
++++ b/examples/cortex-a/armv8/spider/lwip/lwip.oil
+@@ -22,7 +22,7 @@ CPU lwip {
+       APP_SRC = "lwip.c";
+ 
+       APP_NAME = "lwip_exe.elf";
+-      CFLAGS  = "-O0 -DHSCIF_1843200BPS -ggdb";
++      CFLAGS  = "-O0 -DHSCIF_921600BPS -ggdb";
+       LDFLAGS = "-Map=lwip.map";
+       COMPILER = "arm-none-eabi-gcc";
+       CPPCOMPILER = "arm-none-eabi-g++";
+-- 
+2.25.1
+
