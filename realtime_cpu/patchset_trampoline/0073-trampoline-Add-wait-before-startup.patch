@@ -1,0 +1,117 @@
+From 342589ad35c05f9b16008b74aedd12b77bc5f4f4 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 13 Oct 2023 14:01:30 +0900
+Subject: [PATCH] trampoline: Add wait before startup
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/cortex-a/armv8/spider/ethernet/main.c   | 16 ++++++++++++++++
+ .../cortex-a/armv8/spider/ethernet_basic/main.c  | 16 ++++++++++++++++
+ examples/cortex-a/armv8/spider/lwip/lwip.c       | 16 ++++++++++++++++
+ 3 files changed, 48 insertions(+)
+
+diff --git a/examples/cortex-a/armv8/spider/ethernet/main.c b/examples/cortex-a/armv8/spider/ethernet/main.c
+index 2b073338..1580f4df 100644
+--- a/examples/cortex-a/armv8/spider/ethernet/main.c
++++ b/examples/cortex-a/armv8/spider/ethernet/main.c
+@@ -13,6 +13,20 @@
+ ip4_addr_t ip4_addr, net_mask, gateway;
+ struct netif ethif_netif;
+ 
++extern volatile TickType tpl_time_counter; // 10msec/count
++#define TICK_TO_MSEC(t)	(t*10)
++#define TICK_TO_SEC(t)	(t/100)
++
++// return msec
++uint32 ms_time() { return TICK_TO_MSEC(tpl_time_counter); }
++
++void ms_sleep(int ms)
++{
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
++}
++
+ // Is this the right section for the main function??
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+@@ -21,6 +35,8 @@ FUNC(int, OS_APPL_CODE) main(void)
+ }
+ 
+ TASK(sample_init) {
++	ms_sleep(3000);
++
+ 	Serial_Init();
+ 
+ 	rswitch_enable_clock_and_reset();
+diff --git a/examples/cortex-a/armv8/spider/ethernet_basic/main.c b/examples/cortex-a/armv8/spider/ethernet_basic/main.c
+index fc7b35c7..bcbde45e 100644
+--- a/examples/cortex-a/armv8/spider/ethernet_basic/main.c
++++ b/examples/cortex-a/armv8/spider/ethernet_basic/main.c
+@@ -12,6 +12,20 @@
+ uint8 tmp_buffer[1600];
+ uint16 tmp_buffer_len = 0;
+ 
++extern volatile TickType tpl_time_counter; // 10msec/count
++#define TICK_TO_MSEC(t)	(t*10)
++#define TICK_TO_SEC(t)	(t/100)
++
++// return msec
++uint32 ms_time() { return TICK_TO_MSEC(tpl_time_counter); }
++
++void ms_sleep(int ms)
++{
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
++}
++
+ // Is this the right section for the main function??
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+@@ -30,6 +44,8 @@ void eth_callback(uint8 *data, uint16 len)
+ TASK(sample_init) {
+ 	int ret;
+ 
++	ms_sleep(3000);
++
+ 	Serial_Init();
+ 
+ 	rswitch_enable_clock_and_reset();
+diff --git a/examples/cortex-a/armv8/spider/lwip/lwip.c b/examples/cortex-a/armv8/spider/lwip/lwip.c
+index 7c1cc2f1..5aa24664 100755
+--- a/examples/cortex-a/armv8/spider/lwip/lwip.c
++++ b/examples/cortex-a/armv8/spider/lwip/lwip.c
+@@ -13,6 +13,20 @@
+ 
+ struct netif this_netif;
+ 
++extern volatile TickType tpl_time_counter; // 10msec/count
++#define TICK_TO_MSEC(t)	(t*10)
++#define TICK_TO_SEC(t)	(t/100)
++
++// return msec
++uint32 ms_time() { return TICK_TO_MSEC(tpl_time_counter); }
++
++void ms_sleep(int ms)
++{
++	uint32 end;
++	end = ms_time() + ms;
++	while(end > ms_time());
++}
++
+ FUNC(int, OS_APPL_CODE) main(void)
+ {
+ 	Serial_Init();
+@@ -24,6 +38,8 @@ FUNC(int, OS_APPL_CODE) main(void)
+ 
+ TASK(lwip)
+ {
++	ms_sleep(3000);
++
+ 	debug_msg("init: call");
+ 	struct netif this_netif;
+ 	ip4_addr_t ip4_addr, net_mask, gateway;
+-- 
+2.25.1
+
