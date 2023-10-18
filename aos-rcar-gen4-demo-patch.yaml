@@ -43,6 +43,8 @@
             partitions:
               domd_var:
                 size: 2048 MiB
+                files:
+                  "RH850-OTA-MASTER.config": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/var/RH850-OTA-MASTER.config"
 
   USING_REMOTE_META_WHITEBOX_LAYER:
     desc: "Using remote repository instead of local meta layer"
