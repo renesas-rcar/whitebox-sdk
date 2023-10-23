@@ -3,15 +3,15 @@ Name=eth0
 
 [Network]
 #DHCP=yes
-Address=192.168.1.111/24
-Gateway=192.168.1.1
-DNS=192.168.1.1
+Address=192.168.140.111/24
+Gateway=192.168.140.1
+DNS=192.168.140.1
 
 [DHCP]
 CriticalConnection=true
 
 [Route]
-Gateway=192.168.1.1
+Gateway=192.168.140.1
 Destination=192.168.137.0/24
 Metric=100
 

@@ -2,11 +2,11 @@
 Name=tsn1
 
 [Network]
-Address=192.168.1.1/24
+Address=192.168.140.1/24
 # Gateway=192.168.1.1
 # DNS=192.168.1.1
 
 [Route]
-Destination=192.168.1.0/24
+Destination=192.168.140.0/24
 Metric=1024
 
