@@ -1,0 +1,15 @@
+apiVersion: 1
+
+providers:
+  - name: "Node exporter Full"
+    orgId: 1
+    folder: ""
+    folderUid: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /usr/bin/grafana/conf/provisioning/dashboards/node-exporter-full.json
+      foldersFromFilesStructure: false
+
