@@ -61,9 +61,6 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     # prepare Benchmarks code
     rm -rf examples/cortex-a/armv8
     git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
-    if [ "$1" == "s4sk" ]; then
-        git am ${SCRIPT_DIR}/patchset_trampoline_s4sk/*.patch
-    fi
     git submodule init
     git submodule update net/ethernet/lwip
 
@@ -83,6 +80,23 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
     git apply ${SCRIPT_DIR}/patchset_trampoline/sample_coremark.diff
 
+fi
+
+# Setup uart baudrate
+if [ "$1" == "s4sk" ]; then
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/benchmark.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/iccom/iccom.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip/lwip.oil
+elif [ "$1" == "spider" ];  then
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/benchmark.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/iccom/iccom.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip/lwip.oil
 fi
 
 # Setup python build env
