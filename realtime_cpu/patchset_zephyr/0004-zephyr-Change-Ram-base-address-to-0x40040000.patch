@@ -1,0 +1,32 @@
+From 1e1cb8771e1dfbaa6617aa876ef6d54791d66ff9 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Fri, 13 Oct 2023 14:33:13 +0900
+Subject: [PATCH] zephyr: Change Ram base address to 0x40040000
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ boards/arm/rcar_s4sk/rcar_s4sk_cr52_defconfig     | 1 +
+ boards/arm/rcar_spider/rcar_spider_cr52_defconfig | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/boards/arm/rcar_s4sk/rcar_s4sk_cr52_defconfig b/boards/arm/rcar_s4sk/rcar_s4sk_cr52_defconfig
+index 1579f5900d..f1d3bdbb9e 100644
+--- a/boards/arm/rcar_s4sk/rcar_s4sk_cr52_defconfig
++++ b/boards/arm/rcar_s4sk/rcar_s4sk_cr52_defconfig
+@@ -13,3 +13,4 @@ CONFIG_UART_CONSOLE=y
+ CONFIG_UART_INTERRUPT_DRIVEN=y
+ CONFIG_GPIO=y
+ 
++CONFIG_SRAM_BASE_ADDRESS=0x40040000
+diff --git a/boards/arm/rcar_spider/rcar_spider_cr52_defconfig b/boards/arm/rcar_spider/rcar_spider_cr52_defconfig
+index 72dbae3924..0639b10d28 100644
+--- a/boards/arm/rcar_spider/rcar_spider_cr52_defconfig
++++ b/boards/arm/rcar_spider/rcar_spider_cr52_defconfig
+@@ -13,3 +13,4 @@ CONFIG_UART_CONSOLE=y
+ CONFIG_UART_INTERRUPT_DRIVEN=y
+ CONFIG_GPIO=y
+ 
++CONFIG_SRAM_BASE_ADDRESS=0x40040000
+-- 
+2.25.1
+

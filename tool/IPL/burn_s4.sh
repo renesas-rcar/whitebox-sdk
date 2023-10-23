@@ -109,5 +109,8 @@ case $CR52 in
     "Zephyr")     cp deploy/cr52_zephyr_deploy/cr52.srec App_CDD_ICCOM_S4_Sample_CR52.srec;;
 esac
 
+# Changed CR52 memory placement to 0x40040000
+sed -i 's/S315EB23695000000000000010E2000000000000000031/S315EB23695000000000000004400000000000000000DF/g' cert_header_sa9.srec
+
 # Flash IPL
 python3 ipl_burning.py $1 $USB_PORT $MOT_PATH $IPL_PATH $WRITE_PATTERN

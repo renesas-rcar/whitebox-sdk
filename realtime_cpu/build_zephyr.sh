@@ -75,7 +75,7 @@ fi
 # Build
 cd ${ZEPHYR_DIR}/zephyr
 west build -p always -b rcar_${BOARD}_cr52 samples/basic/blinky
-${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 \
+${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy -O srec --srec-forceS3 \
     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
 # deploy
@@ -105,7 +105,7 @@ fi
 ## Build
 cd ${ZEPHYR_DIR}/zephyr
 west build -p always -b rcar_${BOARD}_cr52 samples/basic/benchmark
-${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy --adjust-vma 0xe2100000 -O srec --srec-forceS3 \
+${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy -O srec --srec-forceS3 \
     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
 # deploy
