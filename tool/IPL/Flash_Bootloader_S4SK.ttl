@@ -1,0 +1,263 @@
+;---------------------------------------------------
+; Setting load image parameter
+;---------------------------------------------------
+ARRAY_NUM = 10
+strdim IMGNM ARRAY_NUM
+IMGNM[0]  = 'bootparam_sa0.srec'
+IMGNM[1]  = 'icumx_loader.srec'
+IMGNM[2]  = 'cert_header_sa9.srec'
+IMGNM[3]  = 'dummy_fw.srec'
+IMGNM[4]  = 'dummy_rtos.srec'
+IMGNM[5]  = 'dummy_g4mh_case0.srec'
+IMGNM[6]  = 'dummy_icumh_case1.srec'
+IMGNM[7]  = 'bl31-s4sk.srec'
+IMGNM[8]  = 'tee-s4sk.srec'
+IMGNM[9]  = 'u-boot-elf-s4sk.srec'
+
+strdim LIST 4
+    LIST[0] = 'G4MH=Trampoline CR52:Trampoline'
+    LIST[1] = 'G4MH=Safeg-auto CR52:Trampoline'
+    LIST[2] = 'G4MH=Trampoline CR52:Zephyr'
+    LIST[3] = 'G4MH=Safeg-auto CR52:Zephyr'
+listbox '' 'Select OS' LIST
+if result = 0 then
+    IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
+    IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh_can_disable.srec'
+    strdim LIST1 2
+        LIST1[0] = 'CR52'
+        LIST1[1] = 'G4MH'
+    listbox '' 'Select CAN' LIST1
+    if result = 0 then
+        IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
+        IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh_can_disable.srec'
+    elseif result = 1 then
+        IMGNM[4]  = 'cr52_trampoline_deploy\cr52_can_disable.srec'
+        IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
+    endif
+elseif result = 1 then
+    IMGNM[4]  = 'cr52_trampoline_deploy\cr52_can_disable.srec'
+    IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+elseif result = 2 then
+    IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
+    IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh_can_disable.srec'
+elseif result = 3 then
+    IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
+    IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+else
+    end
+endif
+
+strdim SAVEADR ARRAY_NUM
+SAVEADR[0]  = '0'
+SAVEADR[1]  = '40000'
+SAVEADR[2]  = '240000'
+SAVEADR[3]  = '280000'
+SAVEADR[4]  = '500000'
+SAVEADR[5]  = '900000'
+SAVEADR[6]  = '380000'
+SAVEADR[7]  = 'E00000'
+SAVEADR[8]  = 'E80000'
+SAVEADR[9]  = 'F80000'
+
+strdim WRITESEL ARRAY_NUM
+WRITESEL[0]  = 'Flash'
+WRITESEL[1]  = 'Flash'
+WRITESEL[2]  = 'Flash'
+WRITESEL[3]  = 'Flash'
+WRITESEL[4]  = 'Flash'
+WRITESEL[5]  = 'Flash'
+WRITESEL[6]  = 'Flash'
+WRITESEL[7]  = 'Flash'
+WRITESEL[8]  = 'Flash'
+WRITESEL[9]  = 'Flash'
+
+;---------------------------------------------------
+; Setting FlashWriter parameter
+;---------------------------------------------------
+FLASHWRITER_FILE = 'ICUMX_Flash_writer_SCIF_DUMMY_CERT_EB203000_S4.mot'
+FLASHWRITER_SPEED = 921600
+
+;---------------------------------------------------
+; Select load all images or selected image
+;---------------------------------------------------
+LOAD_FILES = 'all'
+;LOAD_FILES = 'selected'
+
+;---------------------------------------------------
+; DO NOT EDIT THE FOLLOWING LINES
+;---------------------------------------------------
+; Main program
+;---------------------------------------------------
+getdir DIR
+
+call Load_FlashWriter
+
+;Automatically identify the start address from S-record.
+strdim IMGADR ARRAY_NUM
+
+strcompare LOAD_FILES 'selected'
+if result==0  then
+  call Load_selected_image
+else
+  call Load_all_image
+endif
+
+end
+
+;---------------------------------------------------
+; load FlashWriter
+;---------------------------------------------------
+:Load_FlashWriter
+filesearch FLASHWRITER_FILE
+if result=0 then
+    sprintf 'File "%s" not found' FLASHWRITER_FILE
+    messagebox inputstr 'error'
+    break
+endif
+
+setbaud FLASHWRITER_SPEED
+sprintf2 FILE_NAME '%s\%s' DIR FLASHWRITER_FILE
+sendfile FILE_NAME 1
+wait '>'
+
+return
+
+;---------------------------------------------------
+; load all images
+;---------------------------------------------------
+:Load_All_image
+
+; file check
+for i 0 ARRAY_NUM-1
+    filesearch IMGNM[i]
+    if result=0 then
+        sprintf 'File "%s" not found' IMGNM[i]
+        messagebox inputstr 'error'
+        break
+    endif
+next
+
+if result=1 then
+    for i 0 ARRAY_NUM-1
+        index = i
+        call Decode_srec_start_address
+        strcompare WRITESEL[i] 'Flash'
+        if result=0 then
+            call Load_Image
+        endif
+        strcompare WRITESEL[i] 'eMMC'
+        if result=0 then
+            call Load_Image_eMMC
+        endif
+    next
+else
+    messagebox "Cancel write all images" "error"
+endif
+
+;messagebox "Write Complete" ""
+return
+
+;---------------------------------------------------
+; Select load selected Image
+;---------------------------------------------------
+:Load_selected_image
+:retry
+    listbox 'Select the write image file' 'select image' IMGNM
+    index = result
+    if index = -1 then
+    else
+        ; file check
+        filesearch IMGNM[index]
+        If result=0 then
+            sprintf 'File "%s" not found' IMGNM[index]
+            messagebox inputstr 'error'
+        else
+            call Decode_srec_start_address
+            call Load_Image
+        endif
+        goto retry
+    endif
+return
+
+;---------------------------------------------------
+; Decoed S-record start address
+;---------------------------------------------------
+:Decode_srec_start_address
+    fileopen fhandle IMGNM[index] 0 1
+    if fhandle = -1 then
+        sprintf 'File "%s" open error' IMGNM[i]
+        messagebox inputstr 'error'
+        break
+    endif
+    filereadln fhandle strvar
+    if result=1 then
+        fileclose fhandle
+        sprintf 'File "%s" S-record format error' IMGNM[i]
+        messagebox inputstr 'error'
+        break
+    endif
+    filereadln fhandle strvar
+    strcopy strvar 5 8 IMGADR[index]
+    fileclose fhandle
+return
+
+;---------------------------------------------------
+; Load Image To Flash
+;---------------------------------------------------
+:Load_Image
+mpause 10
+sendln 'xls2'
+wait '  Select (1-3)>'
+mpause 10
+sendln '1'
+wait '(Push Y key)'
+mpause 10
+send 'y'
+wait '(Push Y key)'
+mpause 10
+send 'y'
+wait '  Please Input : H'
+mpause 1
+sendln IMGADR[index]
+wait '  Please Input : H'
+sendln SAVEADR[index]
+mpause 400
+sprintf2 FILE_NAME '%s\%s' DIR IMGNM[index]
+sendfile FILE_NAME 1
+wait 'complete!' 'Clear OK?(y/n)'
+If result=1 goto proc_end
+If result=2 goto send_y
+
+:send_y
+send 'y'
+wait '>'
+
+:proc_end
+mpause 100
+return
+
+;---------------------------------------------------
+; Load Image To eMMC
+;---------------------------------------------------
+:Load_Image_eMMC
+mpause 10
+sendln 'em_w'
+wait '(Push Y key)'
+mpause 10
+send 'y'
+wait '  Select area(0-2)>'
+mpause 10
+sendln '1'
+wait 'Please Input Start Address in sector :'
+mpause 1
+sendln SAVEADR[index]
+wait 'Please Input Program Start Address :'
+sendln IMGADR[index]
+mpause 400
+wait 'CR stop load)'
+mpause 400
+sprintf2 FILE_NAME '%s\%s' DIR IMGNM[index]
+sendfile FILE_NAME 1
+wait 'EM_W Complete!'
+mpause 100
+return
