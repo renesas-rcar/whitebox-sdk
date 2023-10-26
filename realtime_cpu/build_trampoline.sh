@@ -84,19 +84,11 @@ fi
 
 # Setup uart baudrate
 if [ "$1" == "s4sk" ]; then
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/benchmark.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/iccom/iccom.oil
     sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
     sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip/lwip.oil
 elif [ "$1" == "spider" ];  then
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/benchmark/benchmark.oil
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/iccom/iccom.oil
     sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
     sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic/eth.oil
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip/lwip.oil
 fi
 
 # Setup python build env
@@ -108,7 +100,7 @@ cd ${SOURCE_DIR}/goil/makefile-unix
 ./build.py
 export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
 
-# build project
+# build sample project
 cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
 bash ./build.sh
 
@@ -117,29 +109,10 @@ rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/cr52.srec
 
-# build eathernet
+# build eathernet project
 cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet
 chmod +x ./build.sh
 ./build.sh
 mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
-
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/lwip
-chmod +x ./build.sh
-./build.sh
-mkdir -p ${SCRIPT_DIR}/deploy
-arm-none-eabi-objcopy -O srec --srec-forceS3 lwip_exe.elf $SCRIPT_DIR/deploy/cr52_lwip.srec
-
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet_basic
-chmod +x ./build.sh
-./build.sh
-mkdir -p ${SCRIPT_DIR}/deploy
-arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth_basic.srec
-
-# build can demo
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/can_demo
-chmod +x ./build.sh
-./build.sh
-mkdir -p ${SCRIPT_DIR}/deploy
-arm-none-eabi-objcopy -O srec --srec-forceS3 can_demo_exe.elf $SCRIPT_DIR/deploy/cr52_can_demo.srec
 
