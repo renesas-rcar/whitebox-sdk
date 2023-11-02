@@ -10,12 +10,27 @@ export PATH=~/.local/bin:$PATH
 CLEAN_BUILD_FLAG=false
 Usage() {
     echo "Usage:"
-    echo "    $0 [option]"
+    echo "    $0 board [option]"
+    echo "board:"
+    echo "    - spider: R-Car S4 Spider board"
+    echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
     echo "    -h: Show this usage"
 }
+
+if [[ $# < 1 ]]; then
+    echo -e "\e[31mERROR: Please select a board to build\e[m"
+    Usage; exit
+fi
+
+if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
+    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
+    Usage; exit
+fi
+
 # Proc arguments
+OPTIND=2
 while getopts "ch" OPT
 do
     case $OPT in
@@ -55,6 +70,13 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     cd ${SOURCE_DIR}/examples/renesas/sample/coremark
     git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
     git apply ${SCRIPT_DIR}/patchset_trampoline/sample_coremark.diff
+fi
+
+# Setup uart baudrate
+if [ "$1" == "s4sk" ]; then
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/renesas/sample/sample.oil
+elif [ "$1" == "spider" ];  then
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/renesas/sample/sample.oil
 fi
 
 if [[ "$(which rlink | grep no)" != "" ]]; then

@@ -32,7 +32,7 @@ mkdir -p deploy
 
 # Build G4MH
 cd ${BASE_DIR}/mcu
-./build_trampoline.sh -c
+./build_trampoline.sh $1 -c
 mv ${BASE_DIR}/mcu/deploy ${BASE_DIR}/deploy/g4mh_trampoline_deploy
 ./build_safegauto.sh -c
 mv ${BASE_DIR}/mcu/deploy ${BASE_DIR}/deploy/g4mh_safegauto_deploy
