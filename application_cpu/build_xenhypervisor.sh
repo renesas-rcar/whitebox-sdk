@@ -1,6 +1,7 @@
 #!/bin/bash -eu
 
 CLEAN_BUILD_FLAG=false
+USING_UFS=yes
 Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
@@ -9,6 +10,7 @@ Usage() {
     echo "    - s4sk: for S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -m: Using eMMC/SD as rootfs(Defult is UFS)"
     echo "    -h: Show this usage"
 }
 
@@ -25,14 +27,21 @@ fi
 
 # Proc arguments
 OPTIND=2
-while getopts "ch" OPT
+while getopts "chm" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
+        m) USING_UFS=no;;
         h) Usage; exit;;
         *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
 done
+
+BOOT_DEV=ufs
+if [[ "$USING_UFS" == "n" ]]; then
+    BOOT_DEV=mmc
+fi
+
 
 export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
@@ -80,11 +89,13 @@ cd ../../
 # END: Apply patch for meta-aos-rcar-gen4   #
 #############################################
 
-moulin ./aos-rcar-gen4-wb.yaml --TARGET_BOARD $1
+moulin ./aos-rcar-gen4-wb.yaml \
+    --TARGET_BOARD $1 \
+    --USING_UFS_AS_STORAGE $USING_UFS
 ninja
 ninja image-full
-mv full.img $1.full.img
-gzip $1.full.img
+mv full.img $1.${BOOT_DEV}.full.img
+gzip $1.${BOOT_DEV}.full.img
 if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work/
 fi
