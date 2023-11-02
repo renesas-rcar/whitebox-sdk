@@ -83,7 +83,8 @@ cd ../../
 moulin ./aos-rcar-gen4-wb.yaml --TARGET_BOARD $1
 ninja
 ninja image-full
-gzip full.img
+mv full.img $1.full.img
+gzip $1.full.img
 if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work/
 fi
