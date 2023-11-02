@@ -9,6 +9,7 @@
         variables:
           META_WB_LAYER_PATH: "../../../"
           BUILD_DOMD_SDK: "0"
+          USE_UFS: "0"
         components:
           dom0:
             builder:
@@ -30,6 +31,7 @@
                 - [IMAGE_INSTALL_append, " rps-setup"]
                 - [IMAGE_INSTALL_append, " hw-routing-script"]
                 - [IMAGE_INSTALL_append, " pktgen-script"]
+                - [USE_UFS, "%{USE_UFS}"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
@@ -112,4 +114,18 @@
                 - [IMAGE_INSTALL_append, " aws-iot-fleetwise-edge"]
               layers:
                 - "../meta-aws"
+
+
+  USING_UFS_AS_STORAGE:
+    desc: "Using UFS instead of eMMC/SD card"
+    "yes":
+      default: true
+      overrides:
+        variables:
+          USE_UFS: "1"
+        images:
+          full:
+            sector_size: 4096
+    "no":
+      desk: "Nothing to do"
 
