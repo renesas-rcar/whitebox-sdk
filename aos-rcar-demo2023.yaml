@@ -721,3 +721,14 @@ parameters:
       overrides:
         variables:
           AOS_VIS_DATA_PROVIDER: "telemetryemulatoradapter"
+
+
+  GEN4_MACHINE:
+    desc: RCAR Gen4-based machine
+    spider:
+      default: true
+    s4sk:
+      overrides:
+        variables:
+          GEN4_MACHINE: s4sk
+
