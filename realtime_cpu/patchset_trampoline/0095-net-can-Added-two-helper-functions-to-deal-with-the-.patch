@@ -1,0 +1,127 @@
+From 4af4d58bcdf34d9115864b42a2667eded968d32b Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Fri, 6 Oct 2023 10:20:47 +0200
+Subject: [PATCH 22/38] net: can: Added two helper functions to deal with the
+ Data Length Code of a CAN-FD frame.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ net/can/Can.h              | 26 +++++++++++++++++++++
+ net/can/Can_GeneralTypes.h |  3 +++
+ net/can/tpl_can_core.c     | 47 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 76 insertions(+)
+
+diff --git a/net/can/Can.h b/net/can/Can.h
+index b1456c8f..06ca4264 100644
+--- a/net/can/Can.h
++++ b/net/can/Can.h
+@@ -89,4 +89,30 @@ Std_ReturnType Can_SetBaudrate(uint8 Controller, uint16 BaudRateConfigID);
+  */
+ Std_ReturnType Can_Write(Can_HwHandleType Hth, const Can_PduType *PduInfo);
+ 
++/**
++ * Convert a CAN-FD payload size in bytes to the corresponding CAN Data Length
++ * Code.
++ *
++ * @param length The payload length in bytes.
++ * @param adjusted_length If not NULL, contain on output the payload adjusted
++ * length in bytes.
++ *
++ * @retval 0 if the provided payload length exceeds 64 bytes,
++ * @return The DLC code if the provided payload length is valid.
++ *
++ * @note See https://www.can-cia.org/can-knowledge/can/can-fd for more details.
++ */
++uint32 tpl_can_get_dlc_from_length(uint32 length, uint32 *adjusted_length);
++
++/**
++ * Convert a CAN or CAN-FD DLC code to the corresponding payload length in
++ * bytes.
++ *
++ * @param dlc The CAN or CAN-FD frame DLC field value.
++ *
++ * @retval 0 if the provided DLC value exceeds 0x0F,
++ * @return The payload length in bytes if the provided DLC value is valid.
++ */
++uint32 tpl_can_get_length_from_dlc(uint32 dlc);
++
+ #endif
+diff --git a/net/can/Can_GeneralTypes.h b/net/can/Can_GeneralTypes.h
+index 6b0fe94f..05174a7d 100644
+--- a/net/can/Can_GeneralTypes.h
++++ b/net/can/Can_GeneralTypes.h
+@@ -38,6 +38,9 @@
+ #define TPL_CAN_ID_TYPE_GET(id) ((id & TPL_CAN_ID_TYPE_MASK) >> 30)
+ #define TPL_CAN_ID_MASK (0x3FFFFFFF)
+ 
++#define TPL_CAN_CLASSIC_FRAME_MAXIMUM_PAYLOAD_SIZE (8)
++#define TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE (64)
++
+ /**
+  * @typedef tpl_can_protocol_version_t
+  *
+diff --git a/net/can/tpl_can_core.c b/net/can/tpl_can_core.c
+index a1236639..0c3eb458 100644
+--- a/net/can/tpl_can_core.c
++++ b/net/can/tpl_can_core.c
+@@ -99,6 +99,10 @@ Std_ReturnType Can_Write(Can_HwHandleType Hth, const Can_PduType *PduInfo)
+ 
+ 	if (controller == NULL)
+ 		return E_NOT_OK;
++	if (PduInfo == NULL)
++		return E_NOT_OK;
++
++	// TODO check if CAN FD enabled for CAN FD frame, otherwise send as CAN classic if SDU < 8 (see parag 7.12 "CAN FD Support" in AUTOSAR_SWS_CANDriver R22-11)
+ 
+ 	// No need to check for the transmit callback presence, this has already been done by Can_Init()
+ 	ret = controller->transmit(controller, PduInfo);
+@@ -145,3 +149,46 @@ Std_ReturnType CanIf_ReadRxPduData(PduIdType CanIfRxSduId, PduInfoType *CanIfRxI
+ 	can_pdu = (Can_PduType *) CanIfRxInfoPtr->SduDataPtr;
+ 	return controller->receive(controller, can_pdu);
+ }
++
++uint32 tpl_can_get_dlc_from_length(uint32 length, uint32 *adjusted_length)
++{
++	struct length_code_t
++	{
++		uint32 dlc;
++		uint32 adjusted_length;
++	};
++	static struct length_code_t length_code_table[TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE + 1] =
++	{
++		{ 0x0,  0 }, { 0x1,  1 }, { 0x2,  2 }, { 0x3,  3 }, { 0x4,  4 }, { 0x5,  5 }, { 0x6,  6 }, { 0x7,  7 },
++		{ 0x8,  8 }, { 0x9, 12 }, { 0x9, 12 }, { 0x9, 12 }, { 0x9, 12 }, { 0xA, 16 }, { 0xA, 16 }, { 0xA, 16 },
++		{ 0xA, 16 }, { 0xB, 20 }, { 0xB, 20 }, { 0xB, 20 }, { 0xB, 20 }, { 0xC, 24 }, { 0xC, 24 }, { 0xC, 24 },
++		{ 0xC, 24 }, { 0xD, 32 }, { 0xD, 32 }, { 0xD, 32 }, { 0xD, 32 }, { 0xD, 32 }, { 0xD, 32 }, { 0xD, 32 },
++		{ 0xD, 32 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 },
++		{ 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 }, { 0xE, 48 },
++		{ 0xE, 48 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 },
++		{ 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 }, { 0xF, 64 },
++		{ 0xF, 64 }
++	};
++
++	if (length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
++		return 0;
++
++	if (adjusted_length != NULL)
++		*adjusted_length = length_code_table[length].adjusted_length;
++
++	return length_code_table[length].dlc;
++}
++
++uint32 tpl_can_get_length_from_dlc(uint32 dlc)
++{
++	static uint32 length[16] =
++	{
++		 0,  1,  2,  3,  4,  5,  6,  7,
++		 8, 12, 16, 20, 24, 32, 48, 64
++	};
++
++	if (dlc > 0x0F)
++		return 0;
++
++	return length[dlc];
++}
+-- 
+2.34.1
+

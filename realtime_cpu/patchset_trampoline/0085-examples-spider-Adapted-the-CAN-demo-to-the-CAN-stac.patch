@@ -1,0 +1,45 @@
+From 6556b58f5464f1d19780d1cbe654f6912e7f842b Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Tue, 26 Sep 2023 16:56:49 +0200
+Subject: [PATCH 12/38] examples: spider: Adapted the CAN demo to the CAN stack
+ changes related to CAN-FD introduction.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ .../cortex-a/armv8/spider/can_demo/can_demo.c    | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/can_demo/can_demo.c b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+index 8cf40893..c4b37671 100644
+--- a/examples/cortex-a/armv8/spider/can_demo/can_demo.c
++++ b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+@@ -32,15 +32,21 @@
+ 
+ int main(void)
+ {
+-	// Statically list the CAN controllers to use in the application
+-	static tpl_can_controller_t *can_controllers[] =
++	// Statically list the configuration of each CAN controller used in the application
++	static tpl_can_controller_config_t can_controllers_config[] =
+ 	{
+-		&spider_can_controller_0,
+-		NULL
++		// First controller will use CAN 2.0
++		{
++			&spider_can_controller_0,
++			CAN_PROTOCOL_VERSION_CLASSIC,
++			CAN_BAUD_RATE_125_KBPS,
++			CAN_BAUD_RATE_125_KBPS // This value is ignored for classic CAN
++		},
+ 	};
+ 	static Can_ConfigType can_config_type =
+ 	{
+-		can_controllers
++		can_controllers_config,
++		sizeof(can_controllers_config) / sizeof(can_controllers_config[0])
+ 	};
+ 	int ret;
+ 
+-- 
+2.34.1
+

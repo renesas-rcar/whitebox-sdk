@@ -1,0 +1,91 @@
+From 06ee80302918c7051c7af1c6f1d88d64a9c63042 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Mon, 9 Oct 2023 12:44:44 +0200
+Subject: [PATCH 30/38] machines: spider: Added extended CAN ID support to the
+ CAN driver.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ .../armv8/spider/drivers/can/spider_can.c     | 43 ++++++++++++++++---
+ 1 file changed, 36 insertions(+), 7 deletions(-)
+
+diff --git a/machines/cortex-a/armv8/spider/drivers/can/spider_can.c b/machines/cortex-a/armv8/spider/drivers/can/spider_can.c
+index 7791f532..26c97bf0 100644
+--- a/machines/cortex-a/armv8/spider/drivers/can/spider_can.c
++++ b/machines/cortex-a/armv8/spider/drivers/can/spider_can.c
+@@ -259,8 +259,12 @@ static Std_ReturnType spider_transmit(struct tpl_can_controller_t *ctrl, const C
+ 	else
+ 		is_can_fd = 0;
+ 
+-	// Set the CAN ID (TODO add support for extended ID)
+-	ctrl_base_address->CFD0TMID0.UINT32 = pdu_info->id & 0x000007FF;
++	// Set the CAN ID
++	if ((val == TPL_CAN_ID_TYPE_EXTENDED) || (val == TPL_CAN_ID_TYPE_FD_EXTENDED))
++		val = (pdu_info->id & TPL_CAN_ID_EXTENDED_MASK) | (1 << 31); // Tell this is an extended ID frame
++	else
++		val = pdu_info->id & TPL_CAN_ID_STANDARD_MASK;
++	ctrl_base_address->CFD0TMID0.UINT32 = val;
+ 
+ 	// Set the payload size
+ 	val = tpl_can_get_dlc_from_length(pdu_info->length, &adjusted_payload_length);
+@@ -313,17 +317,29 @@ static Std_ReturnType spider_transmit(struct tpl_can_controller_t *ctrl, const C
+ static Std_ReturnType spider_receive(struct tpl_can_controller_t *ctrl, Can_PduType *pdu_info)
+ {
+ 	volatile struct __tag5586 *ctrl_base_address = (volatile struct __tag5586 *) ctrl->base_address;
+-	int i;
++	int i, is_extended_id;
+ 	volatile uint8 *src, *dest;
+ 	Std_ReturnType ret = E_NOT_OK;
+ 	struct spider_can_priv *priv = ctrl->priv;
++	uint32 val;
+ 
+ 	// Do not block if no data are available
+ 	if (!SPIDER_CAN_RECEIVED_DATA_FLAG(ctrl))
+ 		return E_NOT_OK;
+ 
+-	// Retrieve the CAN ID (TODO add extended ID support)
+-	pdu_info->id = ctrl_base_address->CFDRMID0.UINT32 & 0x000007FF;
++	// Retrieve the CAN ID
++	val = ctrl_base_address->CFDRMID0.UINT32;
++	if (val & 0x80000000)
++	{
++		is_extended_id = 1;
++		val &= TPL_CAN_ID_EXTENDED_MASK;
++	}
++	else
++	{
++		is_extended_id = 0;
++		val &= TPL_CAN_ID_STANDARD_MASK;
++	}
++	pdu_info->id = val;
+ 
+ 	// Retrieve the frame length
+ 	val = ctrl_base_address->CFDRMPTR0.UINT32 >> 28;
+@@ -346,9 +362,22 @@ static Std_ReturnType spider_receive(struct tpl_can_controller_t *ctrl, Can_PduT
+ 	}
+ 
+ 	// Tell userspace about the type of the frame that has been received
+-	// TODO add support for extended ID
++	// Is this CAN-FD ?
+ 	if (ctrl_base_address->CFDRMFDSTS0.BIT.RMFDF)
+-		pdu_info->id |= TPL_CAN_ID_TYPE_FD_STANDARD;
++	{
++		if (is_extended_id)
++			pdu_info->id |= TPL_CAN_ID_TYPE_FD_EXTENDED;
++		else
++			pdu_info->id |= TPL_CAN_ID_TYPE_FD_STANDARD;
++	}
++	// So it is CAN classic
++	else
++	{
++		if (is_extended_id)
++			pdu_info->id |= TPL_CAN_ID_TYPE_EXTENDED;
++		else
++			pdu_info->id |= TPL_CAN_ID_TYPE_STANDARD;
++	}
+ 
+ 	ret = E_OK;
+ 
+-- 
+2.34.1
+

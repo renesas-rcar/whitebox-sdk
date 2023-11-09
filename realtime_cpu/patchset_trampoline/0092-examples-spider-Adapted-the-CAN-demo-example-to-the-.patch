@@ -1,0 +1,46 @@
+From ffce19117677dfb963e18e85a2eae794f97b3e37 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Tue, 3 Oct 2023 11:28:30 +0200
+Subject: [PATCH 19/38] examples: spider: Adapted the CAN demo example to the
+ CAN stack changes.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ examples/cortex-a/armv8/spider/can_demo/can_demo.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/can_demo/can_demo.c b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+index c4b37671..b4b704b4 100644
+--- a/examples/cortex-a/armv8/spider/can_demo/can_demo.c
++++ b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+@@ -26,6 +26,7 @@
+  */
+ #include <Can.h>
+ #include <CanIf.h>
++#include <spider_can.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <tpl_os.h>
+@@ -39,9 +40,16 @@ int main(void)
+ 		{
+ 			&spider_can_controller_0,
+ 			CAN_PROTOCOL_VERSION_CLASSIC,
+-			CAN_BAUD_RATE_125_KBPS,
+-			CAN_BAUD_RATE_125_KBPS // This value is ignored for classic CAN
+-		},
++			{
++				.CanControllerBaudRate = 250,
++				.CanControllerBaudRateConfigID = 0,
++				.CanControllerPropSeg = 1, // Fine tune the bus speed, it is measured at 245KHz
++				.CanControllerSeg1 = 11,
++				.CanControllerSeg2 = 4,
++				.CanControllerSyncJumpWidth = 4,
++				.use_fd_configuration = FALSE
++			},
++		}
+ 	};
+ 	static Can_ConfigType can_config_type =
+ 	{
+-- 
+2.34.1
+

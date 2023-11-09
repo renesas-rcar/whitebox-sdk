@@ -1,0 +1,65 @@
+From 2b6128f6d61ce99f951de5b99c3cd605e95a0425 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Mon, 9 Oct 2023 12:47:58 +0200
+Subject: [PATCH 31/38] examples: spider: Added extended CAN ID support to the
+ CAN demo.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ .../cortex-a/armv8/spider/can_demo/can_demo.c | 26 ++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/examples/cortex-a/armv8/spider/can_demo/can_demo.c b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+index 53aa3d65..bd96e182 100644
+--- a/examples/cortex-a/armv8/spider/can_demo/can_demo.c
++++ b/examples/cortex-a/armv8/spider/can_demo/can_demo.c
+@@ -81,7 +81,7 @@ int main(void)
+ 	};
+ 	int ret;
+ 
+-	// Initialize the CAN module 0 channel 0 at 125 Kbit/s (the default baud rate)
++	// Initialize the CAN module 0 channel 0 with the enabled configuration
+ 	ret = Can_Init(&can_config_type);
+ 	if (ret)
+ 		return -1;
+@@ -96,6 +96,7 @@ TASK(can_task)
+ 	PduInfoType pdu_info;
+ 	uint8 payload[TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE];
+ 	int i;
++	Can_IdType id_without_flags, id_flags;
+ 
+ 	// Send a frame to tell that the program is ready
+ 	can_pdu.id = 0x123 | TPL_CAN_ID_TYPE_STANDARD;
+@@ -116,8 +117,27 @@ TASK(can_task)
+ 			if (pointer_can_pdu->length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
+ 				continue;
+ 
+-			// Increment the CAN ID and the payload bytes
+-			pointer_can_pdu->id++;
++			// Increment the CAN ID and wrap to 0 if the highest ID was received
++			id_flags = pointer_can_pdu->id & TPL_CAN_ID_TYPE_MASK;
++			if ((id_flags == TPL_CAN_ID_TYPE_STANDARD) || (id_flags == TPL_CAN_ID_TYPE_FD_STANDARD))
++			{
++				id_without_flags = pointer_can_pdu->id & TPL_CAN_ID_STANDARD_MASK;
++				if (id_without_flags >= 1023) // 11-bit standard ID
++					id_without_flags = 0;
++				else
++					id_without_flags++;
++			}
++			else
++			{
++				id_without_flags = pointer_can_pdu->id & TPL_CAN_ID_EXTENDED_MASK;
++				if (id_without_flags >= 536870911) // 29-bit extended ID
++					id_without_flags = 0;
++				else
++					id_without_flags++;
++			}
++			pointer_can_pdu->id = id_flags | id_without_flags;
++
++			// Increment the payload bytes
+ 			for (i = 0; i < pointer_can_pdu->length; i++)
+ 				pointer_can_pdu->sdu[i]++;
+ 
+-- 
+2.34.1
+

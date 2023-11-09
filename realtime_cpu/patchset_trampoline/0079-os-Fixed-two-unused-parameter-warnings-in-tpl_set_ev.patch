@@ -1,0 +1,31 @@
+From a84bf8d155b9d7524c991656810baabfe4f4de25 Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Mon, 18 Sep 2023 20:26:28 +0200
+Subject: [PATCH 06/38] os: Fixed two unused parameter warnings in
+ tpl_set_event().
+
+The 'task_id' and 'incoming_event' parameters are not used and trigger
+a compilation warning.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ os/tpl_os_kernel.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/os/tpl_os_kernel.c b/os/tpl_os_kernel.c
+index 341220b3..6987d92f 100644
+--- a/os/tpl_os_kernel.c
++++ b/os/tpl_os_kernel.c
+@@ -1087,6 +1087,9 @@ tpl_set_event(CONST(tpl_task_id, AUTOMATIC) task_id,
+   {
+     result = E_OS_STATE;
+   }
++#else
++  (void) task_id;
++  (void) incoming_event;
+ #endif
+ 
+   return result;
+-- 
+2.34.1
+
