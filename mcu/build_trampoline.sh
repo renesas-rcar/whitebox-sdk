@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 GITHUB_URL=https://github.com/TrampolineRTOS/trampoline
-COMMIT=90adcf3d4d2b8685abd1a6e938c116f43f68c70e
+COMMIT=5deaff4941cb086e25859743973af019f2bad27c
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
 
 export PATH=~/.local/bin:$PATH

@@ -1,0 +1,65 @@
+From 894e137ce060e7c36dddebf425b6b85be7b346bb Mon Sep 17 00:00:00 2001
+From: Adrien Ricciardi <aricciardi@baylibre.com>
+Date: Tue, 17 Oct 2023 17:25:08 +0200
+Subject: [PATCH 34/38] net: can: Added the helper function
+ tpl_can_fill_pdu_info() to ease creating a CAN frame to send.
+
+This avoids having to manually fill a Can_PduType, then fill a PduInfoType
+from the Can_PduType.
+
+Signed-off-by: Adrien Ricciardi <aricciardi@baylibre.com>
+---
+ net/can/CanIf.h        | 20 ++++++++++++++++++++
+ net/can/tpl_can_core.c | 10 ++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/net/can/CanIf.h b/net/can/CanIf.h
+index 181cc4f6..7cfeb06c 100644
+--- a/net/can/CanIf.h
++++ b/net/can/CanIf.h
+@@ -84,4 +84,24 @@ Std_ReturnType CanIf_Transmit(PduIdType TxPduId, const PduInfoType *PduInfoPtr);
+  */
+ Std_ReturnType CanIf_ReadRxPduData(PduIdType CanIfRxSduId, PduInfoType *CanIfRxInfoPtr);
+ 
++/**
++ * Ease the filling of a PduInfoType struct from the content of a Can_PduType
++ * struct, and also prepares the Can_PduType content.
++ * This way, it is faster to prepare a CAN frame to be sent with the
++ * CanIf_Transmit() function.
++ *
++ * @param can_pdu A non-initialized CAN PDU structure, it will be filled by this
++ * function.
++ * @param pdu_info A non-initialized generic PDU info structure, it will also
++ * be filled by this function.
++ * @param id_and_flags The CAN ID (standard or extended) ORed with the frame
++ * type flag (use a constant from TPL_CAN_ID_TYPE_xx).
++ * @param payload A pointer to the buffer already containing the frame payload.
++ * @param payload_length The payload length in bytes. The length will be
++ * automatically rounded by the CAN stack if it is of CAN-FD format and should
++ * be adjusted to an available Data Length Code (@see
++ * tpl_can_get_dlc_from_length).
++ */
++void tpl_can_fill_pdu_info(Can_PduType *can_pdu, PduInfoType *pdu_info, Can_IdType id_and_flags, void *payload, uint32 payload_length);
++
+ #endif
+diff --git a/net/can/tpl_can_core.c b/net/can/tpl_can_core.c
+index 0c3eb458..abb14e40 100644
+--- a/net/can/tpl_can_core.c
++++ b/net/can/tpl_can_core.c
+@@ -192,3 +192,13 @@ uint32 tpl_can_get_length_from_dlc(uint32 dlc)
+ 
+ 	return length[dlc];
+ }
++
++void tpl_can_fill_pdu_info(Can_PduType *can_pdu, PduInfoType *pdu_info, Can_IdType id_and_flags, void *payload, uint32 payload_length)
++{
++	can_pdu->id = id_and_flags;
++	can_pdu->sdu = payload;
++	can_pdu->length = (uint8) payload_length;
++
++	pdu_info->SduDataPtr = (uint8 *) can_pdu;
++	pdu_info->SduLength = sizeof(can_pdu) + payload_length;
++}
+-- 
+2.34.1
+
