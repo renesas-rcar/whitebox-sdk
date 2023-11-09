@@ -1,0 +1,70 @@
+From 90b4df81714aabe87f883ca7bbedcc3cfbbce355 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Thu, 9 Nov 2023 11:06:02 +0900
+Subject: [PATCH] trampoline: Fix CAN8 support for spider
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ examples/renesas/sample/memory_unlocker.c | 11 ++++++++++-
+ examples/renesas/sample/memory_unlocker.h |  9 +++++++++
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/examples/renesas/sample/memory_unlocker.c b/examples/renesas/sample/memory_unlocker.c
+index 5324b680..d51f9072 100644
+--- a/examples/renesas/sample/memory_unlocker.c
++++ b/examples/renesas/sample/memory_unlocker.c
+@@ -18,6 +18,15 @@ void memory_unlocker(void)
+ 	PBG21PROT0_m(1) = 0x000000D0; // Port configuration register PBG protection release
+ 	PBG21PROT1_m(1) = 0x040000FF; // Port configuration register PBG protection release　SPID=0~7 enable
+ 
++	// P-Bus group 3
++	PBG30KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	for (channel = 0; channel < 3; channel++) // Channels 13 to 15 correspond to the RSCFD1 CAN8 to CAN10
++		PBG32PROT0_m(channel + 13) = 0x000000D3;
++	for (channel = 0; channel < 5; channel++) // Channels 0 to 4 correspond to the RSCFD1 CAN11 to CAN15
++		PBG33PROT0_m(channel) = 0x000000D3;
++	PBG33PROT0_m(5) = 0x000000D3; // RSCFD1 common registers
++	PBG33PROT0_m(7) = 0x000000D3; // RSCFD1 global registers
++
+ 	// P-Bus group 7
+ 	PBG70KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
+ 	PBG70PROT0_m(3) = 0x000000D0; // RIIC0 PBG protection release
+@@ -25,7 +34,7 @@ void memory_unlocker(void)
+ 
+ 	// P-Bus group 8
+ 	PBG80KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
+-	for (channel = 0; channel < 8; channel++) // Channels 2 to 9 are the RSCFD0 CAN0 to CAN7
++	for (channel = 0; channel < 8; channel++) // Channels 2 to 9 correspond to the RSCFD0 CAN0 to CAN7
+ 		PBG80PROT0_m(channel + 2) = 0x000000D3;
+ 	PBG80PROT0_m(10) = 0x000000D3; // RSCFD0 common registers
+ 	PBG80PROT0_m(12) = 0x000000D3; // RSCFD0 global registers
+diff --git a/examples/renesas/sample/memory_unlocker.h b/examples/renesas/sample/memory_unlocker.h
+index 02741bf1..af442d23 100644
+--- a/examples/renesas/sample/memory_unlocker.h
++++ b/examples/renesas/sample/memory_unlocker.h
+@@ -8,6 +8,9 @@
+ #define PBG20_base  0xFFDE0B00 // P-Bus Group 2L
+ #define PBG21_base 0xFFDE0C00 // P-Bus Group 2L
+ #define PBGERRSLV20_base 0xFFDE1000 // P-Bus Group 2L
++#define PBG32_base 0xFFC72D00 // P-Bus Group 3
++#define PBG33_base 0xFFC72E00 // P-Bus Group 3
++#define PBGERRSLV30_base 0xFFC73200 // P-Bus Group 3
+ #define PBG70_base 0xFFF49400 // P-Bus Group 7
+ #define PBGERRSLV70_base 0xFFF4A000 // P-Bus Group 7
+ #define PBG80_base 0xFFF29300 // P-Bus Group 8
+@@ -25,6 +28,12 @@
+ #define PBG21PROT0_m(m) (*(volatile unsigned long *) (PBG21_base + 0x0 + 0x8 * (m)))
+ #define PBG21PROT1_m(m) (*(volatile unsigned long *) (PBG21_base + 0x4 + 0x8 * (m)))
+ 
++#define PBG30KCPROT (*(volatile unsigned long *) (PBGERRSLV30_base + 0x18))
++#define PBG32PROT0_m(m) (*(volatile unsigned long *) (PBG32_base + 0x0 + 0x8 * (m)))
++#define PBG32PROT1_m(m) (*(volatile unsigned long *) (PBG32_base + 0x4 + 0x8 * (m)))
++#define PBG33PROT0_m(m) (*(volatile unsigned long *) (PBG33_base + 0x0 + 0x8 * (m)))
++#define PBG33PROT1_m(m) (*(volatile unsigned long *) (PBG33_base + 0x4 + 0x8 * (m)))
++
+ #define PBG70KCPROT (*(volatile unsigned long *) (PBGERRSLV70_base + 0x18))
+ #define PBG70PROT0_m(m) (*(volatile unsigned long *) (PBG70_base + 0x0 + 0x8 * (m)))
+ #define PBG70PROT1_m(m) (*(volatile unsigned long *) (PBG70_base + 0x4 + 0x8 * (m)))
+-- 
+2.25.1
+
