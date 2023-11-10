@@ -59,9 +59,9 @@ variables:
 
   GEN4_XT_DOMD_DTB_NAME: "%{GEN4_SOC_FAMILY}-%{GEN4_MACHINE}-domd.dtb"
   GEN4_XT_XEN_DTB_NAME: "%{GEN4_SOC_FAMILY}-%{GEN4_MACHINE}-xen.dtb"
-  GEN4_XT_DOMD_CONFIG_NAME: "domd-spider.cfg"
+  GEN4_XT_DOMD_CONFIG_NAME: "domd-%{GEN4_MACHINE}.cfg"
 
-  GEN4_XT_OPTEE_FLAVOR: "spider_s4"
+  GEN4_XT_OPTEE_FLAVOR: "%{GEN4_MACHINE}_s4"
 
   GEN4_XT_KERNEL_BRANCH: "v5.10.41/rcar-5.1.7.rc5-xt"
   GEN4_XT_KERNEL_REV: "${AUTOREV}"
@@ -485,7 +485,7 @@ images:
         gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
         type: raw_image
         size: 1024 MiB
-        image_path: "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/rcar-image-minimal-spider.ext4"
+        image_path: "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/rcar-image-minimal-%{GEN4_MACHINE}.ext4"
 
       domd_var:
         gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
