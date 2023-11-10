@@ -776,6 +776,10 @@ parameters:
         images:
           gen4_full:
             sector_size: 4096
+            partitions:
+              domd_var:
+                files:
+                  "/boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/boot-ufs.uImage"
     "no":
       default: true
       desc: "Nothing to do"
