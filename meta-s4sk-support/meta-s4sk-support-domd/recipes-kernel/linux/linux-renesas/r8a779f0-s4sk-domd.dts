@@ -54,7 +54,7 @@
 };
 
 /* Xen will provide vITS with phandle == PHANDLE_ITS. */
-/delete-node/&gic_its;
+// /delete-node/&gic_its;
 
 &pciec0 {
 	msi-map = <0x0 PHANDLE_ITS 0x0 0x1000>;
