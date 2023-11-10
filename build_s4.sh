@@ -4,6 +4,7 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 cd $SCRIPT_DIR
 
 CLEAN_BUILD_FLAG=false
+USE_UFS=no
 Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
@@ -12,6 +13,7 @@ Usage() {
     echo "    - s4sk: for S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -u: Use UFS as boot storage(Default is disable)"
     echo "    -h: Show this usage"
 }
 
@@ -28,10 +30,11 @@ BOARD=$1
 
 # Proc arguments
 OPTIND=2
-while getopts "ch" OPT
+while getopts "cuh" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
+        u) USE_UFS=yes;;
         h) Usage; exit;;
         *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
@@ -62,7 +65,8 @@ fi
 moulin ./aos-rcar-demo2023.yaml \
     --GEN3_DEVICE disable \
     --GEN3_MACHINE h3ulcb-4x2g \
-    --GEN4_MACHINE $BOARD
+    --GEN4_MACHINE $BOARD \
+    --USING_UFS_AS_STORAGE $USE_UFS
 
 ninja
 ninja gen4_full.img

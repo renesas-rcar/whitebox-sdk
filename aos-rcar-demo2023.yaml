@@ -744,6 +744,7 @@ parameters:
       overrides:
         variables:
           GEN4_MACHINE: s4sk
+          USE_UFS: "0"
         components:
           gen4-dom0:
             builder:
@@ -761,6 +762,21 @@ parameters:
                 - "../../../../../meta-s4sk-support/meta-s4sk-support-driver-domain"
               conf:
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
+                - [USE_UFS, "%{USE_UFS}"]
                 #- [IMAGE_INSTALL_append, " s4-boot-script"]
               target_images:
                 - "tmp/deploy/images/%{GEN4_MACHINE}/boot-ufs.uImage"
+
+  USING_UFS_AS_STORAGE:
+    desc: "Using UFS instead of eMMC/SD card"
+    "yes":
+      overrides:
+        variables:
+          USE_UFS: "1"
+        images:
+          gen4_full:
+            sector_size: 4096
+    "no":
+      default: true
+      desc: "Nothing to do"
+
