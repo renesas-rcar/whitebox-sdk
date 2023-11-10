@@ -124,7 +124,7 @@
 };
 
 &mmc0 {
-	status = "disabled";
+	status = "okay";
 };
 
 /* Force enable UFS */
