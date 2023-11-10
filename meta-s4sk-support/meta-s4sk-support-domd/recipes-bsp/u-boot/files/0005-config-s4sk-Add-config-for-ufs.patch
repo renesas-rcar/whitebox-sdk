@@ -1,0 +1,27 @@
+From e0a2a61d48ba328ba9da622022fbaa66707dc62e Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 8 Sep 2023 16:21:23 +0900
+Subject: [PATCH 5/6] config: s4sk: Add config for ufs
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ configs/r8a779f0_s4sk_defconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/configs/r8a779f0_s4sk_defconfig b/configs/r8a779f0_s4sk_defconfig
+index 249f2e3dd7..6afa5bf74d 100644
+--- a/configs/r8a779f0_s4sk_defconfig
++++ b/configs/r8a779f0_s4sk_defconfig
+@@ -63,3 +63,9 @@ CONFIG_SPI=y
+ CONFIG_DM_SPI=y
+ CONFIG_RENESAS_RPC_SPI=y
+ CONFIG_OF_LIBFDT_OVERLAY=y
++
++CONFIG_SCSI=y
++CONFIG_DM_SCSI=y
++CONFIG_CMD_SCSI=y
++CONFIG_UFS=y
++CONFIG_RENESAS_UFS=y
+-- 
+2.34.1
+

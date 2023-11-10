@@ -1,0 +1,30 @@
+From 08d3e57aba02dcf12b32bd36c4408d62640216d3 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 6 Oct 2023 10:20:36 +0900
+Subject: [PATCH] HACK: Workaround to use UFS on S4SK
+
+scsi_exec always returns -22 and device detection fails.
+But, device can be used even if it returns error.
+Thus, this patch skips early return in order to use UFS on S4SK.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ drivers/scsi/scsi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 0ab1d441f4..aaf4d65f75 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -538,7 +538,7 @@ static int scsi_detect_dev(struct udevice *dev, int target, int lun,
+ 			goto removable;
+ 		}
+ 		scsi_print_error(pccb);
+-		return -EINVAL;
++		// return -EINVAL;
+ 	}
+ 	if (scsi_read_capacity(dev, pccb, &capacity, &blksz)) {
+ 		scsi_print_error(pccb);
+-- 
+2.34.1
+

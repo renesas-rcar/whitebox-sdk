@@ -1,0 +1,45 @@
+From a61c379e2335a50d81e450666340fff1bda2b15a Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Wed, 23 Aug 2023 18:15:42 +0900
+Subject: [PATCH] FIX s4sk for optee
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ core/arch/arm/plat-rcar/main.c            | 3 ++-
+ core/arch/arm/plat-rcar/platform_config.h | 6 ++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/core/arch/arm/plat-rcar/main.c b/core/arch/arm/plat-rcar/main.c
+index 0aa55433b..83cd4071f 100644
+--- a/core/arch/arm/plat-rcar/main.c
++++ b/core/arch/arm/plat-rcar/main.c
+@@ -48,7 +48,8 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC, PRR_BASE, SMALL_PAGE_SIZE);
+ 	defined(PLATFORM_FLAVOR_salvator_h3_4x2g) || \
+ 	defined(PLATFORM_FLAVOR_salvator_m3) || \
+ 	defined(PLATFORM_FLAVOR_salvator_m3_2x4g) || \
+-	defined(PLATFORM_FLAVOR_spider_s4)
++	defined(PLATFORM_FLAVOR_spider_s4) || \
++	defined(PLATFORM_FLAVOR_s4sk_s4)
+ register_ddr(NSEC_DDR_0_BASE, NSEC_DDR_0_SIZE);
+ register_ddr(NSEC_DDR_1_BASE, NSEC_DDR_1_SIZE);
+ #ifdef NSEC_DDR_2_BASE
+diff --git a/core/arch/arm/plat-rcar/platform_config.h b/core/arch/arm/plat-rcar/platform_config.h
+index f9d5d7182..0e40a9b1c 100644
+--- a/core/arch/arm/plat-rcar/platform_config.h
++++ b/core/arch/arm/plat-rcar/platform_config.h
+@@ -99,6 +99,12 @@
+ #define NSEC_DDR_1_BASE		0x480000000U
+ #define NSEC_DDR_1_SIZE		0x80000000U
+ 
++#elif defined(PLATFORM_FLAVOR_s4sk_s4)
++#define NSEC_DDR_0_BASE		0x48000000
++#define NSEC_DDR_0_SIZE		0x78000000
++#define NSEC_DDR_1_BASE		0x480000000U
++#define NSEC_DDR_1_SIZE		0x80000000U
++
+ #else
+ 
+ /* Generic DT-based platform */
+-- 
+2.25.1
+
