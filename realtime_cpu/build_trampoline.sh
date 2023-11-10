@@ -58,9 +58,12 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     cd ${SOURCE_DIR}
     git reset --hard ${COMMIT} ; git clean -df
 
-    # prepare Benchmarks code
+    # prepare whitebox code
     rm -rf examples/cortex-a/armv8
     git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
+    if [ "$1" == "spider" ];  then
+        git am ${SCRIPT_DIR}/patchset_trampoline/spider/*.patch
+    fi
     git submodule init
     git submodule update net/ethernet/lwip
 
@@ -85,6 +88,7 @@ fi
 # Setup uart baudrate
 if [ "$1" == "s4sk" ]; then
     sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample_not_can.oil
     sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
 elif [ "$1" == "spider" ];  then
     sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
@@ -100,19 +104,31 @@ cd ${SOURCE_DIR}/goil/makefile-unix
 ./build.py
 export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
 
-# build sample project
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
-bash ./build.sh
-
 # deploy
 rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
+
+# build sample project
+cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
+rm -rf sample
+rm -rf sample_not_can
+chmod +x ./build.sh
+./build.sh
 arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/cr52.srec
+
+# build sample(can disable) project
+if [ "$1" == "s4sk" ]; then
+    cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
+    rm -rf sample
+    rm -rf sample_not_can
+    chmod +x ./build_not_can.sh
+    ./build_not_can.sh
+    arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/cr52_can_disable.srec
+fi
 
 # build eathernet project
 cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet
 chmod +x ./build.sh
 ./build.sh
-mkdir -p ${SCRIPT_DIR}/deploy
 arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
 
