@@ -1,0 +1,32 @@
+From 032062d3172d76c71a0f28e0c37e59446b740ce1 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 10 Oct 2023 20:28:08 +0900
+Subject: [PATCH] HACK: ufs: Force enable initilized flag
+
+If UFS has already initilaized on U-Boot, initilization fails on Linux
+driver.
+However, currently there is no mechaniseme to chacking whether UFS is
+already initilized or not.
+Thus, this patch make to enable initialized flag forcely.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ drivers/scsi/ufs/ufs-renesas.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/scsi/ufs/ufs-renesas.c b/drivers/scsi/ufs/ufs-renesas.c
+index 01f1d8bb8515..adff7fba2196 100644
+--- a/drivers/scsi/ufs/ufs-renesas.c
++++ b/drivers/scsi/ufs/ufs-renesas.c
+@@ -333,6 +333,8 @@ static int ufs_renesas_hce_enable_notify(struct ufs_hba *hba,
+ {
+ 	struct ufs_renesas_priv *priv = ufshcd_get_variant(hba);
+ 
++	priv->initialized = true;
++
+ 	if (priv->initialized)
+ 		return 0;
+ 
+-- 
+2.34.1
+
