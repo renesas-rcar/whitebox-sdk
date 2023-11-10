@@ -254,10 +254,6 @@ components:
     sources:
       - *COMMON_SOURCES
       - *DOMD_SOURCES
-      - type: git
-        url: https://github.com/renesas-rcar/meta-renesas.git
-        rev: "61b40143"
-        dir: "meta-renesas-gen4"
 
     builder:
       type: yocto
@@ -727,6 +723,14 @@ parameters:
     desc: RCAR Gen4-based machine
     spider:
       default: true
+      overrides:
+        components:
+          gen4-domd:
+            sources:
+              - type: git
+                url: https://github.com/renesas-rcar/meta-renesas.git
+                rev: "7c29e7bdae360a86fa77ef561e01cc0c18d2e01f"
+                dir: "meta-renesas-gen4"
     s4sk:
       overrides:
         variables:
@@ -737,6 +741,11 @@ parameters:
               layers:
                 - "../../../../../meta-s4sk-support/meta-s4sk-support-dom0"
           gen4-domd:
+            sources:
+              - type: git
+                url: https://github.com/renesas-rcar/meta-renesas.git
+                rev: "dunfell"
+                dir: "meta-renesas-gen4"
             builder:
               layers:
                 - "../../../../../meta-s4sk-support/meta-s4sk-support-domd"
