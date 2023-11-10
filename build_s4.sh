@@ -62,7 +62,6 @@ fi
 moulin ./aos-rcar-demo2023.yaml \
     --GEN3_DEVICE disable \
     --GEN3_MACHINE h3ulcb-4x2g \
-    --DOM0 linux \
     --GEN4_MACHINE $BOARD
 
 ninja
