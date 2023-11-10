@@ -9,6 +9,7 @@ USE_UFS_S4SK = " \
 "
 
 SRC_URI_append_s4sk = " \
+    file://ufs.cfg \
     ${@oe.utils.conditional("USE_UFS", "1", "${USE_UFS_S4SK}", "", d)} \
 "
 
