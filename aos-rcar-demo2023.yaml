@@ -230,11 +230,11 @@ components:
         - "../../../meta-xt-common/meta-xt-control-domain"
         - "../../../meta-xt-common/meta-xt-domx"
         - "../../../meta-xt-common/meta-xt-dom0"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-dom0"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-dom0"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-control-domain"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-dom0"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-control-domain"
 
       build_target: core-image-thin-initramfs
       external_src:
@@ -306,11 +306,11 @@ components:
         - "../../../meta-renesas-gen4/meta-rcar-gateway"
         - "../../../meta-xt-common/meta-xt-domx"
         - "../../../meta-xt-common/meta-xt-driver-domain"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domd"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen4/meta-aos-rcar-gen4-driver-domain"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domd"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd"
+        - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-driver-domain"
 
       target_images:
         - "tmp/deploy/images/%{GEN4_MACHINE}/Image"
@@ -360,9 +360,9 @@ components:
         - "../../../meta-xt-common/meta-xt-domx"
         - "../../../meta-xt-common/meta-xt-dom0"
         - "../../../meta-xt-rcar/meta-xt-rcar-dom0"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-dom0"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
+        - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
 
       build_target: core-image-thin-initramfs
       external_src:
@@ -431,9 +431,9 @@ components:
         - "../../../meta-xt-rcar/meta-xt-rcar-fixups"
         - "../../../meta-xt-rcar/meta-xt-rcar-domx"
         - "../../../meta-xt-rcar/meta-xt-rcar-driver-domain"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domx"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-common/meta-aos-rcar-common-domd"
-        - "../../../meta-aos-rcar-demo2023/meta-aos-rcar-gen3/meta-aos-rcar-gen3-domd"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domd"
+        - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-domd"
 
       target_images:
         - "tmp/deploy/images/%{GEN3_MACHINE}/Image"
