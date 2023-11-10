@@ -264,7 +264,7 @@
 //&i2c2			{ xen,passthrough; }; /* use for UFS?? */
 //&i2c4			{ xen,passthrough; };
 //&i2c5			{ xen,passthrough; };
-//&mmc0			{ xen,passthrough; }; /* mmc0 is used on Dom0 Zephyr */
+&mmc0			{ xen,passthrough; }; /* mmc0 is used on Dom0 Zephyr */
 &pciec0			{ xen,passthrough; };
 &scif0			{ xen,passthrough; };
 &scif3			{ xen,passthrough; };
