@@ -25,6 +25,12 @@ elif [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
     Usage; exit
 fi
 
+ICUMX_LOADER_PATH=$(find ${BASE_DIR}/tool -name "*ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv*.zip")
+if [ "${ICUMX_LOADER_PATH}" == "" ]; then
+  echo -e "\e[31mERROR: ICUMX loader file (zip) not found in tool directory.\e[m"
+  exit
+fi
+
 # deploy images
 cd ${BASE_DIR}
 rm -rf deploy
@@ -54,4 +60,7 @@ cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec de
 cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec deploy/
 
 ls -l deploy
+
+cd tool
+./setup_ipl.sh $1
 
