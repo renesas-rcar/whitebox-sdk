@@ -2,12 +2,21 @@
 
 # Serial port: e.g. /dev/ttyUSB0
 USB_PORT=/dev/ttyUSB0
+
 WORK_BASE=`pwd`
 IPL_PATH=${WORK_BASE}
 MOT_PATH=${WORK_BASE}
 
-BURN_PATTERN=-1
-WRITE_PATTERN=all
+CR52_NAME="App_CDD_ICCOM_S4_Sample_CR52.srec"
+G4MH_NAME="App_CDD_ICCOM_S4_Sample_G4MH.srec"
+CHECK_FILE="./g4mh_trampoline_deploy/g4mh_can_disable.srec"
+
+BURN_PATTERN=1
+WRITE_FLAG_G4MH=0
+WRITE_FLAG_CR52=0
+WRITE_FLAG_ALL=0
+SELECT_CAN=0
+WRITE_PATTERN=""
 
 # Burn patterns: G4MH, CR52
 BURN_PATTERNS=( "dummy" "dummy" # -0(dummy)
@@ -20,7 +29,7 @@ BURN_PATTERS_NUM=$((${#BURN_PATTERNS[@]} / 2  -1))
 
 Usage() {
     echo "Usage:"
-    echo "    $0 board [option] [option2]"
+    echo "    $0 board [option]"
     echo "board:"
     echo "    - spider: for S4 Spider"
     echo "    - s4sk: for S4 Starter Kit"
@@ -30,12 +39,12 @@ Usage() {
         echo -ne "G4MH=${BURN_PATTERNS[$((2*$key+0))]}\t"
         echo -e "CR52=${BURN_PATTERNS[$((2*$key+1))]}"
     done
-    echo "    -h: Show this usage"
-
-    echo "option2:"
     echo "    all: All writes (default)"
     echo "    g4mh: Only g4mh writes"
     echo "    cr52: Only cr52 writes"
+    echo "    -g: G4MH with CAN"
+    echo "    -r: CR52 with CAN"
+    echo "    -h: Show this usage"
 }
 
 if [[ $# < 1 ]] ; then
@@ -49,68 +58,89 @@ elif [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
     echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
     Usage; exit
 fi
+BOARD_TYPE=$1
 
-# Without option, pattern 1 is selected by default.
-if [[ $# < 3 ]]; then
-    if [[ $# < 2 ]]; then
-        $0 $1 -1 all
+if [[ $BOARD_TYPE = "s4sk" ]]; then
+    if [ ! -e "$CHECK_FILE" ]; then
+        echo -e "\e[31mERROR: Is the board selected correct?\e[m"
         exit
     fi
-    if [[ "$2" == "all" ]] || [[ "$2" == "g4mh" ]] || [[ "$2" == "cr52" ]]; then
-        $0 $1 -1 $2
-        exit
-    elif  [[ "$2" == "-1" ]] || [[ "$2" == "-2" ]] || [[ "$2" == "-3" ]] || [[ "$2" == "-4" ]]; then
-        $0 $1 $2 all
-        exit
-    else
-        echo -e "\e[31mERROR: Unsupported option\e[m"
-	Usage; exit
-    fi
-elif [[ $# > 3 ]]; then # option can be used only one
-    Usage; exit
 fi
 
-# Proc arguments
-OPTIND=2
-while getopts "1234h" OPT
+count=$#
+for i in `seq 2 $count`
 do
-  case $OPT in
-     [0-9]) BURN_PATTERN=$OPT;;
-     h) Usage; exit;;
-     *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
-  esac
+    param="${@:i:1}"
+    if [[ "$param" == "all" ]] || [[ "$param" == "g4mh" ]] || [[ "$param" == "cr52" ]]; then
+        if  [[ "$param" == "g4mh" ]]; then
+            WRITE_FLAG_G4MH=1
+        elif  [[ "$param" == "cr52" ]]; then
+            WRITE_FLAG_CR52=1
+        else
+            WRITE_FLAG_ALL=1
+        fi
+    elif  [[ "$param" == "-1" ]] || [[ "$param" == "-2" ]] || [[ "$param" == "-3" ]] || [[ "$param" == "-4" ]]; then
+        BURN_PATTERN=$(echo "$param" | sed 's/[^0-9]*//')
+    elif  [[ "$param" == "-r" ]] || [[ "$param" == "-g" ]]; then
+        if [[ "$param" == "-g" ]]; then
+            SELECT_CAN=1;
+        else
+            SELECT_CAN=0;
+        fi
+    else
+        echo -e "\e[31mERROR: Unsupported option\e[m"
+	    Usage; exit
+    fi
 done
+
 G4MH=${BURN_PATTERNS[$((2*${BURN_PATTERN}+0))]}
 CR52=${BURN_PATTERNS[$((2*${BURN_PATTERN}+1))]}
 
-if [[ "$3" == "all" ]]; then
-    WRITE_PATTERN=all
-elif [[ "$3" == "g4mh" ]]; then
-    WRITE_PATTERN=g4mh
-elif [[ "$3" == "cr52" ]]; then
-    WRITE_PATTERN=rtos
+if [[ "$BOARD_TYPE" = "spider" ]]; then
+    case $G4MH in
+        "Trampoline") cp ./g4mh_trampoline_deploy/g4mh.srec $G4MH_NAME;;
+        "SafeG-Auto") cp ./g4mh_safegauto_deploy/g4mh.srec $G4MH_NAME;;
+    esac
+    case $CR52 in
+        "Trampoline") cp ./cr52_trampoline_deploy/cr52.srec $CR52_NAME;;
+        "Zephyr")     cp ./cr52_zephyr_deploy/cr52.srec $CR52_NAME;;
+    esac
 else
-    echo -e "\e[31mERROR: Unsupported option\e[m"
-    Usage; exit
+    case $G4MH in
+        "Trampoline") 
+            if [ "$SELECT_CAN" -eq 1 ]; then
+                cp ./g4mh_trampoline_deploy/g4mh.srec $G4MH_NAME
+            else
+                cp ./g4mh_trampoline_deploy/g4mh_can_disable.srec $G4MH_NAME
+            fi
+            ;;
+        "SafeG-Auto") cp ./g4mh_safegauto_deploy/g4mh.srec $G4MH_NAME;;
+    esac
+    case $CR52 in
+        "Trampoline")
+            if [ "$SELECT_CAN" -eq 0 ]; then
+                cp ./cr52_trampoline_deploy/cr52.srec $CR52_NAME
+            else
+                cp ./cr52_trampoline_deploy/cr52_can_disable.srec $CR52_NAME
+            fi
+            ;;
+        "Zephyr")     cp ./cr52_zephyr_deploy/cr52.srec $CR52_NAME;;
+    esac
 fi
 
-if [ ! -d "deploy" ]; then
-  echo -e "\e[31mERROR: Please copy the built deploy directory\e[m"
-  exit
+
+WRITE_FLAG=$((WRITE_FLAG_G4MH+WRITE_FLAG_CR52+WRITE_FLAG_ALL))
+if [ "$WRITE_FLAG" -eq 0 ] || [ "$WRITE_FLAG_ALL" -eq 1 ]; then
+    WRITE_PATTERN="all"
+else
+    if [ "$WRITE_FLAG_G4MH" -eq 1 ]; then
+        WRITE_PATTERN="$WRITE_PATTERN g4mh"
+    fi
+    if [ "$WRITE_FLAG_CR52" -eq 1 ]; then
+        WRITE_PATTERN="$WRITE_PATTERN rtos"
+    fi
 fi
-
-cp deploy/*.srec .
-case $G4MH in
-    "Trampoline") cp deploy/g4mh_trampoline_deploy/g4mh.srec App_CDD_ICCOM_S4_Sample_G4MH.srec;;
-    "SafeG-Auto") cp deploy/g4mh_safegauto_deploy/g4mh.srec App_CDD_ICCOM_S4_Sample_G4MH.srec;;
-esac
-case $CR52 in
-    "Trampoline") cp deploy/cr52_trampoline_deploy/cr52.srec App_CDD_ICCOM_S4_Sample_CR52.srec;;
-    "Zephyr")     cp deploy/cr52_zephyr_deploy/cr52.srec App_CDD_ICCOM_S4_Sample_CR52.srec;;
-esac
-
-# Changed CR52 memory placement to 0x40040000
-sed -i 's/S315EB23695000000000000010E2000000000000000031/S315EB23695000000000000004400000000000000000DF/g' cert_header_sa9.srec
 
 # Flash IPL
 python3 ipl_burning.py $1 $USB_PORT $MOT_PATH $IPL_PATH $WRITE_PATTERN
+
