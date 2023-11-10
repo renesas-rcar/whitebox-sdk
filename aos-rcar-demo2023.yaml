@@ -489,6 +489,7 @@ images:
         size: 512 MiB
         files:
           "/aos/.unprovisioned": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/aos/.unprovisioned"
+          "/boot-mmc.uImage": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/boot-mmc.uImage"
 
       domd_aos:
         gpt_type: CA7D7CCB-63ED-4C53-861C-1742536059CC # LUKS partition
@@ -731,6 +732,14 @@ parameters:
                 url: https://github.com/renesas-rcar/meta-renesas.git
                 rev: "7c29e7bdae360a86fa77ef561e01cc0c18d2e01f"
                 dir: "meta-renesas-gen4"
+            builder:
+              layers:
+                - "../../../../../meta-spider-support/meta-spider-support-domd"
+              conf:
+                - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
+                - [IMAGE_INSTALL_append, " s4-boot-script"]
+              target_images:
+                - "tmp/deploy/images/%{GEN4_MACHINE}/boot-mmc.uImage"
     s4sk:
       overrides:
         variables:
