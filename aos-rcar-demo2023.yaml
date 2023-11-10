@@ -753,7 +753,7 @@ parameters:
             sources:
               - type: git
                 url: https://github.com/renesas-rcar/meta-renesas.git
-                rev: "61b40143"
+                rev: "fb473de"
                 dir: "meta-renesas-gen4"
             builder:
               layers:
