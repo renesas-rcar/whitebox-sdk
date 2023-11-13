@@ -13,6 +13,6 @@ setenv aos_load_vars 'run aos_default_vars; if load mmc 0:3 ${loadaddr} uboot.en
 setenv aos_boot1 'if test ${aos_boot1_ok} -eq 1; then setenv aos_boot1_ok 0; setenv aos_boot2_ok 1; setenv aos_boot_part 0; setenv aos_boot_slot 1; echo "==== Boot from part 1"; run aos_save_vars; run bootcmd_mmc0; fi'
 setenv aos_boot2 'if test ${aos_boot2_ok} -eq 1; then setenv aos_boot2_ok 0; setenv aos_boot1_ok 1; setenv aos_boot_part 1; setenv aos_boot_slot 2; echo "==== Boot from part 2"; run aos_save_vars; run bootcmd_mmc0; fi'
 setenv bootcmd_aos 'run aos_load_vars; if test ${aos_boot_main} -eq 0; then run aos_boot1; run aos_boot2; else run aos_boot2; run aos_boot1; fi'
-setenv bootcmd 'scsi scan; run bootcmd_aos'
+setenv bootcmd 'run bootcmd_aos'
 boot
 
