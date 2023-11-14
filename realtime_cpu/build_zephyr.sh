@@ -38,9 +38,8 @@ elif [ "$1" == "spider" ]; then BOARD="spider"
 else echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"; Usage; exit
 fi
 
-if [[ ! -e ${ZEPHYR_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
+if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
     rm -rf ${ZEPHYR_DIR}
-    mkdir -p ${ZEPHYR_DIR}
 fi
 
 # Setup SDK
@@ -60,7 +59,7 @@ pip install wheel
 pip install west
 
 # Setup source code
-if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
+if [[ ! -e "${ZEPHYR_DIR}/zephyr" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     cd ${ZEPHYR_DIR}
     if [ ! -e "./.west/config" ]; then
         west init -m  https://github.com/iotbzh/zephyr.git --manifest-rev 2022-12-20-s4sk ${ZEPHYR_DIR}
@@ -84,7 +83,7 @@ cp -f ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.srec ${SCRIPT_DIR}/deploy/cr52.sr
 
 # build benchmark
 ## Setup source code
-if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
+if [[ ! -e "${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src/dhrystone" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     ### Dhrystone
     cd ${ZEPHYR_DIR}/zephyr/samples/basic/benchmark/src
     rm -rf ./dhrystone
