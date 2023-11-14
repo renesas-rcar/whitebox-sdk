@@ -41,6 +41,7 @@ fi
 if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
     rm -rf ${ZEPHYR_DIR}
 fi
+mkdir -p ${ZEPHYR_DIR}
 
 # Setup SDK
 cd ${SCRIPT_DIR}
@@ -53,8 +54,8 @@ cd zephyr-sdk-0.15.2
 ./setup.sh -c
 
 # Setup python env
-python3 -m venv ${ZEPHYR_DIR}/.venv
-source ${ZEPHYR_DIR}/.venv/bin/activate
+python3 -m venv ${ZEPHYR_SDK_PATH}/.venv
+source ${ZEPHYR_SDK_PATH}/.venv/bin/activate
 pip install wheel
 pip install west
 
