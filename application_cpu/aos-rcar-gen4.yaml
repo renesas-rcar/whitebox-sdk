@@ -359,4 +359,4 @@ parameters:
       overrides:
         variables:
           MACHINE: "s4sk"
-          META_RENESAS_COMMIT: "fb473de"
+          META_RENESAS_COMMIT: "fb473def"
