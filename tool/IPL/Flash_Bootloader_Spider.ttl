@@ -14,26 +14,75 @@ IMGNM[7]  = 'bl31-spider.srec'
 IMGNM[8]  = 'tee-spider.srec'
 IMGNM[9]  = 'u-boot-elf-spider.srec'
 
-strdim LIST 4
-    LIST[0] = 'G4MH=Trampoline CR52:Trampoline'
-    LIST[1] = 'G4MH=Safeg-auto CR52:Trampoline'
-    LIST[2] = 'G4MH=Trampoline CR52:Zephyr'
-    LIST[3] = 'G4MH=Safeg-auto CR52:Zephyr'
-listbox 'List' 'Set' LIST
+G4MH = 'Trampoline'
+CR52 = 'Trampoline'
+;---------------------------------------------------
+; Select G4MH OS
+;---------------------------------------------------
+strdim LIST 2
+    LIST[0] = '1: Trampoline'
+    LIST[1] = '2: Safeg-auto'
+listbox '' 'Select G4MH OS' LIST
 if result = 0 then
-    IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
-    IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
+    G4MH = 'Trampoline'
 elseif result = 1 then
-    IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
-    IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
-elseif result = 2 then
-    IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
-    IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
-elseif result = 3 then
-    IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
-    IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+    G4MH = 'Safeg-auto'
 else
     end
+endif
+
+;---------------------------------------------------
+; Select CR52 OS
+;---------------------------------------------------
+strdim LIST1 3
+    LIST1[0] = '1: Trampoline'
+    LIST1[1] = '2: Trampoline(ether enable)'
+    LIST1[2] = '3: Zephyr'
+listbox '' 'Select Cortex-R52 OS' LIST1
+if result = 0 then
+    CR52 = 'Trampoline'
+elseif result = 1 then
+    CR52 = 'Trampoline(ether enable)'
+elseif result = 2 then
+    CR52 = 'Zephyr'
+else
+    end
+endif
+
+;---------------------------------------------------
+; Change load image parameter
+;---------------------------------------------------
+strcompare CR52 'Trampoline(ether enable)'
+if result = 0 then
+    strcompare G4MH 'Trampoline'
+    if result = 0 then
+        IMGNM[4]  = 'cr52_trampoline_deploy\cr52_eth.srec'
+        IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
+    else
+        IMGNM[4]  = 'cr52_trampoline_deploy\cr52_eth.srec'
+        IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+    endif
+else
+    strcompare G4MH 'Trampoline'
+    if result = 0 then
+        strcompare CR52 'Trampoline'
+        if result = 0 then
+            IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
+            IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
+        else
+            IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
+            IMGNM[5]  = 'g4mh_trampoline_deploy\g4mh.srec'
+        endif
+    else
+        strcompare CR52 'Trampoline'
+         if result = 0 then
+            IMGNM[4]  = 'cr52_trampoline_deploy\cr52.srec'
+            IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+        else
+            IMGNM[4]  = 'cr52_zephyr_deploy\cr52.srec'
+            IMGNM[5]  = 'g4mh_safegauto_deploy\g4mh.srec'
+        endif
+    endif
 endif
 
 strdim SAVEADR ARRAY_NUM

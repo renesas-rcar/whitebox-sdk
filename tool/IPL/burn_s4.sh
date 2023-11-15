@@ -9,13 +9,19 @@ MOT_PATH=${WORK_BASE}
 
 CR52_NAME="App_CDD_ICCOM_S4_Sample_CR52.srec"
 G4MH_NAME="App_CDD_ICCOM_S4_Sample_G4MH.srec"
-CHECK_FILE="./g4mh_trampoline_deploy/g4mh_can_disable.srec"
+G4MH_TP_DIR="g4mh_trampoline_deploy"
+G4MH_SA_DIR="g4mh_safegauto_deploy"
+CR52_TP_DIR="cr52_trampoline_deploy"
+CR52_ZP_DIR="cr52_zephyr_deploy"
+
+CHECK_FILE="${G4MH_TP_DIR}/g4mh_can_disable.srec"
 
 BURN_PATTERN=1
 WRITE_FLAG_G4MH=0
 WRITE_FLAG_CR52=0
 WRITE_FLAG_ALL=0
 SELECT_CAN=0
+SELECT_ETHER=0
 WRITE_PATTERN=""
 
 # Burn patterns: G4MH, CR52
@@ -40,8 +46,10 @@ Usage() {
         echo -e "CR52=${BURN_PATTERNS[$((2*$key+1))]}"
     done
     echo "    all: All writes (default)"
-    echo "    g4mh: Only g4mh writes"
-    echo "    cr52: Only cr52 writes"
+    echo "    g4mh: Write only G4MH"
+    echo "    cr52: Write only CR52"
+    echo "    ether: Write only CR52 tranpoline with ethernet"
+
     echo "    -g: G4MH with CAN"
     echo "    -r: CR52 with CAN"
     echo "    -h: Show this usage"
@@ -87,6 +95,8 @@ do
         else
             SELECT_CAN=0;
         fi
+    elif [[ "$param" == "ether" ]]; then
+        SELECT_ETHER=1;
     else
         echo -e "\e[31mERROR: Unsupported option\e[m"
 	    Usage; exit
@@ -98,33 +108,33 @@ CR52=${BURN_PATTERNS[$((2*${BURN_PATTERN}+1))]}
 
 if [[ "$BOARD_TYPE" = "spider" ]]; then
     case $G4MH in
-        "Trampoline") cp ./g4mh_trampoline_deploy/g4mh.srec $G4MH_NAME;;
-        "SafeG-Auto") cp ./g4mh_safegauto_deploy/g4mh.srec $G4MH_NAME;;
+        "Trampoline") cp ${G4MH_TP_DIR}/g4mh.srec $G4MH_NAME;;
+        "SafeG-Auto") cp ${G4MH_SA_DIR}/g4mh.srec $G4MH_NAME;;
     esac
     case $CR52 in
-        "Trampoline") cp ./cr52_trampoline_deploy/cr52.srec $CR52_NAME;;
-        "Zephyr")     cp ./cr52_zephyr_deploy/cr52.srec $CR52_NAME;;
+        "Trampoline") cp ${CR52_TP_DIR}/cr52.srec $CR52_NAME;;
+        "Zephyr")     cp ${CR52_ZP_DIR}/cr52.srec $CR52_NAME;;
     esac
 else
     case $G4MH in
         "Trampoline") 
-            if [ "$SELECT_CAN" -eq 1 ]; then
-                cp ./g4mh_trampoline_deploy/g4mh.srec $G4MH_NAME
+            if [ "$BURN_PATTERN" -eq 3 ] || [ "$SELECT_CAN" -eq 1 ]; then
+                cp ${G4MH_TP_DIR}/g4mh.srec $G4MH_NAME
             else
-                cp ./g4mh_trampoline_deploy/g4mh_can_disable.srec $G4MH_NAME
+                cp ${G4MH_TP_DIR}/g4mh_can_disable.srec $G4MH_NAME
             fi
             ;;
-        "SafeG-Auto") cp ./g4mh_safegauto_deploy/g4mh.srec $G4MH_NAME;;
+        "SafeG-Auto") cp ${G4MH_SA_DIR}/g4mh.srec $G4MH_NAME;;
     esac
     case $CR52 in
         "Trampoline")
-            if [ "$SELECT_CAN" -eq 0 ]; then
-                cp ./cr52_trampoline_deploy/cr52.srec $CR52_NAME
+            if [ "$BURN_PATTERN" -ne 2 ] && [ "$SELECT_CAN" -eq 0 ]; then
+                cp ${CR52_TP_DIR}/cr52.srec $CR52_NAME
             else
-                cp ./cr52_trampoline_deploy/cr52_can_disable.srec $CR52_NAME
+                cp ${CR52_TP_DIR}/cr52_can_disable.srec $CR52_NAME
             fi
             ;;
-        "Zephyr")     cp ./cr52_zephyr_deploy/cr52.srec $CR52_NAME;;
+        "Zephyr")     cp ${CR52_ZP_DIR}/cr52.srec $CR52_NAME;;
     esac
 fi
 
@@ -139,6 +149,11 @@ else
     if [ "$WRITE_FLAG_CR52" -eq 1 ]; then
         WRITE_PATTERN="$WRITE_PATTERN rtos"
     fi
+fi
+
+if [ "$SELECT_ETHER" -eq 1 ]; then
+    cp ${CR52_TP_DIR}/cr52_eth.srec $CR52_NAME
+    WRITE_PATTERN="rtos"
 fi
 
 # Flash IPL
