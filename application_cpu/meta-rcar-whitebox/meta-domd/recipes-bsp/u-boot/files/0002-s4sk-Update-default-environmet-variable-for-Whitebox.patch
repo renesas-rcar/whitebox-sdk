@@ -1,0 +1,36 @@
+From 9b35efd64e4a6d74151bd15f0901ca7903af6ce9 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Thu, 16 Nov 2023 06:53:48 +0900
+Subject: [PATCH] s4sk: Update default environmet variable for Whitebox
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ include/configs/rcar-gen4-common.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/rcar-gen4-common.h b/include/configs/rcar-gen4-common.h
+index b7794c5e85..a59e937f34 100644
+--- a/include/configs/rcar-gen4-common.h
++++ b/include/configs/rcar-gen4-common.h
+@@ -55,11 +55,14 @@
+ 
+ #define CONFIG_EXTRA_ENV_SETTINGS	\
+ 	"usb_pgood_delay=2000\0"	\
+-	"bootm_size=0x10000000\0"
++	"bootm_size=0x10000000\0"	\
++	"flash_ufs=scsi scan && tftp 0x480000000 s4sk.ufs.full.img.gz; gzwrite scsi 0 0x480000000 ${filesize} 1000000 0\0"	\
++	"dump_macaddr=i2c dev 5; i2c read 0x70 0x0060.2 0x06 0x48000000 && for i in 0 1 2 3 4 5; do setexpr.b M$i *0x4800000$i; done\0"	\
++	"set_macaddr=run dump_macaddr && setenv ethaddr $M5:$M4:$M3:$M2:$M1:$M0; for i in 0 1 2 3 4 5; do env delete M$i; done\0"	\
+ 
+ #define CONFIG_BOOTCOMMAND	\
+-	"tftp 0x48080000 Image; " \
+-	"tftp 0x48000000 Image-"CONFIG_DEFAULT_FDT_FILE"; " \
+-	"booti 0x48080000 - 0x48000000"
++	"scsi scan && "	\
++	"ext4load scsi 0:5 0x83000000 boot-ufs.uImage;"	\
++	"source 0x83000000"
+ 
+ #endif	/* __RCAR_GEN4_COMMON_H */
+-- 
+2.25.1
+

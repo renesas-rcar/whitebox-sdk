@@ -1,0 +1,36 @@
+From ca4b2eac6baec21e7dab94ad72b2e109eb925d63 Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Wed, 15 Nov 2023 17:27:02 +0900
+Subject: [PATCH] spider: Update default environmet variable for Whitebox
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ include/configs/rcar-gen4-common.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/rcar-gen4-common.h b/include/configs/rcar-gen4-common.h
+index b7794c5e85..a871bc4bc2 100644
+--- a/include/configs/rcar-gen4-common.h
++++ b/include/configs/rcar-gen4-common.h
+@@ -55,11 +55,14 @@
+ 
+ #define CONFIG_EXTRA_ENV_SETTINGS	\
+ 	"usb_pgood_delay=2000\0"	\
+-	"bootm_size=0x10000000\0"
++	"bootm_size=0x10000000\0"	\
++	"flash_ufs=run set_ufs && scsi scan && tftp 0x480000000 spider.ufs.full.img.gz; gzwrite scsi 0 0x480000000 ${filesize} 1000000 0\0"	\
++	"set_ufs=i2c dev 0; i2c mw 0x6c 0x26 0x05; i2c olen 0x6c 2; i2c mw 0x6c 0x13a 0x86; i2c mw 0x6c 0x26a 0x3c; i2c mw 0x6c 0x26b 0x00; i2c mw 0x6c 0x268 0x06; i2c mw 0x6c 0x269 0x00; i2c mw 0x6c 0x26c 0x06; i2c mw 0x6c 0x26d 0x00; i2c mw 0x6c 0x26e 0x3f; i2c mw 0x6c 0x26f 0x00\0"
++
+ 
+ #define CONFIG_BOOTCOMMAND	\
+-	"tftp 0x48080000 Image; " \
+-	"tftp 0x48000000 Image-"CONFIG_DEFAULT_FDT_FILE"; " \
+-	"booti 0x48080000 - 0x48000000"
++	"run set_ufs && scsi scan && "	\
++	"ext4load scsi 0:5 0x83000000 boot-ufs.uImage;"	\
++	"source 0x83000000"
+ 
+ #endif	/* __RCAR_GEN4_COMMON_H */
+-- 
+2.25.1
+

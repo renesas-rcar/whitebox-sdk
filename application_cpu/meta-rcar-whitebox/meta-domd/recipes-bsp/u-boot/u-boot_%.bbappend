@@ -25,5 +25,10 @@ SRC_URI_append = " \
 # Workaround for S4SK
 SRC_URI_append_s4sk = " \
     file://0001-HACK-Workaround-to-use-UFS-on-S4SK.patch \
+    file://0002-s4sk-Update-default-environmet-variable-for-Whitebox.patch \
+"
+
+SRC_URI_append_spider = " \
+    file://0001-spider-Update-default-environmet-variable-for-Whiteb.patch \
 "
 
