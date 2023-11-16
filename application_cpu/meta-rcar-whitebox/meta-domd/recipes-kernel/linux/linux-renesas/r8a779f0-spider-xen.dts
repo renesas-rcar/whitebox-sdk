@@ -11,7 +11,7 @@
 	memory@48000000 {
 		device_type = "memory";
 		/* first 128MB is reserved for secure area. */
-		reg = <0x0 0x48000000 0x0 0x78000000
+		reg = <0x0 0x48000000 0x0 0x58000000
 		       0x4 0x80000000 0x0 0x80000000>;
 	};
 
@@ -19,6 +19,11 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
+
+		cr54_mem {
+			no-map;
+			reg = <0x00 0x58000000 0x00 0x20000000>;
+		};
 
 		/* ICCOM CR Shared memory */
 		cr_cta_mem {
@@ -32,13 +37,6 @@
 			compatible = "renesas,iccom-memory";
 			no-map;
 			reg = <0x0 0x47fc9000 0x0 0x2000>;
-		};
-
-		/* R-Switch LINKFIX table */
-		rswitch_linkfix_mem@48000000 {
-			compatible = "renesas,rswitch-linkfix";
-			no-map;
-			reg = <0x0 0x48000000 0x0 0x200000>;
 		};
 	};
 };
@@ -225,6 +223,12 @@
 	iommu-map = <0x0 &ipmmu_hc 48 0x1>,
 		    <0x100 &ipmmu_hc 49 0x1>;
 	iommu-map-mask = <0xff00>;
+};
+
+&ufs {
+	status = "okay";
+        iommus = <&ipmmu_hc 15>;
+	xen,passthrough;
 };
 
 &dmac0			{ xen,passthrough; };
