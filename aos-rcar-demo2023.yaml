@@ -810,3 +810,47 @@ parameters:
       default: true
       desc: "Nothing to do"
 
+  PREBUILT_DDK:
+    desc: "Use pre-built GPU drivers"
+    "yes":
+      overrides:
+        variables:
+          XT_PREBUILT_GSX_DIR: "${TOPDIR}/../../../prebuilt_gsx"
+
+        components:
+          domd:
+            builder:
+              conf:
+                - [XT_PREBUILT_GSX_DIR, "%{XT_PREBUILT_GSX_DIR}"]
+                # Enable Gfx Pkgs
+                - [MACHINE_FEATURES:append, " gsx"]
+                - [
+                    BB_MULTI_PROVIDER_ALLOWED:append,
+                    " virtual/libgl virtual/egl virtual/libgles1 virtual/libgles2",
+                  ]
+                # Install some apps to test GPU/Display
+                - [IMAGE_INSTALL:append, " glmark2 kmscube"]
+                - [BBMASK:append, " mesa-gl"]
+                # Preferred providers
+                - [PREFERRED_PROVIDER_virtual/libgles1, ""]
+                - [PREFERRED_PROVIDER_virtual/libgles2, "gles-user-module"]
+                - [PREFERRED_PROVIDER_virtual/libgles3, "gles-user-module"]
+                - [PREFERRED_PROVIDER_virtual/egl, "libegl"]
+                - [PREFERRED_PROVIDER_virtual/libgl, ""]
+                - [PREFERRED_PROVIDER_virtual/mesa, ""]
+                - [PREFERRED_PROVIDER_virtual/libgbm, "libgbm"]
+                - [PREFERRED_PROVIDER_libgbm-dev, "libgbm"]
+                - [BBMASK:append, "|meta-aos-rcar-gen3-domd/recipes-graphics/wayland/weston_%.bbappend"]
+                - [IMAGE_INSTALL:append, " wayland wayland-kms wayland-wsegl"]
+    "nogfx":
+      overrides:
+        components:
+          domd:
+            builder:
+              conf:
+                - [DISTRO_FEATURES_NATIVESDK:append, " wayland"]
+                - [BBMASK:append, "|gles-user-module|kernel-module-gles|wayland-kms|libgbm"]
+                - [BBMASK:append, "|kernel-module-uvcs-drv|omx-user-module"]
+                - [BBMASK:append, "|meta-renesas/meta-rcar-gen3/recipes-multimedia/gstreamer"]
+                - [LICENSE_FLAGS_ACCEPTED, "commercial"]
+
