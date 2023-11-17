@@ -76,7 +76,7 @@ variables:
   GEN3_XT_DOMD_DTB_NAME: "%{GEN3_SOC_FAMILY}-%{GEN3_MACHINE}-domd.dtb"
   GEN3_XT_XEN_DTB_NAME: "%{GEN3_SOC_FAMILY}-%{GEN3_MACHINE}-xen.dtb"
 
-  GEN3_XT_DOMD_IMAGE: "core-image-minimal"
+  GEN3_XT_DOMD_IMAGE: "core-image-weston"
 
 common_data:
   # Sources used by all domains
