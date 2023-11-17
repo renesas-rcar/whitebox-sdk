@@ -733,6 +733,16 @@ parameters:
         variables:
           AOS_VIS_DATA_PROVIDER: "telemetryemulatoradapter"
 
+  GEN4_DEVICE:
+    desc: "Add RCAR Gen4-based device as Aos nodes"
+    enable:
+      default: true
+    disable:
+      default: false
+      overrides:
+        components:
+          gen4-dom0:
+            default: false
 
   GEN4_MACHINE:
     desc: RCAR Gen4-based machine
