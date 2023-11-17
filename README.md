@@ -1,8 +1,23 @@
 # What is Whitebox SDK?
 
+The R-Car S4 Whitebox SDK is an integrated development platform that accelerates the development of connected services applications.
+ 
+All software is provided as an all-in-one package under a Free of Charge (FoC) license, which facilitates testing and can be widely used in advanced development. In addition, since the software is mainly open source, users are free to modify the source code as they wish.
+
 Please refer to the official webpage:
 
-- https://www.renesas.com/software-tool/r-car-s4-whitebox-sdk-integrated-development-platform-connected-services-and-gateway-application
+- https://www.renesas.com/whitebox-sdk
+
+# Table of contents
+
+- [Setup](#Setup)
+- [Tool setup](#Tool-setup)
+- [Build](#Build)
+- [LICENSE](#LICENSE)
+- [Documentation](#Documentation)
+- [Support](#Support)
+  - [FAQ](#FAQ)
+  - [Community Q&A forum](#Community-QA-forum)
 
 # Setup
 Execute the following command:
@@ -22,7 +37,7 @@ Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and e
 	cp <download directry>/CC-RH_V20500_setup-doc.zip .
 	./setup_whitebox.sh
 
-# build
+# Build
 Execute the following command:
 
 	cd whitebox-sdk
@@ -48,6 +63,12 @@ Except for the above, all files in this repository are licensed under the [MIT L
 Ex.) License priority:
 
 File's license information > License notification in the directory > License of this repository
+
+# Documentation
+ 
+The user's manuals are available for free, please download it from the official website
+ 
+https://www.renesas.com/whitebox-sdk#documents
 
 # Support
 
