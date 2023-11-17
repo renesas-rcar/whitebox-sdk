@@ -62,15 +62,18 @@ if [[ -d $SCRIPT_DIR/common_data/repo ]]; then
     sed -i -e 's|url: ".*://.*/|url: "../common_data/repo/|' -e 's/\.git//' ./aos-rcar-demo2023.yaml
 fi
 
+# GEN3_DEVICE: enable/disable/enable-not-build
 moulin ./aos-rcar-demo2023.yaml \
-    --GEN3_DEVICE disable \
+    --GEN3_DEVICE enable-not-build \
     --GEN3_MACHINE h3ulcb-4x2g \
     --GEN4_MACHINE $BOARD \
     --USING_UFS_AS_STORAGE $USE_UFS
 
+    #--GEN3_DEVICE disable \
+
 ninja
-ninja gen4_full.img
-gzip -f gen4_full.img
+ninja gen4_full.img.gz
+#gzip -f gen4_full.img
 
 exit
 

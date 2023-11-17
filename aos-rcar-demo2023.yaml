@@ -30,7 +30,7 @@ variables:
   GEN3_DOMD_NODE_ID: "gen3-domd"
   GEN3_DOM0_NODE_ID: "gen3-dom0"
 
-  NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID}"
+  NODE_LIST: "%{GEN4_DOMD_NODE_ID}"
   UM_LIST: "%{GEN4_DOMD_NODE_ID}"
 
   # Network configuration
@@ -44,8 +44,8 @@ variables:
   GEN3_DOMAIN_NAME: "gen3"
   GEN3_DOM0_HOST_NAME: "dom0"
   GEN3_DOMD_HOST_NAME: "domd"
-  GEN3_DHCP_NET: "10.0.2"
-  GEN3_DOM0_IP: "10.0.2.2"
+  GEN3_DHCP_NET: "10.0.0"
+  GEN3_DOM0_IP: "10.0.0.2"
 
   NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN4_DOM0_HOST_NAME}.%{GEN4_DOMAIN_NAME}"
 
@@ -95,7 +95,7 @@ common_data:
       rev: "c62970f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos"
-      rev: "v7.0.1"
+      rev: "v7.0.3"
     - type: git
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "c1ad85f"
@@ -480,7 +480,7 @@ images:
       domd_rootfs:
         gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
         type: raw_image
-        size: 1024 MiB
+        size: 2048 MiB
         image_path: "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/rcar-image-minimal-%{GEN4_MACHINE}.ext4"
 
       domd_var:
@@ -579,6 +579,20 @@ parameters:
 
     disable:
       default: false
+
+    enable-not-build:
+      default: false
+      overrides:
+        variables:
+          #GEN3_DOMD_NODE_ID: "rcar-multinode-zephyr-1.0-gen3-domd"
+          #GEN3_DOM0_NODE_ID: "rcar-multinode-zephyr-1.0-gen3-boot"
+          GEN3_DOMD_NODE_ID: "gen3-domd"
+          GEN3_DOM0_NODE_ID: "gen3-dom0"
+          #NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID} %{GEN3_DOMD_NODE_ID} %{GEN3_DOM0_NODE_ID}"
+          NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
+          UM_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
+          #NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN4_DOM0_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN3_DOMD_HOST_NAME}.%{GEN3_DOMAIN_NAME} %{GEN3_DOM0_HOST_NAME}.%{GEN3_DOMAIN_NAME}"
+          NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN3_DOMD_HOST_NAME}.%{GEN3_DOMAIN_NAME}"
 
   GEN3_MACHINE:
     desc: "RCAR Gen3-based machine"
@@ -725,6 +739,8 @@ parameters:
     spider:
       default: true
       overrides:
+        variables:
+          USE_UFS: "0"
         components:
           gen4-domd:
             sources:
