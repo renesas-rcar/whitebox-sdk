@@ -1,0 +1,12 @@
+[Unit]
+Description=Monitoring vissv2server process
+After=network.target waii.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/monitoring-vissv2server.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

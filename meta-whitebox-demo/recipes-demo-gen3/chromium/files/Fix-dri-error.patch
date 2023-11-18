@@ -1,0 +1,26 @@
+diff --git a/content/gpu/BUILD.gn b/content/gpu/BUILD.gn
+index 9f5f303..67a56be 100644
+--- a/content/gpu/BUILD.gn
++++ b/content/gpu/BUILD.gn
+@@ -137,7 +137,7 @@ target(link_target_type, "gpu_sources") {
+   }
+ 
+   # Use DRI on desktop Linux builds.
+-  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux &&
++  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux && ozone_platform_x11 &&
+       !is_castos) {
+     configs += [ "//build/config/linux/dri" ]
+   }
+diff --git a/media/gpu/sandbox/BUILD.gn b/media/gpu/sandbox/BUILD.gn
+index cfcb7fa..876c574 100644
+--- a/media/gpu/sandbox/BUILD.gn
++++ b/media/gpu/sandbox/BUILD.gn
+@@ -30,7 +30,7 @@ source_set("sandbox") {
+   if (use_v4l2_codec) {
+     deps += [ "//media/gpu/v4l2" ]
+   }
+-  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux &&
++  if (current_cpu != "s390x" && current_cpu != "ppc64" && is_linux && ozone_platform_x11 &&
+       !is_castos) {
+     # For DRI_DRIVER_DIR.
+     configs += [ "//build/config/linux/dri" ]

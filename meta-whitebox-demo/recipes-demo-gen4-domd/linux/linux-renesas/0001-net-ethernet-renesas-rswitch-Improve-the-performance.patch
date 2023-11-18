@@ -1,0 +1,123 @@
+From 81cef96c765eafa64686f3c12933f819c0c2237a Mon Sep 17 00:00:00 2001
+From: Phong Hoang <phong.hoang.wz@renesas.com>
+Date: Tue, 25 Apr 2023 18:38:39 +0900
+Subject: [PATCH] net: ethernet: renesas: rswitch: Improve the performance
+
+Improve the performance of transmission and reception while
+also reducing packet loss.
+
+  - Previously, the global rate of limiter of GWCA was used
+to reduce packet loss. However, the actual botteneck arises
+from the TSNA descriptor overflow issue, which can be detected
+by Ethernet Agent Descriptor Queue Overflow Error Counter register
+(EADQOECN). To avoid it, increase the depth of Descriptor queue.
+
+  - Increase the reception ring size to prevent the descriptor
+full error, which can be detected by GWCA Descriptor Full Error
+Counter register (GWDFECN).
+
+  - Since interrupt and NAPI have been implemented, using
+napi_gro_receive() instead of netif_receive_skb() to improve
+RX performance. By aggregating multiple small packets into
+larger ones, napi_gro_receive() reduces the number of processing
+steps required for each packet, leading to enhaneced efficiency.
+
+Signed-off-by: Phong Hoang <phong.hoang.wz@renesas.com>
+
+Porting for Whitebox SDK environment(based on Xen)
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ drivers/net/ethernet/renesas/rswitch.c | 26 ++++----------------------
+ drivers/net/ethernet/renesas/rswitch.h |  3 +--
+ 2 files changed, 5 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.c b/drivers/net/ethernet/renesas/rswitch.c
+index 777ca5eca356..5e95c1623526 100644
+--- a/drivers/net/ethernet/renesas/rswitch.c
++++ b/drivers/net/ethernet/renesas/rswitch.c
+@@ -697,6 +697,7 @@ enum rswitch_etha_mode {
+ #define EAMS_OPS_MASK	EAMC_OPC_OPERATION
+ 
+ #define EAVCC_VEM_SC_TAG	(0x3 << 16)
++#define EATDQDC_DQD_MAX		1024
+ 
+ #define MPIC_PIS_MII	0x00
+ #define MPIC_PIS_GMII	0x02
+@@ -1041,24 +1042,6 @@ static void rswitch_modify(void __iomem *addr, enum rswitch_reg reg, u32 clear,
+ 	rs_write32((rs_read32(addr + reg) & ~clear) | set, addr + reg);
+ }
+ 
+-static void rswitch_gwca_set_rate_limit(struct rswitch_private *priv, int rate)
+-{
+-	u32 gwgrlulc, gwgrlc;
+-
+-	switch (rate) {
+-	case 1000:
+-		gwgrlulc = 0x0000005f;
+-		gwgrlc = 0x00010260;
+-		break;
+-	default:
+-		dev_err(&priv->pdev->dev, "%s: This rate is not supported (%d)\n", __func__, rate);
+-		return;
+-	}
+-
+-	rs_write32(gwgrlulc, priv->addr + GWGRLULC);
+-	rs_write32(gwgrlc, priv->addr + GWGRLC);
+-}
+-
+ static bool __maybe_unused rswitch_is_any_data_irq(struct rswitch_private *priv, u32 *dis, bool tx)
+ {
+ 	int i;
+@@ -1220,7 +1203,7 @@ static bool rswitch_rx_chain(struct net_device *ndev, int *quota, struct rswitch
+ 		// Replace skb dev with real device so vlan_do_receive can work properly
+ 		if (is_vlan_dev(skb->dev))
+ 			skb->dev = vlan_dev_real_dev(skb->dev);
+-		netif_receive_skb(skb);
++		napi_gro_receive(&rdev->napi, skb);
+ 		rdev->ndev->stats.rx_packets++;
+ 		rdev->ndev->stats.rx_bytes += pkt_len;
+ 
+@@ -1498,6 +1481,8 @@ static int rswitch_etha_hw_init(struct rswitch_etha *etha, const u8 *mac)
+ 	rswitch_rmac_setting(etha, mac);
+ 	rswitch_etha_enable_mii(etha);
+ 
++	rs_write32(EATDQDC_DQD_MAX, etha->addr + EATDQDC0);
++
+ 	/* Change to OPERATION Mode */
+ 	err = rswitch_etha_change_mode(etha, EAMC_OPC_OPERATION);
+ 	if (err < 0)
+@@ -3036,9 +3021,6 @@ static int rswitch_gwca_hw_init(struct rswitch_private *priv)
+ 	rs_write32(lower_32_bits(priv->desc_bat_dma), priv->addr + GWDCBAC1);
+ 	rs_write32(upper_32_bits(priv->desc_bat_dma), priv->addr + GWDCBAC0);
+ 
+-	priv->gwca.speed = 1000;
+-	rswitch_gwca_set_rate_limit(priv, priv->gwca.speed);
+-
+ 	err = rswitch_gwca_change_mode(priv, GWMC_OPC_DISABLE);
+ 	if (err < 0)
+ 		return err;
+diff --git a/drivers/net/ethernet/renesas/rswitch.h b/drivers/net/ethernet/renesas/rswitch.h
+index 5c8721b698f0..b1bd92cd691d 100644
+--- a/drivers/net/ethernet/renesas/rswitch.h
++++ b/drivers/net/ethernet/renesas/rswitch.h
+@@ -201,7 +201,7 @@ struct rswitch_gwca_chain {
+ #define RSWITCH_MAX_NUM_L23	256
+ 
+ #define TX_RING_SIZE		1024
+-#define RX_RING_SIZE		1024
++#define RX_RING_SIZE		3072
+ 
+ #define PKT_BUF_SZ		1584
+ #define RSWITCH_ALIGN		128
+@@ -214,7 +214,6 @@ struct rswitch_gwca {
+ 	DECLARE_BITMAP(used, RSWITCH_MAX_NUM_CHAINS);
+ 	u32 tx_irq_bits[RSWITCH_NUM_IRQ_REGS];
+ 	u32 rx_irq_bits[RSWITCH_NUM_IRQ_REGS];
+-	int speed;
+ };
+ 
+ struct rswitch_mfwd_mac_table_entry {
+-- 
+2.34.1
+

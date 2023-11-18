@@ -77,6 +77,9 @@ variables:
   GEN3_XT_XEN_DTB_NAME: "%{GEN3_SOC_FAMILY}-%{GEN3_MACHINE}-xen.dtb"
 
   GEN3_XT_DOMD_IMAGE: "core-image-weston"
+  XT_USE_DDK1_11: "0"
+  XT_PREBUILT_GSX_DIR: ""
+  XT_MULTIMEDIA_EVA_DIR: ""
 
 common_data:
   # Sources used by all domains
@@ -136,8 +139,8 @@ common_data:
     - [
         DISTRO_FEATURES_remove,
         "x11 gtk gobject-introspection-data wifi nfc
-        bluetooth irda zeroconf 3g sysvinit acl alsa argp pcmcia usbgadget
-        usbhost opengl ptest multiarch wayland vulkan sysvinit",
+        bluetooth irda zeroconf 3g sysvinit acl argp pcmcia usbgadget
+        usbhost ptest multiarch vulkan sysvinit",
       ]
 
     # Aos configuration
@@ -383,7 +386,10 @@ components:
       - *GEN3_SOURCES
       - type: git
         url: https://github.com/xen-troops/meta-renesas.git
-        rev: "Renesas-Yocto-v5.1-patched"
+        # rev: "Renesas-Yocto-v5.1-patched"
+        rev: "Renesas-Yocto-v5.9-patched"
+        #url: https://github.com/renesas-rcar/meta-renesas.git
+        #rev: "c5b39adbabdb8fd51517cf37190552b8fb57d062"
         dir: "meta-renesas-gen3"
     builder:
       type: yocto
@@ -440,7 +446,7 @@ components:
         - "tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
         - "tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
         - "tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
-        - "tmp/deploy/images/%{GEN3_MACHINE}/core-image-minimal-%{GEN3_MACHINE}.ext4"
+        - "tmp/deploy/images/%{GEN3_MACHINE}/core-image-weston-%{GEN3_MACHINE}.ext4"
         - "tmp/deploy/images/%{GEN3_MACHINE}/aos/.unprovisioned"
 
 images:
@@ -555,7 +561,7 @@ parameters:
               domd_rootfs:
                 gpt_type: B921B045-1DF0-41C3-AF44-4C6F280D3FAE # Linux aarch64 root
                 type: raw_image
-                image_path: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/core-image-minimal-%{GEN3_MACHINE}.ext4"
+                image_path: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/core-image-weston-%{GEN3_MACHINE}.ext4"
                 size: 1024 MiB
 
               domd_var:
@@ -810,27 +816,65 @@ parameters:
       default: true
       desc: "Nothing to do"
 
+  FOR_WESTON:
+    desc: "Using graphics env common settings"
+    "yes":
+      default: yes
+      overrides:
+        variable:
+          XT_USE_DDK1_11: "1"
+        components:
+          gen3-domd:
+            builder:
+              layer:
+                - "../../../meta-xt-rcar/meta-xt-rcar-gles_common"
+                - "../../../meta-xt-rcar/meta-xt-rcar-fixups"
+              conf:
+                - [DISTRO_FEATURES_NATIVESDK_append, " wayland"]
+                - [DISTRO_FEATURES_remove, " ptest x11 vulkan"]
+                - [DISTRO_FEATURES_append, " pam"]
+                - [XT_USE_DDK1_11, "%{XT_USE_DDK1_11}"]
+                - [LICENSE_FLAGS_WHITELIST, "commercial"]
+                - [BBMASK_append, "|meta-renesas-gen3/meta-rcar-gen3/recipes-connectivity/linuxptp"]
+                - [BBMASK_append, "|meta-xt-rcar-driver-domain/recipes-bsp/"]
+                - [BBMASK_append,
+                  " ${@bb.utils.contains('XT_USE_DDK1_11', '1', '', 'meta-xt-rcar-fixups/recipes-kernel/kernel-module-gles/kernel-module-gles.bbappend', d)}",
+                  ]
+                - [BBMASK_append,
+                  " ${@bb.utils.contains('XT_USE_DDK1_11', '1', '', 'meta-xt-rcar-fixups/recipes-graphics/gles-module/gles-user-module.bbappend', d)}",
+                  ]
+                - [BBMASK_append,
+                  " ${@bb.utils.contains('XT_USE_DDK1_11', '1', '', 'meta-xt-rcar-fixups/recipes-graphics/packagegroups/packagegroup-graphic-renesas.bbappend', d)}",
+                  ]
+                - [MACHINE_FEATURES_append, " multimedia"]
+                - [PREFERRED_RPROVIDER_libgstallocators-1.0, "gstreamer1.0-plugins-base"]
+                - [PREFERRED_RPROVIDER_libgstapp-1.0, "gstreamer1.0-plugins-base"]
+                - [XT_MULTIMEDIA_EVA_DIR, "%{XT_MULTIMEDIA_EVA_DIR}"]
+
+
   PREBUILT_DDK:
     desc: "Use pre-built GPU drivers"
     "yes":
+      desc: "専用のGFX packageをもらわないと動かない。meta-aos-rcar-gen3/v3.0.0とも異なるバージョン"
       overrides:
         variables:
-          XT_PREBUILT_GSX_DIR: "${TOPDIR}/../../../prebuilt_gsx"
+          XT_PREBUILT_GSX_DIR: "${TOPDIR}/../../../../../prebuilt_gsx"
 
         components:
-          domd:
+          gen3-domd:
             builder:
               conf:
                 - [XT_PREBUILT_GSX_DIR, "%{XT_PREBUILT_GSX_DIR}"]
                 # Enable Gfx Pkgs
-                - [MACHINE_FEATURES:append, " gsx"]
+                - [MACHINE_FEATURES_append, " gsx"]
                 - [
-                    BB_MULTI_PROVIDER_ALLOWED:append,
+                    BB_MULTI_PROVIDER_ALLOWED_append,
                     " virtual/libgl virtual/egl virtual/libgles1 virtual/libgles2",
                   ]
                 # Install some apps to test GPU/Display
-                - [IMAGE_INSTALL:append, " glmark2 kmscube"]
-                - [BBMASK:append, " mesa-gl"]
+                - [IMAGE_INSTALL_append, " glmark2"]
+                #- [IMAGE_INSTALL_append, " kmscube"]
+                - [BBMASK_append, " mesa-gl"]
                 # Preferred providers
                 - [PREFERRED_PROVIDER_virtual/libgles1, ""]
                 - [PREFERRED_PROVIDER_virtual/libgles2, "gles-user-module"]
@@ -840,17 +884,82 @@ parameters:
                 - [PREFERRED_PROVIDER_virtual/mesa, ""]
                 - [PREFERRED_PROVIDER_virtual/libgbm, "libgbm"]
                 - [PREFERRED_PROVIDER_libgbm-dev, "libgbm"]
-                - [BBMASK:append, "|meta-aos-rcar-gen3-domd/recipes-graphics/wayland/weston_%.bbappend"]
-                - [IMAGE_INSTALL:append, " wayland wayland-kms wayland-wsegl"]
+                - [BBMASK_append, "|meta-aos-rcar-gen3-domd/recipes-graphics/wayland/weston_%.bbappend"]
+                - [IMAGE_INSTALL_append, " wayland wayland-kms"]
+                # Maybe required with weston 10?
+                # - [IMAGE_INSTALL_append, " wayland-wsegl"]
     "nogfx":
+      default: yes
       overrides:
         components:
-          domd:
+          gen3-domd:
             builder:
               conf:
-                - [DISTRO_FEATURES_NATIVESDK:append, " wayland"]
-                - [BBMASK:append, "|gles-user-module|kernel-module-gles|wayland-kms|libgbm"]
-                - [BBMASK:append, "|kernel-module-uvcs-drv|omx-user-module"]
-                - [BBMASK:append, "|meta-renesas/meta-rcar-gen3/recipes-multimedia/gstreamer"]
-                - [LICENSE_FLAGS_ACCEPTED, "commercial"]
+                - [BBMASK_append, "|gles-user-module|kernel-module-gles|wayland-kms|libgbm"]
+                - [BBMASK_append, "|kernel-module-uvcs-drv|omx-user-module"]
+                - [BBMASK_append, "|meta-renesas/meta-rcar-gen3/recipes-multimedia/gstreamer"]
+
+  ENABLE_MM:
+    desc: "Enable Multimedia support"
+    no:
+      default: true
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                # Mask MMP recipes
+                - [BBMASK_append, " kernel-module-uvcs-drv omx-user-module"]
+
+# ===================================================================================================================
+  ENABLE_DEMO:
+    desc: "build demo envrionment or development environment"
+    "no":
+      default: true
+    "yes":
+      overrides:
+        components:
+          gen3-domd:
+            sources:
+              - type: git
+                url: "https://github.com/yhamamachi/meta-rcar-dev-utils"
+                rev: "4b66aab8dfc5606c4070c110905132bf33fa115e"
+              - type: git
+                url: "https://github.com/OSSystems/meta-browser"
+                rev: "b61362a891cda9460820398af29945af1d30baae"
+              - type: git
+                url: "https://github.com/kraj/meta-clang"
+                rev: "f14170378aa11d2098a4e82baf680a2c53363191"
+            builder:
+              conf:
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
+                - [PACKAGECONFIG_pn-systemd_append, " networkd"]
+                - [PACKAGECONFIG_pn-systemd_append, " timesyncd"]
+                - [PACKAGECONFIG_pn-systemd_append, " resolved"]
+                - [IMAGE_INSTALL_append, " cluster-app ttf-dejavu-common ttf-dejavu-sans ttf-dejavu-serif"]
+                - [IMAGE_INSTALL_append, " ttf-noto-emoji-color ttf-noto-emoji-regular"]
+                - [IMAGE_INSTALL_append, " simple-video-streaming python3-opencv"]
+                - [IMAGE_INSTALL_append, " iperf3"]
+                - [PACKAGECONFIG_pn-chromium-ozone-wayland, " proprietary-codecs"]
+                - [IMAGE_INSTALL_append, " chromium-ozone-wayland"]
+                # For development
+                - [IMAGE_INSTALL_append, " htop ethtool vim usbutils"]
+                - [EXTRA_IMAGE_FEATURES_append, " ssh-server-openssh"]
+                - [IMAGE_INSTALL_append, " node-exporter autostart-browser"]
+                - [IMAGE_INSTALL_remove, "gtk+3-demo"]
+              layers:
+                - "../../../../../meta-whitebox-demo"
+                - "../../../meta-rcar-dev-utils/meta-rcar-gen3"
+                - "../../../meta-rcar-dev-utils/meta-rcar-common"
+                - "../../../meta-clang"
+                - "../../../meta-browser/meta-chromium"
+                - "../../../meta-openembedded/meta-networking"
+        images:
+          gen3_full:
+            type: gpt
+            desc: "Full SD-card/eMMC image"
+            partitions:
+              domd_rootfs:
+                size: 2048 MiB
 

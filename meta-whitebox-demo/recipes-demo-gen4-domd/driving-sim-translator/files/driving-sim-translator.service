@@ -1,0 +1,15 @@
+[Unit]
+Description = Translator from Driving Simulator to COVESA CVII server
+After=local-fs.target network.target
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=python3 /usr/bin/driving-sim-translator/main.py --dbfile /var/statestorage.db
+WorkingDirectory=/usr/bin/driving-sim-translator
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

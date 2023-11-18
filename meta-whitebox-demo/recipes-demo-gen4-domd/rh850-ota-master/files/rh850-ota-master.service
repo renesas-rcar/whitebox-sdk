@@ -1,0 +1,21 @@
+[Unit]
+Description=OTA-master for RH850/U2A sample
+# After=network-online.target
+After=local-fs.target
+
+[Service]
+Type=simple
+# ExecStartPre=mkdir -p /var/aos/downloads/rh850/
+ExecStart=/usr/bin/rh850-ota-master -mi ${HOST_IP} -mp ${HOST_PORT} -ti ${U2A_IP} -tp ${U2A_PORT}
+EnvironmentFile=/var/RH850-OTA-MASTER.config
+#WorkingDirectory=/var/aos/downloads/rh850
+#WorkingDirectory=/
+# Restart=always
+
+[Install]
+# for user
+#WantedBy=default.target
+# for system
+WantedBy=multi-user.target
+
+

@@ -1,0 +1,23 @@
+[Unit]
+Description = Simple Video Streaming Application
+After=local-fs.target network.target
+PartOf=waii.target
+ConditionPathExists=/usr/bin
+
+[Service]
+Environment=PORT=5999
+Environment=CAM_NUM=0
+Environment=CAM_W=1024
+Environment=CAM_H=576
+Environment=CAM_FPS=30
+ExecStartPre=mkdir -p /var/textfile_collector
+ExecStart=taskset -c 2 python3 /usr/bin/simple-video-streaming/server.py
+WorkingDirectory=/usr/bin/simple-video-streaming
+Type=simple
+Restart=on-failure
+RestartSec=10
+Nice=-10
+
+[Install]
+WantedBy=multi-user.target
+

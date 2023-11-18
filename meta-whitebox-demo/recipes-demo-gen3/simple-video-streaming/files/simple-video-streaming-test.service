@@ -1,0 +1,17 @@
+[Unit]
+Description = Simple Video Streaming Application(for Test version without WebCamera)
+After=local-fs.target network.target
+PartOf=waii.target
+ConditionPathExists=/usr/bin
+
+[Service]
+Environment=PORT=6000
+ExecStart=python3 /usr/bin/simple-video-streaming/test-server.py
+WorkingDirectory=/usr/bin/simple-video-streaming
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

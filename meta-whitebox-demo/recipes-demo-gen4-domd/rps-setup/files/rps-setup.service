@@ -1,0 +1,10 @@
+[Unit]
+Description=Receive Packet Steering setup service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rps-setup.sh
+
+[Install]
+WantedBy=multi-user.target
+

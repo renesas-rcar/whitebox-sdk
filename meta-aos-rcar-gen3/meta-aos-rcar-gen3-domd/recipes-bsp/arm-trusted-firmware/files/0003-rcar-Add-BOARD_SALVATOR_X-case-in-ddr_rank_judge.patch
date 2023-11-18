@@ -1,0 +1,30 @@
+From acbd0237f7129d3c4aa2e6c9ca293a47262c0b54 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 1 Feb 2021 21:49:18 +0200
+Subject: [PATCH 3/3] rcar: Add BOARD_SALVATOR_X case in ddr_rank_judge()
+
+To support salvator-x-h3-4x2g machine (8Gbit/2rank).
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Signed-off-by: Valerii Chubar <valerii_chubar@epam.com>
+---
+ drivers/renesas/rcar/ddr/ddr_b/boot_init_dram_config.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/renesas/rcar/ddr/ddr_b/boot_init_dram_config.c b/drivers/renesas/rcar/ddr/ddr_b/boot_init_dram_config.c
+index 8f6f9b199..6b760e3b2 100644
+--- a/drivers/renesas/rcar/ddr/ddr_b/boot_init_dram_config.c
++++ b/drivers/renesas/rcar/ddr/ddr_b/boot_init_dram_config.c
+@@ -1724,7 +1724,8 @@ static uint32_t ddr_rank_judge(void)
+ 	brd = 99U;
+ 	ret = rcar_get_board_type(&type, &rev);
+ 	if ((ret == 0) && (rev != 0xFFU)) {
+-		if (type == (uint32_t)BOARD_SALVATOR_XS) {
++		if (type == (uint32_t)BOARD_SALVATOR_XS ||
++			type == (uint32_t)BOARD_SALVATOR_X) {
+ 			if (rev == 0x11U) {
+ 				brd = 14U;
+ 			} else {
+-- 
+2.17.1
+

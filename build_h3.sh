@@ -4,6 +4,7 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 cd $SCRIPT_DIR
 
 CLEAN_BUILD_FLAG=false
+ENABLE_DEMO=no
 USE_UFS=no
 Usage() {
     echo "Usage:"
@@ -12,6 +13,7 @@ Usage() {
     echo "    - h3ulcb-4x2g"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -d: Enable Demo features(Defult is disable)"
     echo "    -u: Use UFS as boot storage(Default is disable)"
     echo "    -h: Show this usage"
 }
@@ -29,10 +31,11 @@ BOARD=$1
 
 # Proc arguments
 OPTIND=2
-while getopts "cuh" OPT
+while getopts "cduh" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
+        d) ENABLE_DEMO=yes;;
         u) USE_UFS=yes;;
         h) Usage; exit;;
         *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
@@ -42,7 +45,7 @@ done
 # Prepare working directory
 cd ${SCRIPT_DIR}
 if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work ]] ;then
-    rm -rf ./work
+    rm -rf ./work/yocto/build/gen3/
     mkdir -p ./work
 fi
 cd ./work
@@ -67,9 +70,9 @@ moulin ./aos-rcar-demo2023.yaml \
     --GEN4_DEVICE disable \
     --GEN3_MACHINE $BOARD \
     --GEN4_MACHINE s4sk \
-    --USING_UFS_AS_STORAGE $USE_UFS
+    --USING_UFS_AS_STORAGE $USE_UFS \
+    --ENABLE_DEMO $ENABLE_DEMO
 
 ninja gen3_full.img
-gzip -f gen3_full.img
-
+# gzip -f gen3_full.img
 
