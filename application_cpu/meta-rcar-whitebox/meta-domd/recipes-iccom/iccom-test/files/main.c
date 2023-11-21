@@ -192,7 +192,11 @@ int main(int argc, char **argv)
 		recive_param.recive_buf = (uint8_t *)&reply;
 		recive_param.recive_size = pkt_size;
 		printf("benchmark is running ...\n");
-		usleep(BENCH_WAIT);
+		if (cpu_type == 1) {
+			usleep(BENCH_WAIT*2);
+		} else {
+			usleep(BENCH_WAIT);
+		}
 		ret = R_ICCOM_Recive(&recive_param);
 		if (ret < 0) {
 			err_printf("R_ICCOM_Recive failed at iteration %d\n", curr_iter + 1);
