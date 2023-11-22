@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
-repolist=$(grep -h url ./*.yaml | grep -v "^#" | awk '{print $2}' | sed 's/"//g' )
+repolist=$(grep -h url: ./*.yaml | grep -v "^#" | awk '{print $2}' | sed 's/"//g' )
 REPO_DIR=${SCRIPT_DIR}/common_data/repo
 
 mkdir -p $REPO_DIR
