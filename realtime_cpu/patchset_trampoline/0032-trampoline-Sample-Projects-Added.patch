@@ -202,7 +202,7 @@ index 00000000..f1b5ef6b
 +#define TIMER_TICKS_PER_MS		(1000000U/TIMER_TICK_INTERVAL_NS)
 +#define HOST_INT_CLEAR_TIMEOUT_MS	(500U*TIMER_TICKS_PER_MS)
 +#define OS_NAME				"Trampoline"
-+#define STARTUP_LOG			"[Coatex-R52] ICCOM: driver initialized\r\n"
++#define STARTUP_LOG			"[Cortex-R52] ICCOM: driver initialized\r\n"
 +#define BENCH_SIZE			(17*14+1)
 +#define BENCH_TOTAL_SIZE		BENCH_SIZE*2+1
 +

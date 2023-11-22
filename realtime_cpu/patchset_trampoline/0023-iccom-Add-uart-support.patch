@@ -26,7 +26,7 @@ index ccc68c2b..4f0d38a4 100644
  #define HOST_INT_CLEAR_TIMEOUT_MS		(500U*TIMER_TICKS_PER_MS)
  #define OS_NAME				"Trampoline"
 -#define OS_NAME_SIZE			10
-+#define STARTUP_LOG			"[Coatex-R52] ICCOM: driver initialized\r\n"
++#define STARTUP_LOG			"[Cortex-R52] ICCOM: driver initialized\r\n"
  
  uint8 iccom_initalized = 0;
  struct echo_command recv_pkt;
