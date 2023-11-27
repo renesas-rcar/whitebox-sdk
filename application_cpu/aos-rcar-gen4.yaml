@@ -242,7 +242,7 @@ components:
       - *COMMON_SOURCES
       - type: git
         url: https://github.com/renesas-rcar/meta-renesas.git
-        rev: "fb473def"
+        rev: "%{META_RENESAS_COMMIT}"
     builder:
       type: yocto
       work_dir: "%{DOMU_BUILD_DIR}"
