@@ -19,6 +19,11 @@ RDEPENDS_${PN} += " \
 do_install_append() {
     install -d ${D}${sysconfdir}/systemd/system/aos-iamanager.service.d
     install -m 0644 ${WORKDIR}/aos-vis-service.conf ${D}${sysconfdir}/systemd/system/aos-iamanager.service.d/10-aos-vis-service.conf
+
+    if [ "${@d.getVar('USE_UFS')}" -eq "1" ]; then
+        sed -i 's/mmcblk0p/sda/g' \
+            ${D}${sysconfdir}/aos/aos_iamanager.cfg
+    fi
 }
 
 python do_update_config_append() {

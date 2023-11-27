@@ -10,7 +10,7 @@ do_install_append() {
     echo '  - job_name: "H3 node"' >> ${CONF_FILE}
     echo '    scrape_interval: 5s' >> ${CONF_FILE}
     echo '    static_configs:' >> ${CONF_FILE}
-    echo '    - targets: ["192.168.140.111:9100"]' >> ${CONF_FILE}
+    echo '    - targets: ["domd.gen3:9100"]' >> ${CONF_FILE}
     echo '' >> ${CONF_FILE}
 }
 

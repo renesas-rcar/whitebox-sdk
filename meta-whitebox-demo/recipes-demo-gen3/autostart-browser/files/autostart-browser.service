@@ -1,6 +1,6 @@
 [Unit]
 Description=service file for autostart chromium
-After=network.target
+After=network.target weston@root.service
 
 [Service]
 Type=simple
@@ -9,6 +9,8 @@ Environment=Display=:0
 Environment=XDG_RUNTIME_DIR=/run/user/0
 EnvironmentFile=/var/autostart-browser.config
 ExecStart=chromium --no-sandbox --kiosk --incognito --oobe-skip-postlogin --autoplay-policy=no-user-gesture-required --alsa-output-device=${AUDIO_OUT} --url ${APP_URL}:${APP_PORT}?serverAddr=${SERVER_IP}&serverPort=${SERVER_PORT}&${DEBUG}
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target

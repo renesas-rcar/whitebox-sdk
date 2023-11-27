@@ -1,0 +1,15 @@
+[Unit]
+Description=Weston Wayland Compositor
+RequiresMountsFor=/run
+
+[Service]
+User=%i
+Group=%i
+EnvironmentFile=-/etc/default/weston
+ExecStartPre=mkdir -p ${XDG_RUNTIME_DIR}
+ExecStart=/usr/bin/weston --tty 7 --log=${XDG_RUNTIME_DIR}/weston.log
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

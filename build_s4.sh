@@ -42,11 +42,11 @@ done
 
 # Prepare working directory
 cd ${SCRIPT_DIR}
-if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work ]] ;then
-    rm -rf ./work
-    mkdir -p ./work
+if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work-s4 ]] ;then
+    rm -rf ./work-s4/yocto/build/gen4
+    mkdir -p ./work-s4
 fi
-cd ./work
+cd ./work-s4
 
 # Preprae yaml file
 cp -f ../aos-rcar-demo2023.yaml ./aos-rcar-demo2023.yaml

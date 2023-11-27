@@ -44,8 +44,8 @@ variables:
   GEN3_DOMAIN_NAME: "gen3"
   GEN3_DOM0_HOST_NAME: "dom0"
   GEN3_DOMD_HOST_NAME: "domd"
-  GEN3_DHCP_NET: "10.0.0"
-  GEN3_DOM0_IP: "10.0.0.2"
+  GEN3_DHCP_NET: "10.0.2"
+  GEN3_DOM0_IP: "10.0.2.2"
 
   NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN4_DOM0_HOST_NAME}.%{GEN4_DOMAIN_NAME}"
 
@@ -67,6 +67,7 @@ variables:
   GEN4_XT_KERNEL_REV: "${AUTOREV}"
 
   GEN4_XT_DOMD_IMAGE: "rcar-image-minimal"
+  USE_UFS: "0"
 
   # Gen3 build configuration
 
@@ -98,7 +99,7 @@ common_data:
       rev: "c62970f"
     - type: git
       url: "https://github.com/aoscloud/meta-aos"
-      rev: "v7.0.3"
+      rev: "v7.0.1"
     - type: git
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "c1ad85f"
@@ -291,6 +292,7 @@ components:
         - [NODE_ADDRESSES, "%{NODE_ADDRESSES}"]
 
         - [VIS_DATA_PROVIDER, "%{AOS_VIS_DATA_PROVIDER}"]
+        - [USE_UFS, "%{USE_UFS}"]
 
       build_target: "%{GEN4_XT_DOMD_IMAGE}"
       layers:
@@ -411,6 +413,7 @@ components:
         - [DOM0_IP, "%{GEN3_DOM0_IP}"]
         - [DNSMASQ_INTERFACES, "eth0"]
         - [DNSMASQ_ADDRESSES, "/wwwivi/%{GEN4_DHCP_NET}.1"]
+        - [DNSMASQ_ADDRESSES, "/gen4/%{GEN4_DHCP_NET}.1"]
 
         # Aos configuration
         - [NODE_ID, "%{GEN3_DOMD_NODE_ID}"]
@@ -448,6 +451,159 @@ components:
         - "tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
         - "tmp/deploy/images/%{GEN3_MACHINE}/core-image-weston-%{GEN3_MACHINE}.ext4"
         - "tmp/deploy/images/%{GEN3_MACHINE}/aos/.unprovisioned"
+
+  gen3-domd-fota:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - *COMMON_SOURCES
+      - *GEN3_SOURCES
+    builder:
+      type: yocto
+      work_dir: "%{GEN3_DOM0_BUILD_DIR}-update"
+      conf:
+        - *COMMON_CONF
+        - *DOM0_CONF
+        - [MACHINE, "%{GENERIC_MACHINE}"]
+        - [XT_DOM_NAME, "dom0"]
+        - [XT_DOMD_CONFIG_NAME, "%{GEN3_XT_DOMD_CONFIG_NAME}"]
+        - [XT_DOMD_DTB_NAME, "%{GEN3_XT_DOMD_DTB_NAME}"]
+        - [XT_GUEST_INSTALL, "domd"]
+        - [XT_XEN_DTB_NAME, "%{GEN3_XT_XEN_DTB_NAME}"]
+        - [XT_DOMD_MACHINE, "%{GEN3_MACHINE}"]
+        - [XT_DOMD_IMAGE, "%{GEN3_XT_DOMD_IMAGE}"]
+
+        # Network configuration
+        - [DOMAIN_NAME, "%{GEN3_DOMAIN_NAME}"]
+        - [HOST_NAME, "%{GEN3_DOM0_HOST_NAME}"]
+        - [DOM0_MAC, "08:00:27:ff:cb:cb"]
+
+        # Aos configuration
+        - [NODE_ID, "%{GEN3_DOM0_NODE_ID}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
+
+        # Enable only DomD
+        - [BUNDLE_DOM0_TYPE, ""]
+        - [BUNDLE_DOMD_TYPE, "full"]
+        # For incremental fota(Currently, doesn't work well)
+        # - [BUNDLE_DOMD_TYPE, "incremental"]
+        # - [AOS_DOMD_REF_VERSION, "%{BUNDLE_REF_VERSION}"]
+        # - [BUNDLE_RH840_TYPE, "%{BUNDLE_RH850_TYPE}"]
+
+      layers:
+        - "../../../meta-virtualization"
+        - "../../../meta-openembedded/meta-oe"
+        - "../../../meta-openembedded/meta-filesystems"
+        - "../../../meta-openembedded/meta-python"
+        - "../../../meta-openembedded/meta-networking"
+        - "../../../meta-aos"
+        - "../../../meta-xt-common/meta-xt-control-domain"
+        - "../../../meta-xt-common/meta-xt-domx"
+        - "../../../meta-xt-common/meta-xt-dom0"
+        - "../../../meta-xt-rcar/meta-xt-rcar-dom0"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
+        - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+
+      build_target: aos-update
+      external_src:
+        domd: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/"
+      additional_deps:
+        - "%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/Image"
+      target_images:
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
+
+  gen3-domd-fota-inc:
+    build-dir: "%{YOCTOS_WORK_DIR}"
+    sources:
+      - *COMMON_SOURCES
+      - *GEN3_SOURCES
+    builder:
+      type: yocto
+      work_dir: "%{GEN3_DOM0_BUILD_DIR}-update-inc"
+      conf:
+        - *COMMON_CONF
+        - *DOM0_CONF
+        - [MACHINE, "%{GENERIC_MACHINE}"]
+        - [XT_DOM_NAME, "dom0"]
+        - [XT_DOMD_CONFIG_NAME, "%{GEN3_XT_DOMD_CONFIG_NAME}"]
+        - [XT_DOMD_DTB_NAME, "%{GEN3_XT_DOMD_DTB_NAME}"]
+        - [XT_GUEST_INSTALL, "domd"]
+        - [XT_XEN_DTB_NAME, "%{GEN3_XT_XEN_DTB_NAME}"]
+        - [XT_DOMD_MACHINE, "%{GEN3_MACHINE}"]
+        - [XT_DOMD_IMAGE, "%{GEN3_XT_DOMD_IMAGE}"]
+
+        # Network configuration
+        - [DOMAIN_NAME, "%{GEN3_DOMAIN_NAME}"]
+        - [HOST_NAME, "%{GEN3_DOM0_HOST_NAME}"]
+        - [DOM0_MAC, "08:00:27:ff:cb:cb"]
+
+        # Aos configuration
+        - [NODE_ID, "%{GEN3_DOM0_NODE_ID}"]
+        - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
+
+        # Enable only DomD
+        - [BUNDLE_DOM0_TYPE, ""]
+        - [BUNDLE_DOMD_TYPE, "full"]
+        # For incremental fota(Currently, doesn't work well)
+        - [BUNDLE_DOMD_TYPE, "incremental"]
+        - [AOS_DOMD_REF_VERSION, "%{BUNDLE_REF_VERSION}"]
+        - [BUNDLE_RH840_TYPE, "%{BUNDLE_RH850_TYPE}"]
+
+      layers:
+        - "../../../meta-virtualization"
+        - "../../../meta-openembedded/meta-oe"
+        - "../../../meta-openembedded/meta-filesystems"
+        - "../../../meta-openembedded/meta-python"
+        - "../../../meta-openembedded/meta-networking"
+        - "../../../meta-aos"
+        - "../../../meta-xt-common/meta-xt-control-domain"
+        - "../../../meta-xt-common/meta-xt-domx"
+        - "../../../meta-xt-common/meta-xt-dom0"
+        - "../../../meta-xt-rcar/meta-xt-rcar-dom0"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
+        - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
+        - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+
+      build_target: aos-update
+      external_src:
+        domd: "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/"
+      additional_deps:
+        - "%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/Image"
+      target_images:
+        - "tmp/deploy/images/%{GENERIC_MACHINE}/Image"
+
+  fota:
+    builder:
+      type: custom_script
+      work_dir: "fota"
+      script: "../scripts/fota_builder.py"
+      args: "-v"
+      target_images:
+        - "output/fota/%{UNIT_MODEL}-%{UNIT_VERSION}-%{BUNDLE_IMAGE_VERSION}.tar"
+
+      additional_deps:
+        - "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xen-%{GEN3_MACHINE}.uImage"
+        - "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/xenpolicy-%{GEN3_MACHINE}"
+        - "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/%{GEN3_XT_XEN_DTB_NAME}"
+        - "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/Image-%{GEN3_MACHINE}.bin"
+        - "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/aos-image-initramfs-%{GEN3_MACHINE}.cpio.gz"
+          #- "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/aos/boot/version"
+
+      components:
+        rootfs-full:
+          componentType: "%{UNIT_MODEL}-%{UNIT_VERSION}-%{GEN3_DOMD_NODE_ID}"
+          enabled: true
+          method: "overlay"
+          yocto_dir: "%{YOCTOS_WORK_DIR}"
+          build_dir: "%{GEN3_DOMD_BUILD_DIR}"
+          type: "full"
+          description: "gen3-domd rootfs image"
+          vendorVersion: "%{BUNDLE_IMAGE_VERSION}"
+          exclude:
+          exclude:
+            - "var/*"
+          fileName: "%{UNIT_MODEL}-%{UNIT_VERSION}-rootfs-full-%{BUNDLE_IMAGE_VERSION}.squashfs"
+
 
 images:
   gen4_full:
@@ -516,12 +672,18 @@ parameters:
       default: true
       overrides:
         variables:
-          NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID} %{GEN3_DOMD_NODE_ID} %{GEN3_DOM0_NODE_ID}"
+          # NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN4_DOM0_NODE_ID} %{GEN3_DOMD_NODE_ID} %{GEN3_DOM0_NODE_ID}"
+          # UM_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
+          # NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN4_DOM0_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN3_DOMD_HOST_NAME}.%{GEN3_DOMAIN_NAME} %{GEN3_DOM0_HOST_NAME}.%{GEN3_DOMAIN_NAME}"
+
+          NODE_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
           UM_LIST: "%{GEN4_DOMD_NODE_ID} %{GEN3_DOMD_NODE_ID}"
-          NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN4_DOM0_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN3_DOMD_HOST_NAME}.%{GEN3_DOMAIN_NAME} %{GEN3_DOM0_HOST_NAME}.%{GEN3_DOMAIN_NAME}"
+          NODE_ADDRESSES: "%{GEN4_DOMD_HOST_NAME}.%{GEN4_DOMAIN_NAME} %{GEN3_DOMD_HOST_NAME}.%{GEN3_DOMAIN_NAME}"
 
         components:
           gen3-dom0:
+            default: true
+          gen3-domd-fota:
             default: true
 
         images:
@@ -755,8 +917,6 @@ parameters:
     spider:
       default: true
       overrides:
-        variables:
-          USE_UFS: "0"
         components:
           gen4-domd:
             sources:
@@ -776,7 +936,6 @@ parameters:
       overrides:
         variables:
           GEN4_MACHINE: s4sk
-          USE_UFS: "0"
         components:
           gen4-dom0:
             builder:
@@ -794,7 +953,6 @@ parameters:
                 - "../../../../../meta-s4sk-support/meta-s4sk-support-driver-domain"
               conf:
                 - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
-                - [USE_UFS, "%{USE_UFS}"]
                 #- [IMAGE_INSTALL_append, " s4-boot-script"]
               target_images:
                 - "tmp/deploy/images/%{GEN4_MACHINE}/boot-ufs.uImage"
@@ -802,6 +960,7 @@ parameters:
   USING_UFS_AS_STORAGE:
     desc: "Using UFS instead of eMMC/SD card"
     "yes":
+      default: true
       overrides:
         variables:
           USE_UFS: "1"
@@ -813,7 +972,6 @@ parameters:
                 files:
                   "/boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/boot-ufs.uImage"
     "no":
-      default: true
       desc: "Nothing to do"
 
   FOR_WESTON:
@@ -948,6 +1106,7 @@ parameters:
                 - [EXTRA_IMAGE_FEATURES_append, " ssh-server-openssh"]
                 - [IMAGE_INSTALL_append, " node-exporter autostart-browser"]
                 - [IMAGE_INSTALL_remove, "gtk+3-demo"]
+                - [EXTRA_IMAGEDEPENDS:append, " boot-script"]
               layers:
                 - "../../../../../meta-whitebox-demo"
                 - "../../../meta-rcar-dev-utils/meta-rcar-gen3"
@@ -962,4 +1121,137 @@ parameters:
             partitions:
               domd_rootfs:
                 size: 2048 MiB
+              boot_a:
+                items:
+                  "boot.uImage": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/boot2.uImage"
+              boot_b:
+                items:
+                  "boot.uImage": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/boot2.uImage"
+              domd_var:
+                items:
+                  #"/": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/work/h3ulcb-poky-linux/core-image-weston/1.0-r0/rootfs/var"
+                  "autostart-browser.config": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/work/h3ulcb-poky-linux/core-image-weston/1.0-r0/rootfs/var/autostart-browser.config"
+                  "log/xen/boot.uImage": "%{YOCTOS_WORK_DIR}/%{GEN3_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN3_MACHINE}/boot2.uImage"
+
+  SELECT_CLUSTER_COLOR:
+    desc: "select cluster color"
+    "blue":
+      default: true
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "11, 66, 121"]
+                - [BASE_COLOR_AFTER, "179,214,255"]
+                - [ANIME_COLOR_AFTER, "0,102,255"]
+    "purple":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "66, 11, 121"]
+                - [BASE_COLOR_AFTER, "214,179,255"]
+                - [ANIME_COLOR_AFTER, "102,0,255"]
+    "yellow":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "123, 123, 0"]
+                - [BASE_COLOR_AFTER, "200,200,100"]
+                - [ANIME_COLOR_AFTER, "220,220,0"]
+
+# ===================================================================================================================
+
+  ENABLE_WHITEBOX_SDK:
+    desc: "Add Whitebox-sdk features"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        variables:
+          META_WB_LAYER_PATH: "../../../whitebox-sdk/application_cpu/"
+          BUILD_DOMD_SDK: "0"
+        components:
+          gen4-domd:
+            sources:
+              - type: git
+                url: "https://github.com/renesas-rcar/whitebox-sdk.git"
+                rev: "v4.0"
+            builder:
+              conf:
+                - [BUILD_SDK, "%{BUILD_DOMD_SDK}"]
+                - [IMAGE_INSTALL_append, " iproute2-tc snort"]
+                - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
+                - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
+                - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
+                - [IMAGE_INSTALL_append, " waii"]
+                - [IMAGE_INSTALL_append, " node-exporter"]
+                - [EXTRA_IMAGEDEPENDS_append, " s4-boot-script"]
+                - [IMAGE_INSTALL_append, " ufs-duplication-script"]
+                - [IMAGE_INSTALL_append, " packagegroup-system-monitor"]
+              layers:
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
+              target_images:
+                - "tmp/deploy/images/%{GEN4_MACHINE}/var/statestorage.db"
+        images:
+          gen4_full:
+            partitions:
+              domd_rootfs:
+                size: 3072 MiB
+              domd_var:
+                size: 1024 MiB
+                files:
+                  "statestorage.db": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/var/statestorage.db"
+              domd_aos:
+                size: 3072 MiB
+
+  ENABLE_WHITEBOX_SDK_DEMO:
+    desc: "Expand whitebox-sdk for demo"
+    "no":
+      desc: "Nothing to do"
+    "yes":
+      default: true
+      overrides:
+        components:
+          #          dom0:
+          #            builder:
+          #              conf:
+          #                - [BBMASK_append, "meta-whitebox-demo/recipes-demo-gen3"]
+          #                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-domd"]
+          #                - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
+          #              layers:
+          #                - "../../../../meta-whitebox-demo"
+          gen4-domd:
+            builder:
+              conf:
+                # Remove unused recipes
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen3"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-dom0"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
+                # Remoce existing network settings
+                #- [BBMASK_append, "|meta-aos-rcar-gen4-driver-domain/recipes-connectivity/xen-network"]
+                # Add additional applications
+                - [IMAGE_INSTALL_append, " python3-pip python3-websockets"]
+                - [IMAGE_INSTALL_append, " alcohol-recv-server rh850-ota-master"]
+                - [IMAGE_INSTALL_append, " driving-sim-translator dummy-driving-sim"]
+                - [IMAGE_INSTALL_append, " monitoring-vissv2server"]
+                - [IMAGE_INSTALL_append, " api-server"]
+                - [IMAGE_INSTALL_append, " rps-setup"]
+                # For development
+                - [IMAGE_INSTALL_append, " vim curl htop"]
+              layers:
+                - "../../../../../meta-whitebox-demo"
+        images:
+          gen4_full:
+            partitions:
+              domd_var:
+                size: 2048 MiB
+                files:
+                  "RH850-OTA-MASTER.config": "%{YOCTOS_WORK_DIR}/%{GEN4_DOMD_BUILD_DIR}/tmp/deploy/images/%{GEN4_MACHINE}/var/RH850-OTA-MASTER.config"
 

@@ -1,0 +1,11 @@
+[Unit]
+Description=Snort for TSN0
+After=network.target
+
+[Service]
+ExecStartPre=-mkdir /var/log/snort
+ExecStartPre=-tc qdisc add dev tsn0 ingress
+ExecStart=/usr/bin/snort --daq-dir /usr/lib/daq/ -Q -c /etc/snort/snort.conf -i tsn0:rmon0
+
+[Install]
+WantedBy=multi-user.target

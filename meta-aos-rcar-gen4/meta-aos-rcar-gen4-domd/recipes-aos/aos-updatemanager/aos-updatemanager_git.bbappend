@@ -37,4 +37,9 @@ do_compile() {
 do_install_append() {
     install -d ${D}${bindir}
     install -m 0755 ${B}/bin/aos_updatemanager ${D}${bindir}
+
+    if [ "${@d.getVar('USE_UFS')}" -eq "1" ]; then
+        sed -i 's/mmcblk0p/sda/g' \
+            ${D}${sysconfdir}/aos/aos_updatemanager.cfg
+    fi
 }
