@@ -1142,9 +1142,9 @@ parameters:
           gen3-domd:
             builder:
               conf:
-                - [BG_COLOR_AFTER, "11, 66, 121"]
-                - [BASE_COLOR_AFTER, "179,214,255"]
-                - [ANIME_COLOR_AFTER, "0,102,255"]
+                - [BG_COLOR_AFTER, "11, 66, 124"]
+                - [BASE_COLOR_AFTER, "179,212,255"]
+                - [ANIME_COLOR_AFTER, "0,105,255"]
     "purple":
       overrides:
         components:
@@ -1236,6 +1236,7 @@ parameters:
                 - [BBMASK_append, "|meta-whitebox-demo/recipes-gen3-proprietary"]
                 # Remoce existing network settings
                 #- [BBMASK_append, "|meta-aos-rcar-gen4-driver-domain/recipes-connectivity/xen-network"]
+                - [BBMASK_append, "|application_cpu/meta-rcar-whitebox/meta-domd/recipes-security/optee"]
                 # Add additional applications
                 - [IMAGE_INSTALL_append, " python3-pip python3-websockets"]
                 - [IMAGE_INSTALL_append, " alcohol-recv-server rh850-ota-master"]
