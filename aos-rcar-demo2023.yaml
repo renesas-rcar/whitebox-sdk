@@ -1101,6 +1101,7 @@ parameters:
                 - [IMAGE_INSTALL_append, " iperf3"]
                 - [PACKAGECONFIG_pn-chromium-ozone-wayland, " proprietary-codecs"]
                 - [IMAGE_INSTALL_append, " chromium-ozone-wayland"]
+                - [IMAGE_INSTALL_append, " api-server"]
                 # For development
                 - [IMAGE_INSTALL_append, " htop ethtool vim usbutils"]
                 - [EXTRA_IMAGE_FEATURES_append, " ssh-server-openssh"]
