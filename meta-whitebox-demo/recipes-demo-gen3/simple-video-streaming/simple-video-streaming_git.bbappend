@@ -3,6 +3,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI_append = " \
     file://simple-video-streaming.service \
     file://0001-WIP-For-demo.patch \
+    file://0002-WIP.patch \
 "
 
 BRANCH = "main"

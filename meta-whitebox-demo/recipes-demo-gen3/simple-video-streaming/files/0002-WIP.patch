@@ -1,0 +1,33 @@
+From 26f9003faaa638255848dc4cc86c687c2833cc82 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 17 Oct 2023 19:59:54 +0900
+Subject: [PATCH 2/3] WIP
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ server.py | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/server.py b/server.py
+index f5b90b9..1318aab 100644
+--- a/server.py
++++ b/server.py
+@@ -125,9 +125,12 @@ class VNCServer(http.server.SimpleHTTPRequestHandler):
+             counter = 1
+         prev_sec=sec
+         # Node-exporter
+-        with open('/var/textfile_collector/fps.prom.tmp', 'w') as f:
+-            f.write('camera_fps {}\n'.format(prev_fps))
+-            _ = shutil.move(r'/var/textfile_collector/fps.prom.tmp', r'/var/textfile_collector/fps.prom')
++        try:
++            with open('/var/textfile_collector/fps.prom.tmp', 'w') as f:
++                f.write('camera_fps {}\n'.format(prev_fps))
++                _ = shutil.move(r'/var/textfile_collector/fps.prom.tmp', r'/var/textfile_collector/fps.prom')
++        except:
++            pass
+ 
+     def do_GET(self):
+         self.path = self.path.split('?')[0]
+-- 
+2.34.1
+
