@@ -1135,8 +1135,9 @@ parameters:
 
   SELECT_CLUSTER_COLOR:
     desc: "select cluster color"
-    "blue":
+    "default":
       default: true
+    "blue":
       overrides:
         components:
           gen3-domd:
@@ -1160,9 +1161,18 @@ parameters:
           gen3-domd:
             builder:
               conf:
-                - [BG_COLOR_AFTER, "123, 123, 0"]
+                - [BG_COLOR_AFTER, "123, 123, 1"]
                 - [BASE_COLOR_AFTER, "200,200,100"]
-                - [ANIME_COLOR_AFTER, "220,220,0"]
+                - [ANIME_COLOR_AFTER, "220,220,1"]
+    "green":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "11, 99, 33"]
+                - [BASE_COLOR_AFTER, "179,255,179"]
+                - [ANIME_COLOR_AFTER, "0,255,102"]
 
 # ===================================================================================================================
 
