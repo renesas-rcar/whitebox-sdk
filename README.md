@@ -10,7 +10,8 @@ Please refer to the official webpage:
 
 # Table of contents
 
-- [Setup](#Setup)
+- [Download repository](#Download-repository)
+- [Required packages](#Required-packages)
 - [Tool setup](#Tool-setup)
 - [Build](#Build)
 - [LICENSE](#LICENSE)
@@ -19,22 +20,32 @@ Please refer to the official webpage:
   - [FAQ](#FAQ)
   - [Community Q&A forum](#Community-QA-forum)
 
-# Setup
+# Download repository
 Execute the following command:
 
-	sudo apt install git	
-	git clone https://github.com/renesas-rcar/whitebox-sdk.git -b v5.x
+	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.0/tool/repo_init.sh )"
 
-# Tool setup
-Since GUI operation is required during installation, it must be run on an Ubuntu PC.
-Please obtain the compiler in advance; "RH850 Compiler CC-RH V2.05.00 for e2 studio" is available from the following site.
+# Required packages
 
-https://www.renesas.com/us/en/software-tool/c-compiler-package-rh850-family#download
+1. ICUMX loader and Flash Writer package
+   - This is not used for building, but it requires for executing Whitebox SDK.
+   - Please donwload "ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv3.16.1" or later from following:
+	 - https://www.renesas.com/products/automotive-products/automotive-system-chips-socs/y-ask-rcar-s4-1000base-t-r-car-s4-starter-kit#download
+2. CC-RH compiler
+   - This is used for building G4MH software.
+   - Please donwload "RH850 Compiler CC-RH V2.05.00 for e2 studio" from following:
+     - https://www.renesas.com/us/en/software-tool/c-compiler-package-rh850-family#download
 
-Save the downloaded file (CC-RH_V20500_setup-doc.zip) in the "tool" folder and execute the following command
+Please copy avobe files under the tool directory:
 
 	cd whitebox-sdk/tool
 	cp <download directry>/CC-RH_V20500_setup-doc.zip .
+	cp <download directry>/ICUMX_Loader_and_Flashwriter_Package_*.zip .
+
+# Tool setup
+Since GUI operation is required during installation, it must be run on an Ubuntu PC.
+
+	cd whitebox-sdk/tool
 	./setup_whitebox.sh
 
 # Build
