@@ -8,7 +8,8 @@ ENABLE_DEMO=no
 USE_UFS=no
 CREATE_FOTA_PKG_FLAG=false
 CLUSTER_VER=new
-CLUSTER_COLOR=blue
+CLUSTER_COLOR=default
+BUNDLE_IMAGE_VERSION=0.2.0
 Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
@@ -66,8 +67,8 @@ done
 # Prepare working directory
 cd ${SCRIPT_DIR}
 if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work ]] ;then
-    rm -rf ./work
-    mkdir -p ./work
+    rm -rf ./work/yocto
+    mkdir -p ./work/yocto
 fi
 cd ./work
 

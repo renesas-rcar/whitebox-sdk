@@ -73,7 +73,12 @@ moulin ./aos-rcar-demo2023.yaml \
 
 ninja
 ninja gen4_full.img.gz
-#gzip -f gen4_full.img
+# Compress
+if [[ -e $(which pigz) ]];then
+    pigz -kf gen4_full.img
+else
+    gzip -kf gen4_full.img
+fi
 
 exit
 
