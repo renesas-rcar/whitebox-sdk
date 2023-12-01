@@ -23,7 +23,7 @@ Please refer to the official webpage:
 # Download repository
 Execute the following command:
 
-	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.0/tool/repo_init.sh )"
+	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.1/tool/repo_init.sh )"
 
 # Required packages
 
@@ -52,7 +52,7 @@ Since GUI operation is required during installation, it must be run on an Ubuntu
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v5.0.sh  <BOARD>
+	./build_whitebox_v5.1.sh  <BOARD>
 
 `BOARD` is "spider" or "s4sk"
 
