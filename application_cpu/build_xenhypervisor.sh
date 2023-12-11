@@ -38,7 +38,7 @@ do
 done
 
 BOOT_DEV=ufs
-if [[ "$USING_UFS" == "n" ]]; then
+if [[ "$USING_UFS" == "no" ]]; then
     BOOT_DEV=mmc
 fi
 
