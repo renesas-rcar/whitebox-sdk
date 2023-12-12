@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 GITHUB_URL=https://github.com/TrampolineRTOS/trampoline
-COMMIT=5deaff4941cb086e25859743973af019f2bad27c
+COMMIT=d930f9447a237feb062ef3040b980cb9d2b748e7
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
 
 export PATH=~/.local/bin:$PATH
@@ -56,43 +56,42 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     fi
 
     cd ${SOURCE_DIR}
+    rm -rf ${SOURCE_DIR}/examples/cortex-a-r/armv8/
     git reset --hard ${COMMIT} ; git clean -df
 
     # prepare whitebox code
-    rm -rf examples/cortex-a/armv8
     git am ${SCRIPT_DIR}/patchset_trampoline/*.patch
-    if [ "$1" == "spider" ];  then
-        git am ${SCRIPT_DIR}/patchset_trampoline/spider/*.patch
-    fi
     git submodule init
-    git submodule update net/ethernet/lwip
+    git submodule update libraries/net/ethernet/lwip
 
     # Dhrystone
-    cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
+    cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample
     rm -rf ./dhrystone
     wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz
     mkdir -p ./dhrystone && tar xf dhrystone-2.1.tar.gz -C ./dhrystone
     cp ./dhrystone/dhry_1.c{,.org}
     cd ./dhrystone
-    patch -p0 < ${SCRIPT_DIR}/patchset_trampoline/sample_dhry_1.c.diff
+    patch -p0 < ${SCRIPT_DIR}/patchset_trampoline/sample_cr52_dhry_1.c.diff
     # Coremark
     cd ..
     rm -rf ./coremark
-    git clone https://github.com/eembc/coremark ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/coremark
-    cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/coremark
+    git clone https://github.com/eembc/coremark ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/coremark
+    cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/coremark
     git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
-    git apply ${SCRIPT_DIR}/patchset_trampoline/sample_coremark.diff
+    git apply ${SCRIPT_DIR}/patchset_trampoline/sample_cr52_coremark.diff
 
 fi
 
 # Setup uart baudrate
 if [ "$1" == "s4sk" ]; then
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample_not_can.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/sample.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
+    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/ethernet/eth.oil
+    sed -i 's/spider_can_controller_1/spider_can_controller_0/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/can_demo.c
 elif [ "$1" == "spider" ];  then
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample/sample.oil
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet/eth.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/sample.oil
+    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/ethernet/eth.oil
+    sed -i 's/spider_can_controller_0/spider_can_controller_1/g' ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample/can_demo.c
 fi
 
 # Setup python build env
@@ -109,7 +108,7 @@ rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 
 # build sample project
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
+cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample
 rm -rf sample
 rm -rf sample_not_can
 chmod +x ./build.sh
@@ -118,7 +117,7 @@ arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/c
 
 # build sample(can disable) project
 if [ "$1" == "s4sk" ]; then
-    cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/sample
+    cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/sample
     rm -rf sample
     rm -rf sample_not_can
     chmod +x ./build_not_can.sh
@@ -127,7 +126,7 @@ if [ "$1" == "s4sk" ]; then
 fi
 
 # build eathernet project
-cd ${SOURCE_DIR}/examples/cortex-a/armv8/spider/ethernet
+cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/ethernet
 chmod +x ./build.sh
 ./build.sh
 arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
