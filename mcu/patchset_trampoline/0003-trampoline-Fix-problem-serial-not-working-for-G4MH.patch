@@ -1,0 +1,36 @@
+From a0ed77afaa48d4744fad351efb5cb6ddbf19b1cf Mon Sep 17 00:00:00 2001
+From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Date: Tue, 12 Dec 2023 18:24:04 +0900
+Subject: [PATCH 3/3] trampoline: Fix problem serial not working for G4MH
+
+Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+---
+ libraries/drivers/serial/renesas/spider_serial.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/libraries/drivers/serial/renesas/spider_serial.c b/libraries/drivers/serial/renesas/spider_serial.c
+index e56b5765..ab01ec3d 100644
+--- a/libraries/drivers/serial/renesas/spider_serial.c
++++ b/libraries/drivers/serial/renesas/spider_serial.c
+@@ -1,8 +1,18 @@
+ #include "spider_serial.h"
++#include "iodefine.h"
+ 
+ uint32 Serial_Init(void)
+ {
+   volatile uint8  wait_cmpt;
++#ifndef __arm__
++  volatile uint32 val = 0;
++
++  /* Enable access to the bus */
++  MCCR_SELB1.STBY_CTRL.UINT32 = 0x00000001;
++  do {
++	val = MCCR_SELB1.STBY_CTRL.UINT32;
++  } while (val != 0x00000001);
++#endif
+ 
+   /* Clear bits TE and RE in HSSCR to 0 */
+   SERIAL_SCR =  SERIAL_SCR_INT_VALUE;
+-- 
+2.25.1
+
