@@ -1,6 +1,7 @@
 #!/bin/bash -eu
 
 BASE_DIR=$(cd `dirname $0` && pwd)
+TARGET_BOARD=""
 
 Usage() {
     echo "Usage:"
@@ -12,23 +13,38 @@ Usage() {
     echo "    -h: Show this usage"
 }
 
-# Without option, pattern 1 is selected by default.
-if [[ $# < 1 ]]; then
-    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
-    Usage; exit
-fi
+print_err() {
+    for arr in "$@"; do
+        echo -e "\e[31m$arr\e[m"
+    done
+}
 
-if [[ "$1" == "-h" ]]; then
-    Usage; exit
-elif [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
-    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
+for arr in $@; do
+    case "$arr" in
+        s4sk  ) TARGET_BOARD+=s4sk ;;
+        spider) TARGET_BOARD+=spider ;;
+        -h    ) Usage; exit ;;
+    esac
+done
+if [[ "$TARGET_BOARD" != "spider" ]] && [[ "$TARGET_BOARD" != "s4sk" ]]; then
+    print_err "Please \"input\" correct board name: spider or s4sk"
     Usage; exit
 fi
 
 ICUMX_LOADER_PATH=$(find ${BASE_DIR}/tool -name "*ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv*.zip")
 if [ "${ICUMX_LOADER_PATH}" == "" ]; then
-  echo -e "\e[31mERROR: ICUMX loader file (zip) not found in tool directory.\e[m"
-  exit
+    print_err "ERROR: ICUMX Loader file(zip) is not found."
+    print_err "    This is not used for building, but it's required for executing Whitebox SDK."
+    print_err "    1. Please donwload "ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv3.16.1" or later from following: \e[m"
+    print_err "    https://www.renesas.com/products/automotive-products/automotive-system-chips-socs/y-ask-rcar-s4-1000base-t-r-car-s4-starter-kit#download"
+    print_err "    2. Copy downloaded file into tool directory."
+    print_err "    cp <path to downloaded file> -t ./tool"
+    exit
+elif [ $(echo "${ICUMX_LOADER_PATH}" | wc -l) -ne 1 ]; then
+    print_err "ERROR: Multiple ICUMX Loader files(zip) are found."
+    for item in ${ICUMX_LOADER_PATH}; do print_err "    - $item"; done
+    print_err "    Please copy only one zip file into tool directory"
+    exit
 fi
 
 # deploy images
@@ -61,6 +77,18 @@ cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.
 
 ls -l deploy
 
-cd tool
-./setup_ipl.sh $1
+# Prepare IPL
+cd $BASE_DIR/tool
+unzip -qo ${ICUMX_LOADER_PATH}
+cp -f ${ICUMX_LOADER_PATH%.zip}/*.srec ${ICUMX_LOADER_PATH%.zip}/*.mot -t ../deploy
+
+# Copy macros and shells to match board
+cp IPL/* ../deploy/
+if [ "$1" == "s4sk" ]; then
+    rm -rf ../deploy/Flash_Bootloader_Spider.ttl
+elif [ "$1" == "spider" ];  then
+    rm -rf ../deploy/Flash_Bootloader_S4SK.ttl
+fi
+# Changed CR52 memory placement to 0x40040000
+sed -i 's/S315EB23695000000000000010E2000000000000000031/S315EB23695000000000000004400000000000000000DF/g' ../deploy/cert_header_sa9.srec
 
