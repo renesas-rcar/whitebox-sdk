@@ -42,33 +42,33 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
 
     cd ${SOURCE_DIR}
     git reset --hard tags/v1.0.0; git clean -df
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0001-iccom.flash.rte-ADD-iccom-flash-driver-and-rte.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0002-iccom-Update-protocol-and-change-CTA-address.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0003-iccom-Change-to-ECHO-for-performance-processing.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0004-Change-of-G4MH-start-address.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0005-iccom-Add-get-OS-mode.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-iccom.flash.rte-ADD-iccom-flash-driver-and-rte.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0002-iccom-Update-protocol-and-change-CTA-address.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0003-iccom-Change-to-ECHO-for-performance-processing.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0004-Change-of-G4MH-start-address.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0005-iccom-Add-get-OS-mode.patch
     wget https://www.toppers.jp/download.cgi/a-rtegen-1.4.0.src.tar.gz
     mkdir vm_atk2/vm1_atk2/common/tool
     tar zxvf a-rtegen-1.4.0.src.tar.gz -C vm_atk2/vm1_atk2/common/tool/
     rm a-rtegen-1.4.0.src.tar.gz
     mv vm_atk2/vm1_atk2/common/tool/a-rtegen vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/toppers/0001-rte-Add-compile-environment.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-rte-Add-compile-environment.patch
 
     # benchmak sample
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safeg_sample/0001-Marge-benchmark.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-Marge-benchmark.patch
     cd ${SOURCE_DIR}/vm_atk2/vm1_atk2/
     rm -rf ./dhrystone
     wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz
     mkdir -p ./dhrystone && tar xf dhrystone-2.1.tar.gz -C ./dhrystone
     cp ./dhrystone/dhry_1.c{,.org}
-    cd ./dhrystone && patch -p0 < ${SCRIPT_DIR}/patchset_safeg_sample/dhry_1.c.diff
+    cd ./dhrystone && patch -p0 < ${SCRIPT_DIR}/patchset_safegauto/dhry_1.c.diff
 
     if [ ! -e ${SOURCE_DIR}/vm_atk2/vm1_atk2/coremark ]; then
         git clone https://github.com/eembc/coremark ${SOURCE_DIR}/vm_atk2/vm1_atk2/coremark
     fi
     cd ${SOURCE_DIR}/vm_atk2/vm1_atk2/coremark
     git reset --hard d5fad6bd094899101a4e5fd53af7298160ced6ab ; git clean -df
-    git apply ${SCRIPT_DIR}/patchset_safeg_sample/coremark.diff
+    git apply ${SCRIPT_DIR}/patchset_safegauto/coremark.diff
 
 fi
 cd ${SOURCE_DIR}
