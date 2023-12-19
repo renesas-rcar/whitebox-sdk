@@ -79,6 +79,12 @@ common_data:
     - [DOMU_IMAGE_VERSION, "%{AOS_BUNDLE_IMAGE_VERSION}"]
     - [RH850_IMAGE_VERSION, "%{AOS_RH850_IMAGE_VERSION}"]
 
+    # Generate license information and source code
+    - [INHERIT_append, " archiver"]
+    - ["ARCHIVER_MODE[src]", "original"]
+    - [COPYLEFT_LICENSE_INCLUDE, "*"]
+    - [COPYLEFT_LICENSE_EXCLUDE_append, "CLOSED"]
+
   # Conf options for domain that are built used renesas layer
   domd_domu_conf: &DOMD_DOMU_CONF
     - [MACHINE, "%{MACHINE}"]
