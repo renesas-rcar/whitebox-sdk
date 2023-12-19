@@ -94,6 +94,8 @@ build_sw() {
     curl -O https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/${WHITEBOX_VERSION}/application_cpu/aos-rcar-gen4-patch.yaml
     cat aos-rcar-gen4.yaml aos-rcar-gen4-patch.yaml ${SCRIPT_DIR}/aos-rcar-gen4-demo-patch.yaml \
         > ${SCRIPT_DIR}/work/s4_build/aos-rcar-gen4-demo.yaml
+    # Fix build error with latest moulin
+    sed -i 's/fb473def/%{META_RENESAS_COMMIT}/' ${SCRIPT_DIR}/work/s4_build/aos-rcar-gen4-demo.yaml
 
     # Apply append patch for repository
     apply_patch_meta-aos-rcar-gen4 () {
