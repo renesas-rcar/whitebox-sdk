@@ -23,9 +23,15 @@ for arr in $@; do
     case "$arr" in
         s4sk  ) TARGET_BOARD+=s4sk ;;
         spider) TARGET_BOARD+=spider ;;
+        all   ) TARGET_BOARD+=all;;
         -h    ) Usage; exit ;;
     esac
 done
+if [[ "$TARGET_BOARD" == "all" ]]; then
+    $0 s4sk && mv deploy{,_s4sk}
+    $0 spider && mv deploy{,_spider}
+    exit
+fi
 if [[ "$TARGET_BOARD" != "spider" ]] && [[ "$TARGET_BOARD" != "s4sk" ]]; then
     print_err "Please \"input\" correct board name: spider or s4sk"
     Usage; exit

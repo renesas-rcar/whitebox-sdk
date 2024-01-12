@@ -4,6 +4,7 @@
 
 # all part
 deploy
+deploy_*
 
 # tool
 tool/CSPlus_CC_Package_V80900-doc-e*
