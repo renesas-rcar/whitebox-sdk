@@ -237,7 +237,7 @@ index 0d30114..169bb89 100644
 -BRANCH = "v5.10.41/rcar-5.1.7.rc3-xt"
 -SRCREV = "d1e67027b82143bd56cc8a881e11e4d475dcffb9"
 +RENESAS_BSP_URL = "git://github.com/renesas-rcar/linux-xen.git"
-+BRANCH = "v5.10.41/rcar-5.1.7.rc11"
++BRANCH = "v5.10.41/rcar-5.1.7.rc11-xt"
 +SRCREV = "33c9c4268e83508c68567fac3ff7a6f8b53f1868"
  
  SRC_URI_append = "\
