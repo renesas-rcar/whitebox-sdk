@@ -2,6 +2,7 @@
 
 CLEAN_BUILD_FLAG=false
 USING_UFS=yes
+USING_DOMU=no
 Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
@@ -11,6 +12,7 @@ Usage() {
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
     echo "    -m: Using eMMC/SD as rootfs(Defult is UFS)"
+    echo "    -u: Using DomU(Default is disable)"
     echo "    -h: Show this usage"
 }
 
@@ -27,11 +29,12 @@ fi
 
 # Proc arguments
 OPTIND=2
-while getopts "chm" OPT
+while getopts "chmu" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         m) USING_UFS=no;;
+        u) USING_DOMU=yes;;
         h) Usage; exit;;
         *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
@@ -93,7 +96,8 @@ fi
 cd ${SCRIPT_DIR}/work
 moulin ./aos-rcar-gen4-wb.yaml \
     --TARGET_BOARD $1 \
-    --USING_UFS_AS_STORAGE $USING_UFS
+    --USING_UFS_AS_STORAGE $USING_UFS \
+    --ENABLE_DOMU $USING_DOMU
 ninja
 ninja image-full
 mv -f full.img $1.${BOOT_DEV}.full.img
