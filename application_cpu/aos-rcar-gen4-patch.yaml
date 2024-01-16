@@ -123,6 +123,19 @@
       overrides:
         variables:
           USE_UFS: "1"
+        components:
+          dom0:
+            builder:
+              conf:
+                - [EXTRA_IMAGECMD_ext4, "-b 4096"]
+          domd:
+            builder:
+              conf:
+                - [EXTRA_IMAGECMD_ext4, "-b 4096"]
+          domu:
+            builder:
+              conf:
+                - [EXTRA_IMAGECMD_ext4, "-b 4096"]
         images:
           full:
             sector_size: 4096
