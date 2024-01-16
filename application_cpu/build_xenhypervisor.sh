@@ -93,6 +93,14 @@ if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     #############################################
 fi
 
+# To avoid increasing network usage, using local repository
+cd ${SCRIPT_DIR}/work
+if [[ -d $SCRIPT_DIR/common_data/repo ]]; then
+    bash ../setup_local_repository.sh
+    # Replace Yocto path
+    sed -i -e 's|url: ".*://.*/|url: "../common_data/repo/|' -e 's/\.git//' ./*.yaml
+fi
+
 cd ${SCRIPT_DIR}/work
 moulin ./aos-rcar-gen4-wb.yaml \
     --TARGET_BOARD $1 \
