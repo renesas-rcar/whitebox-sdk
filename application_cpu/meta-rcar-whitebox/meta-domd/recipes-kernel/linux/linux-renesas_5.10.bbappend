@@ -26,6 +26,7 @@ SRC_URI_append_s4sk = " \
 SRC_URI_append = " \
     file://fwe.cfg \
     file://pktgen.cfg \
+    file://docker.cfg \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
