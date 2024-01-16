@@ -22,6 +22,7 @@
                 - [IMAGE_INSTALL_append, " iproute2-tc snort"]
                 - [IMAGE_INSTALL_append, " iccom-lib iccom-test"]
                 - [IMAGE_INSTALL_append, " docker python3-docker-compose"]
+                - [CORE_IMAGE_EXTRA_INSTALL_append, " kernel-modules"]
                 - [IMAGE_INSTALL_append, " dhrystone whetstone sysbench"]
                 - [IMAGE_INSTALL_append, " can-utils python3-numpy"]
                 - [IMAGE_INSTALL_append, " waii"]
