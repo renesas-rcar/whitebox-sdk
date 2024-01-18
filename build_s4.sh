@@ -179,7 +179,7 @@ prepare_ipl_spider () {
     tar xf ${TOOL_PATH} -C ${TEMP_DIR}
     TOOL_PATH=$(find ${TEMP_DIR} -name "R-Car_S4_Xen*.zip" | head -1)
     unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
-    TOOL_PATH=$(find ${TEMP_DIR} -name "Flash_Boot.zip" | grep -v S4SK)
+    TOOL_PATH=$(find ${TEMP_DIR} -name "Flash_Boot.zip" | grep -v S4SK | grep -v '2.5Gbps')
     unzip -qo ${TOOL_PATH} -d ${TEMP_DIR}
     mv ${TEMP_DIR}/Flash_Boot ${OUTPUT_DIR}
 
