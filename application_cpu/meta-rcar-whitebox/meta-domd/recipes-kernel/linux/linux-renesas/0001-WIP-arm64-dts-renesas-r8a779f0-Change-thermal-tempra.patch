@@ -1,0 +1,44 @@
+From c4f4de08e5a30984e60c2ab7f85fd3594fe0fd80 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 30 Jan 2024 11:56:58 +0900
+Subject: [PATCH] WIP: arm64: dts: renesas: r8a779f0: Change thermal temprature
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index 1663711515e2..0c72231187f7 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -2592,7 +2592,7 @@ sensor_thermal1: sensor-thermal1 {
+ 
+ 			trips {
+ 				sensor1_crit: sensor1-crit {
+-					temperature = <120000>;
++					temperature = <180000>;
+ 					hysteresis = <1000>;
+ 					type = "critical";
+ 				};
+@@ -2607,7 +2607,7 @@ sensor_thermal2: sensor-thermal2 {
+ 
+ 			trips {
+ 				sensor2_crit: sensor2-crit {
+-					temperature = <120000>;
++					temperature = <180000>;
+ 					hysteresis = <1000>;
+ 					type = "critical";
+ 				};
+@@ -2622,7 +2622,7 @@ sensor_thermal3: sensor-thermal3 {
+ 
+ 			trips {
+ 				sensor3_crit: sensor3-crit {
+-					temperature = <120000>;
++					temperature = <180000>;
+ 					hysteresis = <1000>;
+ 					type = "critical";
+ 				};
+-- 
+2.34.1
+

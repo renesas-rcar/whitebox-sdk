@@ -27,6 +27,7 @@ SRC_URI_append = " \
     file://fwe.cfg \
     file://pktgen.cfg \
     file://docker.cfg \
+    file://0001-WIP-arm64-dts-renesas-r8a779f0-Change-thermal-tempra.patch \
 "
 
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
