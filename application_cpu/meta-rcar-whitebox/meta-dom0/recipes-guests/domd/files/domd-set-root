@@ -43,6 +43,10 @@ if echo "${BOOT_STORAGE}" | grep -q 'mmc' ; then
 fi
 STORAGE_PART="${BOOT_STORAGE}${PART_PREFIX}"
 
+# append domd bootargs append
+DOMD_ARGS_APPEND=`cat /proc/device-tree/domd_bootargs_append`
+sed -i "s/DOMD_ARGS_APPEND/${DOMD_ARGS_APPEND}/g" $DOMD_CFG_FILE
+
 # now make up the configuration
 echo "Mangling domain configuration: setting storage to ${BOOT_STORAGE}"
 sed -i "s/STORAGE_PART/${STORAGE_PART}/g" $DOMD_CFG_FILE

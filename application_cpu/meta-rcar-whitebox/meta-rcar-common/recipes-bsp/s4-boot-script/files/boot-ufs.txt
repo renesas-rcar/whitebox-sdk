@@ -2,7 +2,7 @@ env delete bootargs
 
 setenv set_pcie 'i2c dev 0; i2c mw 0x6c 0x26 5; i2c mw 0x6c 0x254.2 0x1e; i2c mw 0x6c 0x258.2 0x1e'
 setenv bootcmd_scsi0 'run scsi0_xen_load; run scsi0_dtb_load; run scsi0_kernel_load; run scsi0_xenpolicy_load; run scsi0_initramfs_load; bootm 0x48080000 0x84000000 0x48000000'
-setenv scsi0_dtb_load 'ext2load scsi 0:${aos_boot_slot} 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device sda; fdt set /boot_dev domd_ip ${domd_ip};'
+setenv scsi0_dtb_load 'ext2load scsi 0:${aos_boot_slot} 0x48000000 xen.dtb; fdt addr 0x48000000; fdt resize; fdt mknode / boot_dev; fdt set /boot_dev device sda; fdt set /boot_dev domd_ip ${domd_ip}; fdt resize; fdt set / domd_bootargs_append "${domd_bootargs_append}"'
 setenv scsi0_initramfs_load 'ext2load scsi 0:${aos_boot_slot} 0x84000000 uInitramfs'
 setenv scsi0_kernel_load 'ext2load scsi 0:${aos_boot_slot} 0x7a000000 Image'
 setenv scsi0_xen_load 'ext2load scsi 0:${aos_boot_slot} 0x48080000 xen'
