@@ -104,6 +104,7 @@ fi
 cd ${SCRIPT_DIR}/work
 moulin ./aos-rcar-gen4-wb.yaml \
     --TARGET_BOARD $1 \
+    --BUILD_DOMD_SDK no \
     --USING_UFS_AS_STORAGE $USING_UFS \
     --ENABLE_DOMU $USING_DOMU
 ninja
