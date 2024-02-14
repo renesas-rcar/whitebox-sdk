@@ -1,0 +1,54 @@
+diff --git a/xen/drivers/passthrough/arm/ipmmu-vmsa.c b/xen/drivers/passthrough/arm/ipmmu-vmsa.c
+index bfd1643ef6..a60368ae89 100644
+--- a/xen/drivers/passthrough/arm/ipmmu-vmsa.c
++++ b/xen/drivers/passthrough/arm/ipmmu-vmsa.c
+@@ -627,14 +627,17 @@ static void ipmmu_domain_irq(struct ipmmu_vmsa_domain *domain)
+     struct ipmmu_vmsa_device *mmu = domain->mmu;
+     uint32_t status;
+     uint64_t iova;
++    uint32_t tmp = 0;
+ 
+     status = ipmmu_ctx_read_root(domain, IMSTR);
+     if ( !(status & err_mask) )
+         return;
++    dev_info(mmu->dev, "%d\n", tmp++);
+ 
+     iova = ipmmu_ctx_read_root(domain, IMELAR) |
+         ((uint64_t)ipmmu_ctx_read_root(domain, IMEUAR) << 32);
+ 
++    dev_info(mmu->dev, "%d\n", tmp++);
+     /*
+      * Clear the error status flags. Unlike traditional interrupt flag
+      * registers that must be cleared by writing 1, this status register
+@@ -642,6 +645,7 @@ static void ipmmu_domain_irq(struct ipmmu_vmsa_domain *domain)
+      * otherwise its value will be 0.
+      */
+     ipmmu_ctx_write_root(domain, IMSTR, 0);
++    dev_info(mmu->dev, "%d\n", tmp++);
+ 
+     /* Log fatal errors. */
+     if ( status & IMSTR_MHIT )
+@@ -651,6 +655,7 @@ static void ipmmu_domain_irq(struct ipmmu_vmsa_domain *domain)
+         dev_err_ratelimited(mmu->dev, "%pd: Page Table Walk Abort @0x%"PRIx64"\n",
+                             domain->d, iova);
+ 
++    dev_info(mmu->dev, "%d\n", tmp++);
+     /* Return if it is neither Permission Fault nor Translation Fault. */
+     if ( !(status & (IMSTR_PF | IMSTR_TF)) )
+         return;
+@@ -677,6 +682,7 @@ static void ipmmu_irq(int irq, void *dev, struct cpu_user_regs *regs)
+         if ( !mmu->domains[i] )
+             continue;
+         ipmmu_domain_irq(mmu->domains[i]);
++        dev_info(mmu->dev, "irq number is %d\n", irq);
+     }
+ 
+     spin_unlock_irqrestore(&mmu->lock, flags);
+@@ -968,6 +974,7 @@ static int ipmmu_probe(struct dt_device_node *node)
+         p2m_restrict_ipa_bits(IPMMU_MAX_P2M_IPA_BITS);
+ 
+         irq = platform_get_irq(node, 0);
++        dev_info(&node->dev, "IPMMU IRQ number: %d\n", irq);
+         if ( irq < 0 )
+         {
+             dev_err(&node->dev, "No IRQ found\n");

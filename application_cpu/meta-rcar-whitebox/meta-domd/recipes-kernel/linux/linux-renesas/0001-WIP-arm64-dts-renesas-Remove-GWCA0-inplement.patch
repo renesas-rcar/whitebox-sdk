@@ -1,0 +1,55 @@
+From 0a1e0f296ae7e86f9e98cd82348053a5105d052a Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 2 Feb 2024 15:23:22 +0900
+Subject: [PATCH] WIP: arm64: dts: renesas: Remove GWCA0 inplement
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+index e40933db1da0..2249b7ec7b54 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+@@ -599,15 +599,7 @@ rswitch: ethernet@e68c0000 {
+ 			reg = <0 0xe68c0000 0 0x00020000>,
+ 			      <0 0xe6444000 0 0x2800>;
+ 			reg-names = "iobase", "serdes";
+-			interrupts = <GIC_SPI 280 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 281 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 282 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 283 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 284 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 285 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 286 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 287 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>,
++			interrupts = <GIC_SPI 288 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 289 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 290 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>,
+@@ -615,19 +607,12 @@ rswitch: ethernet@e68c0000 {
+ 				     <GIC_SPI 293 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 294 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 295 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 296 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 297 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 298 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 299 IRQ_TYPE_LEVEL_HIGH>;
+-			interrupt-names = "gwca0_rxtx0", "gwca0_rxtx1",
+-					  "gwca0_rxtx2", "gwca0_rxtx3",
+-					  "gwca0_rxtx4", "gwca0_rxtx5",
+-					  "gwca0_rxtx6", "gwca0_rxtx7",
+-					  "gwca1_rxtx0", "gwca1_rxtx1",
++			interrupt-names = "gwca1_rxtx0", "gwca1_rxtx1",
+ 					  "gwca1_rxtx2", "gwca1_rxtx3",
+ 					  "gwca1_rxtx4", "gwca1_rxtx5",
+ 					  "gwca1_rxtx6", "gwca1_rxtx7",
+-					  "gwca0_rxts0", "gwca0_rxts1",
+ 					  "gwca1_rxts0", "gwca1_rxts1";
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-- 
+2.34.1
+

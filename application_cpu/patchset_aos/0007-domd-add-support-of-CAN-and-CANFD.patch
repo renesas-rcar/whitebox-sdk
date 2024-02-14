@@ -1,0 +1,75 @@
+From 04da32333ef54109091f2e0b49d7380a9b53b284 Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Mon, 15 Jan 2024 23:54:02 +0200
+Subject: [PATCH 7/7] domd: add support of CAN and CANFD
+
+Add reqired configs to domd.cfg and modify xen dts for CAN and CANFD
+support.
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+---
+ .../recipes-guests/domd/files/domd-spider.cfg        | 12 ++++++++++++
+ .../linux/linux-renesas/r8a779f0-spider-xen.dts      |  3 +++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/files/domd-spider.cfg b/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/files/domd-spider.cfg
+index a59da1c..9b1adee 100644
+--- a/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/files/domd-spider.cfg
++++ b/meta-aos-rcar-gen4-control-domain/recipes-guests/domd/files/domd-spider.cfg
+@@ -33,6 +33,7 @@ dt_compatible = [ "renesas,spider-breakout", "renesas,spider-cpu", "renesas,r8a7
+ # Clocks and regulators are needed and are in the device tree root,
+ # but we do not want to copy all root nodes: handle these one by one
+ dt_passthrough_nodes = [
++    "/can",
+     "/extal",
+     "/extalr",
+     "/msiof-ref-clock",
+@@ -53,6 +54,12 @@ dtdev = [
+ ]
+ 
+ irqs = [
++# gpio@dfd91980
++    861,
++# can@dff50000
++    566, 567, 568, 569, 570, 571, 572, 573, 574,
++# can@dfd00000
++    575, 576, 577, 578, 579, 580, 581, 582, 583,
+ # gpio@e6050180
+     854,
+ # gpio@e6050980
+@@ -125,6 +132,10 @@ irqs = [
+ ]
+ 
+ iomem = [
++#can@dff50000
++    "dff50,9",
++#can@dfd00000
++    "dfd00,9",
+ #watchdog@e6020000
+     "e6020,1",
+ #pin-controller@e6050000
+@@ -137,6 +148,7 @@ iomem = [
+ #gpio@e6051180
+ #gpio@e6051980
+     "e6051,1",
++#gpio@dfd91980
+ #pin-controller@e6050000
+ #pin-controller@e6050000
+     "dfd90,1",
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
+index 06319d6..72adf17 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-spider-xen.dts
+@@ -243,6 +243,9 @@
+ &gpio1			{ xen,passthrough; };
+ &gpio2			{ xen,passthrough; };
+ &gpio3			{ xen,passthrough; };
++&gpio7			{ xen,passthrough; };
++&canfd0         	{ xen,passthrough; };
++&canfd1         	{ xen,passthrough; };
+ &i2c0			{ xen,passthrough; };
+ &i2c4			{ xen,passthrough; };
+ &mmc0			{ xen,passthrough; };
+-- 
+2.34.1
+

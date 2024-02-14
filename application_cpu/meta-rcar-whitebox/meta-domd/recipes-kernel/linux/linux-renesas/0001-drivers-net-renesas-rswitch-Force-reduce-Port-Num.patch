@@ -1,0 +1,26 @@
+From c78e855b18aa8148d60c638578d66f8409dfb3c2 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 25 Jan 2024 11:32:22 +0900
+Subject: [PATCH] drivers: net: renesas: rswitch: Force reduce Port Num
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ drivers/net/ethernet/renesas/rswitch.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/renesas/rswitch.h b/drivers/net/ethernet/renesas/rswitch.h
+index 85f021f40135..9f39cef77755 100644
+--- a/drivers/net/ethernet/renesas/rswitch.h
++++ b/drivers/net/ethernet/renesas/rswitch.h
+@@ -76,7 +76,7 @@ enum DIE_DT {
+ 	DIE		= 0x08,	/* Descriptor Interrupt Enable */
+ };
+ 
+-#define RSWITCH_MAX_NUM_ETHA	3
++#define RSWITCH_MAX_NUM_ETHA	1
+ #define RSWITCH_MAX_NUM_NDEV	8
+ #define RSWITCH_MAX_NUM_CHAINS	128
+ #define RSWITCH_NUM_IRQ_REGS	(RSWITCH_MAX_NUM_CHAINS / BITS_PER_TYPE(u32))
+-- 
+2.34.1
+

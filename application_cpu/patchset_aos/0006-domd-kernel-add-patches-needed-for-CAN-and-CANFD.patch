@@ -1,0 +1,1547 @@
+From 25489b2675f4973d525f3a8e334793f332ae3f4b Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Mon, 15 Jan 2024 23:40:40 +0200
+Subject: [PATCH 6/7] domd: kernel: add patches needed for CAN and CANFD
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+
+Modify for porting Whitebox SDK
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ ...001-arm64-dts-renesas-add-gpio7-node.patch |  41 ++
+ ...02-arm64-dts-renesas-add-canfd-nodes.patch | 333 +++++++++
+ ...c-renesas-add-PFC-channels-for-CANFD.patch | 293 ++++++++
+ ...-control-domain-GPIO-access-as-a-con.patch | 120 ++++
+ ...esas-update-code-to-support-S4-board.patch | 673 ++++++++++++++++++
+ .../linux/linux-renesas/can.cfg               |   5 +
+ .../linux/linux-renesas_%.bbappend            |   6 +
+ 7 files changed, 1471 insertions(+)
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-arm64-dts-renesas-add-gpio7-node.patch
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-arm64-dts-renesas-add-canfd-nodes.patch
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-pfc-renesas-add-PFC-channels-for-CANFD.patch
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-pfc-renesas-make-control-domain-GPIO-access-as-a-con.patch
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-can-canfd-renesas-update-code-to-support-S4-board.patch
+ create mode 100644 meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/can.cfg
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-arm64-dts-renesas-add-gpio7-node.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-arm64-dts-renesas-add-gpio7-node.patch
+new file mode 100644
+index 0000000..7d7b0da
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0001-arm64-dts-renesas-add-gpio7-node.patch
+@@ -0,0 +1,41 @@
++From 8a00ad7c4c5ad05f25d6be6bf664498046a6d698 Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Mon, 15 Jan 2024 22:54:20 +0200
++Subject: [PATCH 1/5] arm64: dts: renesas: add gpio7 node
++
++This GPIO is required for further CANFD functionality.
++
++Signed-off-by: Phat Pham <phat.pham.zg@renesas.com>
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ arch/arm64/boot/dts/renesas/r8a779f0.dtsi | 14 ++++++++++++++
++ 1 file changed, 14 insertions(+)
++
++diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++index ddda2fc3acd0..2a9253aed566 100644
++--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++@@ -389,6 +389,20 @@ gpio3: gpio@e6051980 {
++ 			resets = <&cpg 915>;
++ 		};
++ 
+++		gpio7: gpio@dfd91980 {
+++			compatible = "renesas,gpio-r8a779f0";
+++			reg = <0 0xdfd91980 0 0x54>;
+++			interrupts = <GIC_SPI 829 IRQ_TYPE_LEVEL_HIGH>;
+++			#gpio-cells = <2>;
+++			gpio-controller;
+++			gpio-ranges = <&pfc 0 224 32>;
+++			#interrupt-cells = <2>;
+++			interrupt-controller;
+++			clocks = <&cpg CPG_MOD 915>;
+++			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+++			resets = <&cpg 915>;
+++		};
+++
++ 		cpg: clock-controller@e6150000 {
++ 			compatible = "renesas,r8a779f0-cpg-mssr";
++ 			reg = <0 0xe6150000 0 0x4000>;
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-arm64-dts-renesas-add-canfd-nodes.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-arm64-dts-renesas-add-canfd-nodes.patch
+new file mode 100644
+index 0000000..fbc4e72
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0002-arm64-dts-renesas-add-canfd-nodes.patch
+@@ -0,0 +1,333 @@
++From 8a826870763aca3ff9cf9e0e7125533602821095 Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Mon, 15 Jan 2024 23:25:38 +0200
++Subject: [PATCH 2/5] arm64: dts: renesas: add canfd nodes
++
++Update Canfd device nodes in device tree R9A779F0.
++
++Signed-off-by: Phat Pham <phat.pham.zg@renesas.com>
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ .../boot/dts/renesas/r8a779f0-spider.dts      | 160 ++++++++++++++++++
++ arch/arm64/boot/dts/renesas/r8a779f0.dtsi     | 113 ++++++++++++-
++ 2 files changed, 272 insertions(+), 1 deletion(-)
++
++diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
++index 538f413fbffd..0d6b21fe0c07 100644
++--- a/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
+++++ b/arch/arm64/boot/dts/renesas/r8a779f0-spider.dts
++@@ -27,6 +27,86 @@ eeprom@51 {
++ 	};
++ };
++ 
+++&canfd0 {
+++	pinctrl-0 = <&canfd0_pins>, <&canfd1_pins>, <&canfd2_pins>,
+++				<&canfd3_pins>, <&canfd4_pins>, <&canfd5_pins>,
+++				<&canfd6_pins>, <&canfd7_pins>;
+++	pinctrl-names = "default";
+++	status = "okay";
+++
+++	channel0 {
+++		status = "okay";
+++	};
+++
+++	channel1 {
+++		status = "okay";
+++	};
+++
+++	channel2 {
+++		status = "okay";
+++	};
+++
+++	channel3 {
+++		status = "okay";
+++	};
+++
+++	channel4 {
+++		status = "okay";
+++	};
+++
+++	channel5 {
+++		status = "okay";
+++	};
+++
+++	channel6 {
+++		status = "okay";
+++	};
+++
+++	channel7 {
+++		status = "okay";
+++	};
+++};
+++
+++&canfd1 {
+++	pinctrl-0 = <&canfd8_pins>,<&canfd9_pins>, <&canfd10_pins>, 
+++				<&canfd11_pins>, <&canfd12_pins>, <&canfd13_pins>, 
+++				<&canfd14_pins>, <&canfd15_pins>;
+++	pinctrl-names = "default";
+++	status = "okay";
+++
+++	channel0 {
+++		status = "okay";
+++	};
+++
+++	channel1 {
+++		status = "okay";
+++	};
+++
+++	channel2 {
+++		status = "okay";
+++	};
+++
+++	channel3 {
+++		status = "okay";
+++	};
+++
+++	channel4 {
+++		status = "okay";
+++	};
+++
+++	channel5 {
+++		status = "okay";
+++	};
+++
+++	channel6 {
+++		status = "okay";
+++	};
+++
+++	channel7 {
+++		status = "okay";
+++	};
+++};
+++
++ &pfc {
++ 	tsn0_pins: tsn0 {
++ 		mux {
++@@ -73,6 +153,86 @@ pins_mdio {
++ 		};
++ 	};
++ 
+++	canfd0_pins: canfd0 {
+++		groups = "canfd0_data";
+++		function = "canfd0";
+++	};
+++
+++	canfd1_pins: canfd1 {
+++		groups = "canfd1_data";
+++		function = "canfd1";
+++	};
+++
+++	canfd2_pins: canfd2 {
+++		groups = "canfd2_data";
+++		function = "canfd2";
+++	};
+++
+++	canfd3_pins: canfd3 {
+++		groups = "canfd3_data";
+++		function = "canfd3";
+++	};
+++
+++	canfd4_pins: canfd4 {
+++		groups = "canfd4_data";
+++		function = "canfd4";
+++	};
+++
+++	canfd5_pins: canfd5 {
+++		groups = "canfd5_data";
+++		function = "canfd5";
+++	};
+++
+++	canfd6_pins: canfd6 {
+++		groups = "canfd6_data";
+++		function = "canfd6";
+++	};
+++
+++	canfd7_pins: canfd7 {
+++		groups = "canfd7_data";
+++		function = "canfd7";
+++	};
+++
+++	canfd8_pins: canfd8 {
+++		groups = "canfd8_data";
+++		function = "canfd8";
+++	};
+++
+++	canfd9_pins: canfd9 {
+++		groups = "canfd9_data";
+++		function = "canfd9";
+++	};
+++
+++	canfd10_pins: canfd10 {
+++		groups = "canfd10_data";
+++		function = "canfd10";
+++	};
+++
+++	canfd11_pins: canfd11 {
+++		groups = "canfd11_data";
+++		function = "canfd11";
+++	};
+++
+++	canfd12_pins: canfd12 {
+++		groups = "canfd12_data";
+++		function = "canfd12";
+++	};
+++
+++	canfd13_pins: canfd13 {
+++		groups = "canfd13_data";
+++		function = "canfd13";
+++	};
+++
+++	canfd14_pins: canfd14 {
+++		groups = "canfd14_data";
+++		function = "canfd14";
+++	};
+++
+++	canfd15_pins: canfd15 {
+++		groups = "canfd15_data";
+++		function = "canfd15";
+++	};
+++
++ 	pcie0_pins: pcie0 {
++ 		groups = "pcie0_clkreq_n";
++ 		function = "pcie";
++diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++index 2a9253aed566..d3975aeb5e97 100644
++--- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
+++++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
++@@ -23,6 +23,13 @@ aliases {
++ 		i2c5 = &i2c5;
++ 	};
++ 
+++	/* External CAN clock - to be overridden by boards that provide it */
+++	can_clk: can {
+++		compatible = "fixed-clock";
+++		#clock-cells = <0>;
+++		clock-frequency = <40000000>;
+++	};
+++
++ 	cluster1_opp: opp_table10 {
++ 		compatible = "operating-points-v2";
++ 		opp-shared;
++@@ -329,7 +336,7 @@ pfc: pin-controller@e6050000 {
++ 			compatible = "renesas,pfc-r8a779f0";
++ 			reg = <0 0xe6050000 0 0x16c>, <0 0xe6050800 0 0x16c>,
++ 			      <0 0xe6051000 0 0x16c>, <0 0xe6051800 0 0x16c>,
++-			      <0 0xdfd90000 0 0x16c>, <0 0xdfd90800 0 0x16c>,
+++				  <0 0xdfd90000 0 0x16c>, <0 0xdfd90800 0 0x16c>,
++ 			      <0 0xdfd91000 0 0x16c>, <0 0xdfd91800 0 0x16c>;
++ 		};
++ 
++@@ -424,6 +431,110 @@ sysc: system-controller@e6180000 {
++ 			#power-domain-cells = <1>;
++ 		};
++ 
+++		canfd0: can@dff50000 {	
+++			compatible = "renesas,r8a779f0-canfd";
+++			reg = <0 0xdff50000 0 0x8600>;
+++			interrupts = <GIC_SPI 534 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 535 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 536 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 537 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 538 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 539 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 540 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 541 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 542 IRQ_TYPE_LEVEL_HIGH>;
+++			clocks = <&can_clk>;
+++			clock-names = "can_clk";
+++			assigned-clocks = <&can_clk>;
+++			assigned-clock-rates = <40000000>;
+++			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+++			status = "okay";
+++
+++			channel0 {
+++				status = "disabled";
+++			};
+++
+++			channel1 {
+++				status = "disabled";
+++			};
+++
+++			channel2 {
+++				status = "disabled";
+++			};
+++
+++			channel3 {
+++				status = "disabled";
+++			};
+++
+++			channel4 {
+++				status = "disabled";
+++			};
+++
+++			channel5 {
+++				status = "disabled";
+++			};
+++
+++			channel6 {
+++				status = "disabled";
+++			};
+++
+++			channel7 {
+++				status = "disabled";
+++			};		
+++		};
+++
+++		canfd1: can@dfd00000 {	
+++			compatible = "renesas,r8a779f0-canfd";
+++			reg = <0 0xdfd00000 0 0x8600>;
+++			interrupts = <GIC_SPI 543 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 544 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 545 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 546 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 547 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 548 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 549 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 550 IRQ_TYPE_LEVEL_HIGH>,
+++					 <GIC_SPI 551 IRQ_TYPE_LEVEL_HIGH>;
+++			clocks = <&can_clk>;
+++			clock-names = "can_clk";
+++			assigned-clocks = <&can_clk>;
+++			assigned-clock-rates = <40000000>;
+++			power-domains = <&sysc R8A779F0_PD_ALWAYS_ON>;
+++			status = "okay";
+++
+++			channel0 {
+++				status = "disabled";
+++			};
+++
+++			channel1 {
+++				status = "disabled";
+++			};
+++
+++			channel2 {
+++				status = "disabled";
+++			};
+++
+++			channel3 {
+++				status = "disabled";
+++			};
+++
+++			channel4 {
+++				status = "disabled";
+++			};
+++
+++			channel5 {
+++				status = "disabled";
+++			};
+++
+++			channel6 {
+++				status = "disabled";
+++			};
+++
+++			channel7 {
+++				status = "disabled";
+++			};			
+++		};
+++
++ 		i2c0: i2c@e6500000 {
++ 			compatible = "renesas,i2c-r8a779f0",
++ 				     "renesas,rcar-gen4-i2c";
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-pfc-renesas-add-PFC-channels-for-CANFD.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-pfc-renesas-add-PFC-channels-for-CANFD.patch
+new file mode 100644
+index 0000000..e292498
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0003-pfc-renesas-add-PFC-channels-for-CANFD.patch
+@@ -0,0 +1,293 @@
++From d27caea62e47521853cc053ef71da44ba9121082 Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Mon, 15 Jan 2024 23:28:52 +0200
++Subject: [PATCH 3/5] pfc: renesas: add PFC channels for CANFD
++
++Update pinctrl support for 15 canfd channels in file pfc-r8a779f0.c
++
++Signed-off-by: Phat Pham <phat.pham.zg@renesas.com>
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ drivers/pinctrl/renesas/pfc-r8a779f0.c | 245 +++++++++++++++++++++++++
++ 1 file changed, 245 insertions(+)
++
++diff --git a/drivers/pinctrl/renesas/pfc-r8a779f0.c b/drivers/pinctrl/renesas/pfc-r8a779f0.c
++index de01d4d6b1b1..8e52c61a1abe 100644
++--- a/drivers/pinctrl/renesas/pfc-r8a779f0.c
+++++ b/drivers/pinctrl/renesas/pfc-r8a779f0.c
++@@ -11,6 +11,7 @@
++ #include <linux/io.h>
++ #include <linux/kernel.h>
++ 
+++#include "core.h"
++ #include "sh_pfc.h"
++ 
++ #define CFG_FLAGS (SH_PFC_PIN_CFG_DRIVE_STRENGTH | SH_PFC_PIN_CFG_PULL_UP_DOWN)
++@@ -1170,6 +1171,150 @@ static const struct sh_pfc_pin pinmux_pins[] = {
++ 	PINMUX_GPIO_GP_ALL(),
++ };
++ 
+++/* - CANFD0 ----------------------------------------------------------------- */
+++static const unsigned int canfd0_data_pins[] = {
+++	/* CANFD0_TX, CANFD0_RX */
+++	RCAR_GP_PIN(7, 0), RCAR_GP_PIN(7, 1),
+++};
+++static const unsigned int canfd0_data_mux[] = {
+++	CAN0TX_MARK, CAN0RX_INTP0_MARK,
+++};
+++
+++/* - CANFD1 ----------------------------------------------------------------- */
+++static const unsigned int canfd1_data_pins[] = {
+++	/* CANFD1_TX, CANFD1_RX */
+++	RCAR_GP_PIN(7, 2), RCAR_GP_PIN(7, 3),
+++};
+++static const unsigned int canfd1_data_mux[] = {
+++	CAN1TX_MARK, CAN1RX_INTP1_MARK,
+++};
+++
+++/* - CANFD2 ----------------------------------------------------------------- */
+++static const unsigned int canfd2_data_pins[] = {
+++	/* CANFD2_TX, CANFD2_RX */
+++	RCAR_GP_PIN(7, 4), RCAR_GP_PIN(7, 5),
+++};
+++static const unsigned int canfd2_data_mux[] = {
+++	CAN2TX_MARK, CAN2RX_INTP2_MARK,
+++};
+++
+++/* - CANFD3 ----------------------------------------------------------------- */
+++static const unsigned int canfd3_data_pins[] = {
+++	/* CANFD2_TX, CANFD2_RX */
+++	RCAR_GP_PIN(7, 6), RCAR_GP_PIN(7, 7),
+++};
+++static const unsigned int canfd3_data_mux[] = {
+++	CAN3TX_MARK, CAN3RX_INTP3_MARK,
+++};
+++
+++/* - CANFD4 ----------------------------------------------------------------- */
+++static const unsigned int canfd4_data_pins[] = {
+++	/* CANFD4_TX, CANFD4_RX */
+++	RCAR_GP_PIN(7, 8), RCAR_GP_PIN(7, 9),
+++};
+++static const unsigned int canfd4_data_mux[] = {
+++	CAN4TX_MARK, CAN4RX_INTP4_MARK,
+++};
+++
+++/* - CANFD5 ----------------------------------------------------------------- */
+++static const unsigned int canfd5_data_pins[] = {
+++	/* CANFD5_TX, CANFD5_RX */
+++	RCAR_GP_PIN(7, 10), RCAR_GP_PIN(7, 11),
+++};
+++static const unsigned int canfd5_data_mux[] = {
+++	CAN5TX_MARK, CAN5RX_INTP5_MARK,
+++};
+++
+++/* - CANFD6 ----------------------------------------------------------------- */
+++static const unsigned int canfd6_data_pins[] = {
+++	/* CANFD6_TX, CANFD6_RX */
+++	RCAR_GP_PIN(7, 12), RCAR_GP_PIN(7, 13),
+++};
+++static const unsigned int canfd6_data_mux[] = {
+++	CAN6TX_MARK, CAN6RX_INTP6_MARK,
+++};
+++
+++/* - CANFD7 ----------------------------------------------------------------- */
+++static const unsigned int canfd7_data_pins[] = {
+++	/* CANFD7_TX, CANFD7_RX */
+++	RCAR_GP_PIN(7, 14), RCAR_GP_PIN(7, 15),
+++};
+++static const unsigned int canfd7_data_mux[] = {
+++	CAN7TX_MARK, CAN7RX_INTP7_MARK,
+++};
+++
+++/* - CANFD8 ----------------------------------------------------------------- */
+++static const unsigned int canfd8_data_pins[] = {
+++	/* CANFD8_TX, CANFD8_RX */
+++	RCAR_GP_PIN(7, 16), RCAR_GP_PIN(7, 17),
+++};
+++static const unsigned int canfd8_data_mux[] = {
+++	CAN8TX_MARK, CAN8RX_INTP8_MARK,
+++};
+++
+++/* - CANFD9 ----------------------------------------------------------------- */
+++static const unsigned int canfd9_data_pins[] = {
+++	/* CANFD9_TX, CANFD9_RX */
+++	RCAR_GP_PIN(7, 18), RCAR_GP_PIN(7, 19),
+++};
+++static const unsigned int canfd9_data_mux[] = {
+++	CAN9TX_MARK, CAN9RX_INTP9_MARK,
+++};
+++
+++/* - CANFD10 ----------------------------------------------------------------- */
+++static const unsigned int canfd10_data_pins[] = {
+++	/* CANFD10_TX, CANFD10_RX */
+++	RCAR_GP_PIN(7, 20), RCAR_GP_PIN(7, 21),
+++};
+++static const unsigned int canfd10_data_mux[] = {
+++	CAN10TX_MARK, CAN10RX_INTP10_MARK,
+++};
+++
+++/* - CANFD11 ----------------------------------------------------------------- */
+++static const unsigned int canfd11_data_pins[] = {
+++	/* CANFD11_TX, CANFD11_RX */
+++	RCAR_GP_PIN(7, 22), RCAR_GP_PIN(7, 23),
+++};
+++static const unsigned int canfd11_data_mux[] = {
+++	CAN11TX_MARK, CAN11RX_INTP11_MARK,
+++};
+++
+++/* - CANFD12 ----------------------------------------------------------------- */
+++static const unsigned int canfd12_data_pins[] = {
+++	/* CANFD12_TX, CANFD12_RX */
+++	RCAR_GP_PIN(7, 24), RCAR_GP_PIN(7, 25),
+++};
+++static const unsigned int canfd12_data_mux[] = {
+++	CAN12TX_MARK, CAN12RX_INTP12_MARK,
+++};
+++
+++/* - CANFD13 ----------------------------------------------------------------- */
+++static const unsigned int canfd13_data_pins[] = {
+++	/* CANFD13_TX, CANFD13_RX */
+++	RCAR_GP_PIN(7, 26), RCAR_GP_PIN(7, 27),
+++};
+++static const unsigned int canfd13_data_mux[] = {
+++	CAN13TX_MARK, CAN13RX_INTP13_MARK,
+++};
+++
+++/* - CANFD14 ----------------------------------------------------------------- */
+++static const unsigned int canfd14_data_pins[] = {
+++	/* CANFD14_TX, CANFD14_RX */
+++	RCAR_GP_PIN(7, 28), RCAR_GP_PIN(7, 29),
+++};
+++static const unsigned int canfd14_data_mux[] = {
+++	CAN14TX_MARK, CAN14RX_INTP14_MARK,
+++};
+++
+++/* - CANFD15 ----------------------------------------------------------------- */
+++static const unsigned int canfd15_data_pins[] = {
+++	/* CANFD15_TX, CANFD15_RX */
+++	RCAR_GP_PIN(7, 30), RCAR_GP_PIN(7, 31),
+++};
+++static const unsigned int canfd15_data_mux[] = {
+++	CAN15TX_MARK, CAN15RX_INTP15_MARK,
+++};
+++
++ /* - TSN0 ------------------------------------------------ */
++ static const unsigned int tsn0_link_pins[] = {
++ 	/* TSN0_LINK */
++@@ -1893,6 +2038,88 @@ static const struct sh_pfc_pin_group pinmux_groups[] = {
++ 	SH_PFC_PIN_GROUP(taud1_pwm5),
++ 	SH_PFC_PIN_GROUP(taud1_pwm6),
++ 	SH_PFC_PIN_GROUP(taud1_pwm7),
+++
+++	SH_PFC_PIN_GROUP(canfd0_data),
+++	SH_PFC_PIN_GROUP(canfd1_data),
+++	SH_PFC_PIN_GROUP(canfd2_data),
+++	SH_PFC_PIN_GROUP(canfd3_data),
+++	SH_PFC_PIN_GROUP(canfd4_data),
+++	SH_PFC_PIN_GROUP(canfd5_data),
+++	SH_PFC_PIN_GROUP(canfd6_data),
+++	SH_PFC_PIN_GROUP(canfd7_data),
+++
+++	SH_PFC_PIN_GROUP(canfd8_data),
+++	SH_PFC_PIN_GROUP(canfd9_data),
+++	SH_PFC_PIN_GROUP(canfd10_data),
+++	SH_PFC_PIN_GROUP(canfd11_data),
+++	SH_PFC_PIN_GROUP(canfd12_data),
+++	SH_PFC_PIN_GROUP(canfd13_data),
+++	SH_PFC_PIN_GROUP(canfd14_data),
+++	SH_PFC_PIN_GROUP(canfd15_data),
+++};
+++
+++static const char * const canfd0_groups[] = {
+++	"canfd0_data",
+++};
+++
+++static const char * const canfd1_groups[] = {
+++	"canfd1_data",
+++};
+++
+++static const char * const canfd2_groups[] = {
+++	"canfd2_data",
+++};
+++
+++static const char * const canfd3_groups[] = {
+++	"canfd3_data",
+++};
+++
+++static const char * const canfd4_groups[] = {
+++	"canfd4_data",
+++};
+++
+++static const char * const canfd5_groups[] = {
+++	"canfd5_data",
+++};
+++
+++static const char * const canfd6_groups[] = {
+++	"canfd6_data",
+++};
+++
+++static const char * const canfd7_groups[] = {
+++	"canfd7_data",
+++};
+++
+++static const char * const canfd8_groups[] = {
+++	"canfd8_data",
+++};
+++
+++static const char * const canfd9_groups[] = {
+++	"canfd9_data",
+++};
+++
+++static const char * const canfd10_groups[] = {
+++	"canfd10_data",
+++};
+++
+++static const char * const canfd11_groups[] = {
+++	"canfd11_data",
+++};
+++
+++static const char * const canfd12_groups[] = {
+++	"canfd12_data",
+++};
+++
+++static const char * const canfd13_groups[] = {
+++	"canfd13_data",
+++};
+++
+++static const char * const canfd14_groups[] = {
+++	"canfd14_data",
+++};
+++
+++static const char * const canfd15_groups[] = {
+++	"canfd15_data",
++ };
++ 
++ static const char * const tsn0_groups[] = {
++@@ -2050,6 +2277,24 @@ static const char * const taud1_pwm_groups[] = {
++ };
++ 
++ static const struct sh_pfc_function pinmux_functions[] = {
+++	SH_PFC_FUNCTION(canfd0),
+++	SH_PFC_FUNCTION(canfd1),
+++	SH_PFC_FUNCTION(canfd2),
+++	SH_PFC_FUNCTION(canfd3),
+++	SH_PFC_FUNCTION(canfd4),
+++	SH_PFC_FUNCTION(canfd5),
+++	SH_PFC_FUNCTION(canfd6),
+++	SH_PFC_FUNCTION(canfd7),
+++
+++	SH_PFC_FUNCTION(canfd8),
+++	SH_PFC_FUNCTION(canfd9),
+++	SH_PFC_FUNCTION(canfd10),
+++	SH_PFC_FUNCTION(canfd11),
+++	SH_PFC_FUNCTION(canfd12),
+++	SH_PFC_FUNCTION(canfd13),
+++	SH_PFC_FUNCTION(canfd14),
+++	SH_PFC_FUNCTION(canfd15),
+++	
++ 	SH_PFC_FUNCTION(tsn0),
++ 	SH_PFC_FUNCTION(tsn1),
++ 	SH_PFC_FUNCTION(tsn2),
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-pfc-renesas-make-control-domain-GPIO-access-as-a-con.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-pfc-renesas-make-control-domain-GPIO-access-as-a-con.patch
+new file mode 100644
+index 0000000..a01bd3e
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0004-pfc-renesas-make-control-domain-GPIO-access-as-a-con.patch
+@@ -0,0 +1,120 @@
++From b622267645bd933543d6881c9a86040f61506a08 Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Fri, 19 Jan 2024 19:17:09 +0200
++Subject: [PATCH 4/5] pfc: renesas: make control domain GPIO access as a config
++
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ drivers/pinctrl/renesas/Kconfig        |  4 ++++
++ drivers/pinctrl/renesas/pfc-r8a779f0.c | 20 ++++++++++----------
++ 2 files changed, 14 insertions(+), 10 deletions(-)
++
++diff --git a/drivers/pinctrl/renesas/Kconfig b/drivers/pinctrl/renesas/Kconfig
++index 8ab10105eb45..6f715726948a 100644
++--- a/drivers/pinctrl/renesas/Kconfig
+++++ b/drivers/pinctrl/renesas/Kconfig
++@@ -157,6 +157,10 @@ config PINCTRL_PFC_R8A779F0
++ 	bool "pin control support for R-Car S4" if COMPILE_TEST
++ 	select PINCTRL_SH_PFC
++ 
+++config RENESAS_CONTROL_DOMAIN_ACCESS
+++	bool "Enable access to control domain GPIO devices"
+++	depends on PINCTRL_PFC_R8A779F0
+++
++ config PINCTRL_PFC_R8A7740
++ 	bool "pin control support for R-Mobile A1" if COMPILE_TEST
++ 	select PINCTRL_SH_PFC_GPIO
++diff --git a/drivers/pinctrl/renesas/pfc-r8a779f0.c b/drivers/pinctrl/renesas/pfc-r8a779f0.c
++index 8e52c61a1abe..efd02b3b61c4 100644
++--- a/drivers/pinctrl/renesas/pfc-r8a779f0.c
+++++ b/drivers/pinctrl/renesas/pfc-r8a779f0.c
++@@ -2469,7 +2469,7 @@ static const struct pinmux_cfg_reg pinmux_config_regs[] = {
++ 		GP_3_1_FN,	GPSR3_1,
++ 		GP_3_0_FN,	GPSR3_0, ))
++ 	},
++-#ifdef ENABLE_ACCESS_TO_CONTROL_DOMAIN
+++#ifdef CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS
++ 	{ PINMUX_CFG_REG("GPSR4", 0xdfd90040, 32, 1, GROUP(
++ 		0, 0,
++ 		GP_4_30_FN,	GPSR4_30,
++@@ -2606,7 +2606,7 @@ static const struct pinmux_cfg_reg pinmux_config_regs[] = {
++ 		GP_7_1_FN,	GPSR7_1,
++ 		GP_7_0_FN,	GPSR7_0, ))
++ 	},
++-#endif /* ENABLE_ACCESS_TO_CONTROL_DOMAIN */
+++#endif /* CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS */
++ 
++ #undef F_
++ #undef FM
++@@ -2653,7 +2653,7 @@ static const struct pinmux_cfg_reg pinmux_config_regs[] = {
++ 		IP0SR1_7_4
++ 		IP0SR1_3_0))
++ 	},
++-#ifdef ENABLE_ACCESS_TO_CONTROL_DOMAIN
+++#ifdef CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS
++ 	{ PINMUX_CFG_REG("IP0SR4", 0xdfd90060, 32, 4, GROUP(
++ 		IP0SR4_31_28
++ 		IP0SR4_27_24
++@@ -2774,7 +2774,7 @@ static const struct pinmux_cfg_reg pinmux_config_regs[] = {
++ 		IP3SR7_7_4
++ 		IP3SR7_3_0))
++ 	},
++-#endif /* ENABLE_ACCESS_TO_CONTROL_DOMAIN */
+++#endif /* CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS */
++ 
++ #undef F_
++ #undef FM
++@@ -2913,7 +2913,7 @@ static const struct pinmux_drive_reg pinmux_drive_regs[] = {
++ 		{ RCAR_GP_PIN(3, 17),  4, 3 },	/* TSN0_AVTP_MATCH */
++ 		{ RCAR_GP_PIN(3, 16),  0, 3 },	/* TSN0_AVTP_PPS */
++ 	} },
++-#ifdef ENABLE_ACCESS_TO_CONTROL_DOMAIN
+++#ifdef CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS
++ 	{ PINMUX_DRIVE_REG("DRV0CTRL4", 0xdfd90080) {
++ 		{ RCAR_GP_PIN(4,  7), 28, 3 },	/* GP4_07 */
++ 		{ RCAR_GP_PIN(4,  6), 24, 3 },	/* GP4_06 */
++@@ -3051,7 +3051,7 @@ static const struct pinmux_drive_reg pinmux_drive_regs[] = {
++ 		{ RCAR_GP_PIN(7, 25),  4, 3 },	/* CAN12RX_INTP12 */
++ 		{ RCAR_GP_PIN(7, 24),  0, 3 },	/* CAN12TX */
++ 	} },
++-#endif /* ENABLE_ACCESS_TO_CONTROL_DOMAIN */
+++#endif /* CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS */
++ 	{ },
++ };
++ 
++@@ -3072,12 +3072,12 @@ static const struct pinmux_ioctrl_reg pinmux_ioctrl_regs[] = {
++ 	[POC1] = { 0xe60508a0, },
++ 	[POC2] = { 0xe60510a0, },
++ 	[POC3] = { 0xe60518a0, },
++-#ifdef ENABLE_ACCESS_TO_CONTROL_DOMAIN
+++#ifdef CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS
++ 	[POC4] = { 0xdfd900a0, },
++ 	[POC5] = { 0xdfd908a0, },
++ 	[POC6] = { 0xdfd910a0, },
++ 	[POC7] = { 0xdfd918a0, },
++-#endif /* ENABLE_ACCESS_TO_CONTROL_DOMAIN */
+++#endif /* CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS */
++ 	[TD0SEL1] = { 0xe6058120, },
++ 	{ /* sentinel */ },
++ };
++@@ -3239,7 +3239,7 @@ static const struct pinmux_bias_reg pinmux_bias_regs[] = {
++ 		[30] = SH_PFC_PIN_NONE,
++ 		[31] = SH_PFC_PIN_NONE,
++ 	} },
++-#ifdef ENABLE_ACCESS_TO_CONTROL_DOMAIN
+++#ifdef CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS
++ 	{ PINMUX_BIAS_REG("PUEN4", 0xdfd900c0, "PUD4", 0xdfd900e0) {
++ 		[ 0] = RCAR_GP_PIN(4,  0),	/* GP4_00 */
++ 		[ 1] = RCAR_GP_PIN(4,  1),	/* GP4_01 */
++@@ -3376,7 +3376,7 @@ static const struct pinmux_bias_reg pinmux_bias_regs[] = {
++ 		[30] = RCAR_GP_PIN(7, 30),	/* CAN15TX */
++ 		[31] = RCAR_GP_PIN(7, 31),	/* CAN15RX_INTP15 */
++ 	} },
++-#endif /* ENABLE_ACCESS_TO_CONTROL_DOMAIN */
+++#endif /* CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS */
++ 	{ /* sentinel */ },
++ };
++ 
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-can-canfd-renesas-update-code-to-support-S4-board.patch b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-can-canfd-renesas-update-code-to-support-S4-board.patch
+new file mode 100644
+index 0000000..64748b3
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/0005-can-canfd-renesas-update-code-to-support-S4-board.patch
+@@ -0,0 +1,673 @@
++From 795ef3cb949d543ce8f16f14352ae8e6fa6525ae Mon Sep 17 00:00:00 2001
++From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++Date: Mon, 15 Jan 2024 23:30:02 +0200
++Subject: [PATCH 5/5] can/canfd: renesas: update code to support S4 board
++
++Update Source code support canfd device in rcar-canfd.c.
++
++Signed-off-by: Phat Pham <phat.pham.zg@renesas.com>
++Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
++---
++ drivers/net/can/rcar/rcar_can.c   |  28 ++--
++ drivers/net/can/rcar/rcar_canfd.c | 211 +++++++++++++++++++++++-------
++ 2 files changed, 177 insertions(+), 62 deletions(-)
++
++diff --git a/drivers/net/can/rcar/rcar_can.c b/drivers/net/can/rcar/rcar_can.c
++index 48575900adb7..134eda66f0dc 100644
++--- a/drivers/net/can/rcar/rcar_can.c
+++++ b/drivers/net/can/rcar/rcar_can.c
++@@ -235,11 +235,8 @@ static void rcar_can_error(struct net_device *ndev)
++ 	if (eifr & (RCAR_CAN_EIFR_EWIF | RCAR_CAN_EIFR_EPIF)) {
++ 		txerr = readb(&priv->regs->tecr);
++ 		rxerr = readb(&priv->regs->recr);
++-		if (skb) {
+++		if (skb)
++ 			cf->can_id |= CAN_ERR_CRTL;
++-			cf->data[6] = txerr;
++-			cf->data[7] = rxerr;
++-		}
++ 	}
++ 	if (eifr & RCAR_CAN_EIFR_BEIF) {
++ 		int rx_errors = 0, tx_errors = 0;
++@@ -339,6 +336,9 @@ static void rcar_can_error(struct net_device *ndev)
++ 		can_bus_off(ndev);
++ 		if (skb)
++ 			cf->can_id |= CAN_ERR_BUSOFF;
+++	} else if (skb) {
+++		cf->data[6] = txerr;
+++		cf->data[7] = rxerr;
++ 	}
++ 	if (eifr & RCAR_CAN_EIFR_ORIF) {
++ 		netdev_dbg(priv->ndev, "Receive overrun error interrupt\n");
++@@ -846,10 +846,12 @@ static int __maybe_unused rcar_can_suspend(struct device *dev)
++ 	struct rcar_can_priv *priv = netdev_priv(ndev);
++ 	u16 ctlr;
++ 
++-	if (netif_running(ndev)) {
++-		netif_stop_queue(ndev);
++-		netif_device_detach(ndev);
++-	}
+++	if (!netif_running(ndev))
+++		return 0;
+++
+++	netif_stop_queue(ndev);
+++	netif_device_detach(ndev);
+++
++ 	ctlr = readw(&priv->regs->ctlr);
++ 	ctlr |= RCAR_CAN_CTLR_CANM_HALT;
++ 	writew(ctlr, &priv->regs->ctlr);
++@@ -868,6 +870,9 @@ static int __maybe_unused rcar_can_resume(struct device *dev)
++ 	u16 ctlr;
++ 	int err;
++ 
+++	if (!netif_running(ndev))
+++		return 0;
+++
++ 	err = clk_enable(priv->clk);
++ 	if (err) {
++ 		netdev_err(ndev, "clk_enable() failed, error %d\n", err);
++@@ -881,10 +886,9 @@ static int __maybe_unused rcar_can_resume(struct device *dev)
++ 	writew(ctlr, &priv->regs->ctlr);
++ 	priv->can.state = CAN_STATE_ERROR_ACTIVE;
++ 
++-	if (netif_running(ndev)) {
++-		netif_device_attach(ndev);
++-		netif_start_queue(ndev);
++-	}
+++	netif_device_attach(ndev);
+++	netif_start_queue(ndev);
+++
++ 	return 0;
++ }
++ 
++diff --git a/drivers/net/can/rcar/rcar_canfd.c b/drivers/net/can/rcar/rcar_canfd.c
++index b458b5fd7900..e4f820308954 100644
++--- a/drivers/net/can/rcar/rcar_canfd.c
+++++ b/drivers/net/can/rcar/rcar_canfd.c
++@@ -203,7 +203,7 @@
++ #define RCANFD_FDCFG_FDOE		BIT(28)
++ #define RCANFD_FDCFG_TDCE		BIT(9)
++ #define RCANFD_FDCFG_TDCOC		BIT(8)
++-#define RCANFD_FDCFG_TDCO(x)		(((x) & 0x7f) >> 16)
+++#define RCANFD_FDCFG_TDCO(x)		(((x) & 0xff) << 16)
++ 
++ /* RSCFDnCFDRFCCx */
++ #define RCANFD_RFCC_RFIM		BIT(12)
++@@ -506,6 +506,7 @@
++ /* R-Car V3U Classical and CAN FD mode specific register map */
++ #define RCANFD_V3U_CFDCFG		(0x1314)
++ #define RCANFD_V3U_DCFG(m)		(0x1400 + (0x20 * (m)))
+++#define RCANFD_V3U_FDCFG(m)		(0x1404 + (0x20 * (m)))
++ 
++ #define RCANFD_V3U_GAFL_OFFSET		(0x1800)
++ 
++@@ -574,6 +575,7 @@ struct rcar_canfd_channel {
++ 
++ enum rcar_canfd_chip_id {
++ 	R8A779G0,
+++	R8A779F0,
++ 	R8A779A0,
++ 	GEN3,
++ };
++@@ -734,13 +736,17 @@ static int rcar_canfd_reset_controller(struct rcar_canfd_global *gpriv)
++ 	rcar_canfd_write(gpriv->base, RCANFD_GERFL, 0x0);
++ 
++ 	/* Set the controller into appropriate mode */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		if (gpriv->fdmode)
++-			rcar_canfd_set_bit(gpriv->base, RCANFD_V3U_CFDCFG,
++-					   RCANFD_FDCFG_FDOE);
+++		{
+++			for_each_set_bit(ch, &gpriv->channels_mask, gpriv->max_channels)
+++				rcar_canfd_set_bit(gpriv->base, RCANFD_V3U_FDCFG(ch),
+++						   RCANFD_FDCFG_FDOE);
+++		}
++ 		else
++-			rcar_canfd_set_bit(gpriv->base, RCANFD_V3U_CFDCFG,
++-					   RCANFD_FDCFG_CLOE);
+++			for_each_set_bit(ch, &gpriv->channels_mask, gpriv->max_channels)
+++				rcar_canfd_set_bit(gpriv->base, RCANFD_V3U_FDCFG(ch),
+++						   RCANFD_FDCFG_CLOE);
++ 	} else {
++ 		if (gpriv->fdmode)
++ 			rcar_canfd_set_bit(gpriv->base, RCANFD_GRMCFG,
++@@ -801,7 +807,7 @@ static void rcar_canfd_configure_controller(struct rcar_canfd_global *gpriv)
++ }
++ 
++ static void rcar_canfd_configure_afl_rules(struct rcar_canfd_global *gpriv,
++-					   u32 ch)
+++					   u32 ch, int num_ch_enabled)
++ {
++ 	u32 cfg;
++ 	int offset, start, page, num_rules = RCANFD_CHANNEL_NUMRULES;
++@@ -812,7 +818,7 @@ static void rcar_canfd_configure_afl_rules(struct rcar_canfd_global *gpriv,
++ 	} else {
++ 		/* Get number of Channel 0 rules and adjust */
++ 		cfg = rcar_canfd_read(gpriv->base, RCANFD_V3U_GAFLCFG(ch));
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 			start = ch * num_rules;
++ 		else
++ 			start = RCANFD_GAFLCFG_GETRNC(0, cfg);
++@@ -821,24 +827,28 @@ static void rcar_canfd_configure_afl_rules(struct rcar_canfd_global *gpriv,
++ 	/* Enable write access to entry */
++ 	page = RCANFD_GAFL_PAGENUM(start);
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++	{
++ 		rcar_canfd_set_bit(gpriv->base, RCANFD_GAFLECTR,
++ 				   (RCANFD_V3U_GAFLECTR_AFLPN(page) |
++ 					RCANFD_GAFLECTR_AFLDAE));
+++	}
++ 	else
++ 		rcar_canfd_set_bit(gpriv->base, RCANFD_GAFLECTR,
++ 				   (RCANFD_GAFLECTR_AFLPN(page) |
++ 					RCANFD_GAFLECTR_AFLDAE));
++ 
++ 	/* Write number of rules for channel */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++	{
++ 		rcar_canfd_set_bit(gpriv->base, RCANFD_V3U_GAFLCFG(ch),
++ 				   RCANFD_V3U_GAFLCFG_SETRNC(ch, num_rules));
+++	}
++ 	else
++ 		rcar_canfd_set_bit(gpriv->base, RCANFD_GAFLCFG0,
++ 				   RCANFD_GAFLCFG_SETRNC(ch, num_rules));
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		offset = RCANFD_V3U_GAFL_OFFSET;
++ 	} else {
++ 		if (gpriv->fdmode)
++@@ -848,13 +858,13 @@ static void rcar_canfd_configure_afl_rules(struct rcar_canfd_global *gpriv,
++ 	}
++ 
++ 	/* Accept all IDs */
++-	rcar_canfd_write(gpriv->base, RCANFD_GAFLID(offset, start), 0);
+++	rcar_canfd_write(gpriv->base, RCANFD_GAFLID(offset, num_ch_enabled), 0);
++ 	/* IDE or RTR is not considered for matching */
++-	rcar_canfd_write(gpriv->base, RCANFD_GAFLM(offset, start), 0);
+++	rcar_canfd_write(gpriv->base, RCANFD_GAFLM(offset, num_ch_enabled), 0);
++ 	/* Any data length accepted */
++-	rcar_canfd_write(gpriv->base, RCANFD_GAFLP0(offset, start), 0);
+++	rcar_canfd_write(gpriv->base, RCANFD_GAFLP0(offset, num_ch_enabled), 0);
++ 	/* Place the msg in corresponding Rx FIFO entry */
++-	rcar_canfd_set_bit(gpriv->base, RCANFD_GAFLP1(offset, start),
+++	rcar_canfd_set_bit(gpriv->base, RCANFD_GAFLP1(offset, num_ch_enabled),
++ 			   RCANFD_GAFLP1_GAFLFDP(ridx));
++ 
++ 	/* Disable write access to page */
++@@ -879,10 +889,14 @@ static void rcar_canfd_configure_rx(struct rcar_canfd_global *gpriv, u32 ch)
++ 
++ 	cfg = (RCANFD_RFCC_RFIM | RCANFD_RFCC_RFDC(rfdc) |
++ 		RCANFD_RFCC_RFPLS(rfpls) | RCANFD_RFCC_RFIE);
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++	{
++ 		rcar_canfd_write(gpriv->base, RCANFD_V3U_RFCC(ridx), cfg);
+++	}
++ 	else
+++	{
++ 		rcar_canfd_write(gpriv->base, RCANFD_RFCC(ridx), cfg);
+++	}
++ }
++ 
++ static void rcar_canfd_configure_tx(struct rcar_canfd_global *gpriv, u32 ch)
++@@ -904,7 +918,7 @@ static void rcar_canfd_configure_tx(struct rcar_canfd_global *gpriv, u32 ch)
++ 	else
++ 		cfpls = 0;	/* b000 - Max 8 bytes payload */
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		cfg = (RCANFD_V3U_CFCC_CFTML(cftml) | RCANFD_V3U_CFCC_CFM(cfm) |
++ 			RCANFD_V3U_CFCC_CFIM | RCANFD_V3U_CFCC_CFDC(cfdc) |
++ 			RCANFD_V3U_CFCC_CFPLS(cfpls) | RCANFD_V3U_CFCC_CFTXIE);
++@@ -919,8 +933,10 @@ static void rcar_canfd_configure_tx(struct rcar_canfd_global *gpriv, u32 ch)
++ 	}
++ 	if (gpriv->fdmode) {
++ 		/* Clear FD mode specific control/status register */
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++		{
++ 			addr = RCANFD_V3U_CFFDCSTS(ch, RCANFD_CFFIFO_IDX);
+++		}
++ 		else
++ 			addr = RCANFD_F_CFFDCSTS(ch, RCANFD_CFFIFO_IDX);
++ 
++@@ -938,7 +954,9 @@ static void rcar_canfd_enable_global_interrupts(struct rcar_canfd_global *gpriv)
++ 	/* Global interrupts setup */
++ 	ctr = RCANFD_GCTR_MEIE;
++ 	if (gpriv->fdmode)
+++	{
++ 		ctr |= RCANFD_GCTR_CFMPOFIE;
+++	}
++ 
++ 	rcar_canfd_set_bit(gpriv->base, RCANFD_GCTR, ctr);
++ }
++@@ -1005,7 +1023,7 @@ static void rcar_canfd_global_error(struct net_device *ndev)
++ 		stats->tx_dropped++;
++ 	}
++ 	if (gerfl & RCANFD_GERFL_MES) {
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 			addr = RCANFD_V3U_CFSTS(ch, RCANFD_CFFIFO_IDX);
++ 		else
++ 			addr = RCANFD_CFSTS(ch, RCANFD_CFFIFO_IDX);
++@@ -1018,7 +1036,7 @@ static void rcar_canfd_global_error(struct net_device *ndev)
++ 			rcar_canfd_write(priv->base, addr,
++ 					 sts & ~RCANFD_CFSTS_CFMLT);
++ 		}
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 			addr = RCANFD_V3U_RFSTS(ridx);
++ 		else
++ 			addr = RCANFD_RFSTS(ridx);
++@@ -1171,8 +1189,10 @@ static void rcar_canfd_tx_done(struct net_device *ndev)
++ 	u32 ch = priv->channel;
++ 	struct rcar_canfd_global *gpriv = priv->gpriv;
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++	{
++ 		addr = RCANFD_V3U_CFSTS(ch, RCANFD_CFFIFO_IDX);
+++	}
++ 	else
++ 		addr = RCANFD_CFSTS(ch, RCANFD_CFFIFO_IDX);
++ 
++@@ -1227,7 +1247,7 @@ static irqreturn_t rcar_canfd_global_interrupt(int irq, void *dev_id)
++ 
++ 		/* Global error interrupts */
++ 		gerfl = rcar_canfd_read(priv->base, RCANFD_GERFL);
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 			if (unlikely(RCANFD_V3U_GERFL_ERR(gpriv, gerfl)))
++ 				rcar_canfd_global_error(ndev);
++ 		} else {
++@@ -1235,7 +1255,7 @@ static irqreturn_t rcar_canfd_global_interrupt(int irq, void *dev_id)
++ 				rcar_canfd_global_error(ndev);
++ 		}
++ 		/* Handle Rx interrupts */
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 			addr1 = RCANFD_V3U_RFSTS(ridx);
++ 			addr2 = RCANFD_V3U_RFCC(ridx);
++ 		} else {
++@@ -1307,6 +1327,7 @@ static irqreturn_t rcar_canfd_channel_interrupt(int irq, void *dev_id)
++ 		sts = rcar_canfd_read(priv->base, RCANFD_CSTS(ch));
++ 		txerr = RCANFD_CSTS_TECCNT(sts);
++ 		rxerr = RCANFD_CSTS_RECCNT(sts);
+++		
++ 		if (unlikely(RCANFD_CERFL_ERR(cerfl)))
++ 			rcar_canfd_error(ndev, cerfl, txerr, rxerr);
++ 
++@@ -1316,19 +1337,57 @@ static irqreturn_t rcar_canfd_channel_interrupt(int irq, void *dev_id)
++ 			rcar_canfd_state_change(ndev, txerr, rxerr);
++ 
++ 		/* Handle Tx interrupts */
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
+++		{
++ 			addr = RCANFD_V3U_CFSTS(ch, RCANFD_CFFIFO_IDX);
+++		}
++ 		else
+++		{
++ 			addr = RCANFD_CFSTS(ch, RCANFD_CFFIFO_IDX);
+++		}
++ 
++ 		sts = rcar_canfd_read(priv->base, addr);
++ 
++ 		if (likely(sts & RCANFD_CFSTS_CFTXIF))
+++		{
++ 			rcar_canfd_tx_done(ndev);
+++		}
++ 	}
++ 	return IRQ_HANDLED;
++ }
++ 
+++static void rcar_canfd_set_samplepoint(struct net_device *dev)
+++{
+++	struct rcar_canfd_channel *priv = netdev_priv(dev);
+++	u32 ch = priv->channel;
+++	u16 tdco;
+++	u32 cfg;
+++	struct rcar_canfd_global *gpriv = priv->gpriv;
+++
+++	/* Sample point settings */
+++	tdco = 2; /* TDCO = 2Tq */
+++
+++	/* Transceiver Delay Compensation Offset Configuration */
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
+++		cfg = (RCANFD_FDCFG_TDCE |
+++			   RCANFD_FDCFG_TDCO(tdco));
+++		rcar_canfd_set_bit(priv->base, RCANFD_V3U_FDCFG(ch), cfg);
+++	}
+++}
+++
+++static void rcar_canfd_unset_samplepoint(struct net_device *dev)
+++{
+++	struct rcar_canfd_channel *priv = netdev_priv(dev);
+++	u32 ch = priv->channel;
+++	u32 cfg;
+++	struct rcar_canfd_global *gpriv = priv->gpriv;
+++
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
+++		cfg = RCANFD_FDCFG_TDCE; /* Disable TDC */
+++		rcar_canfd_clear_bit(priv->base, RCANFD_V3U_FDCFG(ch), cfg);
+++	}
+++}
+++
++ static void rcar_canfd_set_bittiming(struct net_device *dev)
++ {
++ 	struct rcar_canfd_channel *priv = netdev_priv(dev);
++@@ -1342,12 +1401,12 @@ static void rcar_canfd_set_bittiming(struct net_device *dev)
++ 	/* Nominal bit timing settings */
++ 	brp = bt->brp - 1;
++ 	sjw = bt->sjw - 1;
++-	tseg1 = bt->prop_seg + bt->phase_seg1 + 1;
+++	tseg1 = bt->prop_seg + bt->phase_seg1 - 1;
++ 	tseg2 = bt->phase_seg2 - 1;
++ 
++ 	if (priv->can.ctrlmode & CAN_CTRLMODE_FD) {
++ 		/* CAN FD only mode */
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 			cfg = (RCANFD_V3U_NCFG_NTSEG1(tseg1) |
++ 			       RCANFD_V3U_NCFG_NBRP(brp) |
++ 			       RCANFD_V3U_NCFG_NSJW(sjw) |
++@@ -1365,10 +1424,16 @@ static void rcar_canfd_set_bittiming(struct net_device *dev)
++ 		/* Data bit timing settings */
++ 		brp = dbt->brp - 1;
++ 		sjw = dbt->sjw - 1;
++-		tseg1 = dbt->prop_seg + dbt->phase_seg1 + 1;
+++		tseg1 = dbt->prop_seg + dbt->phase_seg1 - 1;
++ 		tseg2 = dbt->phase_seg2 - 1;
++ 
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++		/* Set Secondary Sample Point for high baud rate */
+++		if (brp == 0 && tseg1 <= 5 && tseg2 == 1)
+++			rcar_canfd_set_samplepoint(dev);
+++		else
+++			rcar_canfd_unset_samplepoint(dev);
+++
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 			cfg = (RCANFD_V3U_DCFG_DTSEG1(tseg1) |
++ 			       RCANFD_V3U_DCFG_DBRP(brp) |
++ 			       RCANFD_V3U_DCFG_DSJW(sjw) |
++@@ -1387,7 +1452,7 @@ static void rcar_canfd_set_bittiming(struct net_device *dev)
++ 			   brp, sjw, tseg1, tseg2);
++ 	} else {
++ 		/* Classical CAN only mode */
++-		if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++		if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 			cfg = (RCANFD_V3U_NCFG_NTSEG1(tseg1) |
++ 			       RCANFD_V3U_NCFG_NBRP(brp) |
++ 			       RCANFD_V3U_NCFG_NSJW(sjw) |
++@@ -1430,7 +1495,7 @@ static int rcar_canfd_start(struct net_device *ndev)
++ 	}
++ 
++ 	/* Enable Common & Rx FIFO */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		addr1 = RCANFD_V3U_CFCC(ch, RCANFD_CFFIFO_IDX);
++ 		addr2 = RCANFD_V3U_RFCC(ridx);
++ 	} else {
++@@ -1505,7 +1570,7 @@ static void rcar_canfd_stop(struct net_device *ndev)
++ 	rcar_canfd_disable_channel_interrupts(priv);
++ 
++ 	/* Disable Common & Rx FIFO */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		addr1 = RCANFD_V3U_CFCC(ch, RCANFD_CFFIFO_IDX);
++ 		addr2 = RCANFD_V3U_RFCC(ridx);
++ 	} else {
++@@ -1544,7 +1609,9 @@ static netdev_tx_t rcar_canfd_start_xmit(struct sk_buff *skb,
++ 	struct rcar_canfd_global *gpriv = priv->gpriv;
++ 
++ 	if (can_dropped_invalid_skb(ndev, skb))
+++	{
++ 		return NETDEV_TX_OK;
+++	}
++ 
++ 	if (cf->can_id & CAN_EFF_FLAG) {
++ 		id = cf->can_id & CAN_EFF_MASK;
++@@ -1554,11 +1621,13 @@ static netdev_tx_t rcar_canfd_start_xmit(struct sk_buff *skb,
++ 	}
++ 
++ 	if (cf->can_id & CAN_RTR_FLAG)
+++	{
++ 		id |= RCANFD_CFID_CFRTR;
+++	}
++ 
++ 	dlc = RCANFD_CFPTR_CFDLC(can_len2dlc(cf->len));
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		rcar_canfd_write(priv->base,
++ 				 RCANFD_V3U_CFID(ch, RCANFD_CFFIFO_IDX), id);
++ 		rcar_canfd_write(priv->base,
++@@ -1622,7 +1691,7 @@ static netdev_tx_t rcar_canfd_start_xmit(struct sk_buff *skb,
++ 	/* Start Tx: Write 0xff to CFPC to increment the CPU-side
++ 	 * pointer for the Common FIFO
++ 	 */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 		addr = RCANFD_V3U_CFPCTR(ch, RCANFD_CFFIFO_IDX);
++ 	else
++ 		addr = RCANFD_CFPCTR(ch, RCANFD_CFFIFO_IDX);
++@@ -1630,6 +1699,7 @@ static netdev_tx_t rcar_canfd_start_xmit(struct sk_buff *skb,
++ 	rcar_canfd_write(priv->base, addr, 0xff);
++ 
++ 	spin_unlock_irqrestore(&priv->tx_lock, flags);
+++
++ 	return NETDEV_TX_OK;
++ }
++ 
++@@ -1643,7 +1713,7 @@ static void rcar_canfd_rx_pkt(struct rcar_canfd_channel *priv)
++ 	u32 ridx = ch + RCANFD_RFFIFO_IDX;
++ 	struct rcar_canfd_global *gpriv = priv->gpriv;
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		id = rcar_canfd_read(priv->base, RCANFD_V3U_RFID(ridx));
++ 		dlc = rcar_canfd_read(priv->base, RCANFD_V3U_RFPTR(ridx));
++ 		if (priv->can.ctrlmode & CAN_CTRLMODE_FD) {
++@@ -1707,7 +1777,7 @@ static void rcar_canfd_rx_pkt(struct rcar_canfd_channel *priv)
++ 			if (sts & RCANFD_RFFDSTS_RFBRS)
++ 				cf->flags |= CANFD_BRS;
++ 
++-			if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++			if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 				rcar_canfd_get_data(priv, cf,
++ 						    RCANFD_V3U_RFDF(ridx, 0));
++ 			else
++@@ -1719,7 +1789,7 @@ static void rcar_canfd_rx_pkt(struct rcar_canfd_channel *priv)
++ 		if (id & RCANFD_RFID_RFRTR)
++ 			cf->can_id |= CAN_RTR_FLAG;
++ 		else
++-			if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++			if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 				rcar_canfd_get_data(priv, cf,
++ 						    RCANFD_V3U_RFDF(ridx, 0));
++ 			else
++@@ -1730,7 +1800,7 @@ static void rcar_canfd_rx_pkt(struct rcar_canfd_channel *priv)
++ 	/* Write 0xff to RFPC to increment the CPU-side
++ 	 * pointer of the Rx FIFO
++ 	 */
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0))
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0)
++ 		rcar_canfd_write(priv->base, RCANFD_V3U_RFPCTR(ridx), 0xff);
++ 	else
++ 		rcar_canfd_write(priv->base, RCANFD_RFPCTR(ridx), 0xff);
++@@ -1752,7 +1822,7 @@ static int rcar_canfd_rx_poll(struct napi_struct *napi, int quota)
++ 	u32 ridx = ch + RCANFD_RFFIFO_IDX, addr1, addr2;
++ 	struct rcar_canfd_global *gpriv = priv->gpriv;
++ 
++-	if ((gpriv->chip_id == R8A779A0) || (gpriv->chip_id == R8A779G0)) {
+++	if (gpriv->chip_id == R8A779A0 || gpriv->chip_id == R8A779G0 || gpriv->chip_id == R8A779F0) {
++ 		addr1 = RCANFD_V3U_RFSTS(ridx);
++ 		addr2 = RCANFD_V3U_RFCC(ridx);
++ 	} else {
++@@ -1867,15 +1937,15 @@ static int rcar_canfd_channel_probe(struct rcar_canfd_global *gpriv, u32 ch,
++ 
++ 	netif_napi_add(ndev, &priv->napi, rcar_canfd_rx_poll,
++ 		       RCANFD_NAPI_WEIGHT);
+++	spin_lock_init(&priv->tx_lock);
+++	devm_can_led_init(ndev);
+++	gpriv->ch[priv->channel] = priv;
++ 	err = register_candev(ndev);
++ 	if (err) {
++ 		dev_err(&pdev->dev,
++ 			"register_candev() failed, error %d\n", err);
++ 		goto fail_candev;
++ 	}
++-	spin_lock_init(&priv->tx_lock);
++-	devm_can_led_init(ndev);
++-	gpriv->ch[priv->channel] = priv;
++ 	dev_info(&pdev->dev, "device registered (channel %u)\n", priv->channel);
++ 	return 0;
++ 
++@@ -1904,7 +1974,8 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 	struct rcar_canfd_global *gpriv;
++ 	struct device_node *of_child;
++ 	unsigned long channels_mask = 0;
++-	int err, ch_irq, g_irq, i;
+++	int err, g_irq, ch_irq, i, num_ch_enabled = 0;
+++	int ch_irq_s4[RCANFD_NUM_CHANNELS] = {0, 0, 0, 0, 0, 0, 0, 0};
++ 	bool fdmode = true;			/* CAN FD only mode - default */
++ 	const struct rcar_canfd_of_data *of_data;
++ 	char *name[RCANFD_NUM_CHANNELS] = {
++@@ -1925,13 +1996,28 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 			channels_mask |= BIT(i);	/* Channel i */
++ 	}
++ 
++-	ch_irq = platform_get_irq(pdev, 0);
+++	/*	ch_irq = platform_get_irq(pdev, 0);
++ 	if (ch_irq < 0) {
++ 		err = ch_irq;
++ 		goto fail_dev;
++ 	}
++ 
++ 	g_irq = platform_get_irq(pdev, 1);
+++	if (g_irq < 0) {
+++		err = g_irq;
+++		goto fail_dev;
+++	} */
+++	
+++	/* Porting for R8A779F0 */
+++	for (i = 0; i < RCANFD_NUM_CHANNELS; i++) {
+++		ch_irq_s4[i] = platform_get_irq(pdev, i + 1);
+++		if (ch_irq_s4[i] < 0) {
+++			err = ch_irq_s4[i];
+++			goto fail_dev;
+++		}
+++	}
+++
+++	g_irq = platform_get_irq(pdev, 0);
++ 	if (g_irq < 0) {
++ 		err = g_irq;
++ 		goto fail_dev;
++@@ -1950,13 +2036,14 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 	gpriv->max_channels = of_data->max_channels;
++ 
++ 	/* Peripheral clock */
++-	gpriv->clkp = devm_clk_get(&pdev->dev, "fck");
+++	/* Porting for R8A779F0, not use fck */
+++	/* gpriv->clkp = devm_clk_get(&pdev->dev, "fck");
++ 	if (IS_ERR(gpriv->clkp)) {
++ 		err = PTR_ERR(gpriv->clkp);
++ 		dev_err(&pdev->dev, "cannot get peripheral clock, error %d\n",
++ 			err);
++ 		goto fail_dev;
++-	}
+++	} */
++ 
++ 	/* fCAN clock: Pick External clock. If not available fallback to
++ 	 * CANFD clock
++@@ -1971,15 +2058,16 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 			goto fail_dev;
++ 		}
++ 		gpriv->fcan = RCANFD_CANFDCLK;
++-
++ 	} else {
++ 		gpriv->fcan = RCANFD_EXTCLK;
++ 	}
++ 	fcan_freq = clk_get_rate(gpriv->can_clk);
++ 
++ 	if (gpriv->fcan == RCANFD_CANFDCLK)
+++	{
++ 		/* CANFD clock is further divided by (1/2) within the IP */
++ 		fcan_freq /= 2;
+++	}
++ 
++ 	addr = devm_platform_ioremap_resource(pdev, 0);
++ 	if (IS_ERR(addr)) {
++@@ -1989,14 +2077,27 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 	gpriv->base = addr;
++ 
++ 	/* Request IRQ that's common for both channels */
++-	err = devm_request_irq(&pdev->dev, ch_irq,
++-			       rcar_canfd_channel_interrupt, 0,
++-			       "canfd.chn", gpriv);
+++	/*	err = devm_request_irq(&pdev->dev, ch_irq,
+++				rcar_canfd_channel_interrupt, 0,
+++				"canfd.chn", gpriv);
++ 	if (err) {
++ 		dev_err(&pdev->dev, "devm_request_irq(%d) failed, error %d\n",
++ 			ch_irq, err);
++ 		goto fail_dev;
+++	} */
+++
+++	/* Porting for R8A779F0 */
+++	for (i = 0; i < RCANFD_NUM_CHANNELS; i++) {
+++		err = devm_request_irq(&pdev->dev, ch_irq_s4[i],
+++					rcar_canfd_channel_interrupt, 0,
+++					"canfd.chn", gpriv);
+++		if (err) {
+++			dev_err(&pdev->dev, "devm_request_irq(%d) failed, error %d\n",
+++				ch_irq_s4[i], err);
+++			goto fail_dev;
+++		}
++ 	}
+++
++ 	err = devm_request_irq(&pdev->dev, g_irq,
++ 			       rcar_canfd_global_interrupt, 0,
++ 			       "canfd.gbl", gpriv);
++@@ -2032,7 +2133,8 @@ static int rcar_canfd_probe(struct platform_device *pdev)
++ 		rcar_canfd_configure_tx(gpriv, ch);
++ 
++ 		/* Configure receive rules */
++-		rcar_canfd_configure_afl_rules(gpriv, ch);
+++		rcar_canfd_configure_afl_rules(gpriv, ch, num_ch_enabled);
+++		num_ch_enabled++;
++ 	}
++ 
++ 	/* Configure common interrupts */
++@@ -2109,6 +2211,11 @@ static const struct rcar_canfd_of_data of_rcanfd_v4h_compatible = {
++ 	.max_channels = 8,
++ };
++ 
+++static const struct rcar_canfd_of_data of_rcanfd_s4_compatible = {
+++	.chip_id = R8A779F0,
+++	.max_channels = 8,
+++};
+++
++ static const struct rcar_canfd_of_data of_rcanfd_v3u_compatible = {
++ 	.chip_id = R8A779A0,
++ 	.max_channels = 8,
++@@ -2124,6 +2231,10 @@ static const struct of_device_id rcar_canfd_of_table[] = {
++ 		.compatible = "renesas,r8a779g0-canfd",
++ 		.data = &of_rcanfd_v4h_compatible,
++ 	},
+++	{
+++		.compatible = "renesas,r8a779f0-canfd",
+++		.data = &of_rcanfd_s4_compatible,
+++	},
++ 	{
++ 		.compatible = "renesas,r8a779a0-canfd",
++ 		.data = &of_rcanfd_v3u_compatible,
++-- 
++2.25.1
++
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/can.cfg b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/can.cfg
+new file mode 100644
+index 0000000..4c088c7
+--- /dev/null
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/can.cfg
+@@ -0,0 +1,5 @@
++CONFIG_CAN=y
++CONFIG_CAN_DEV=y
++CONFIG_CAN_RCAR=y
++CONFIG_CAN_RCAR_CANFD=y
++CONFIG_RENESAS_CONTROL_DOMAIN_ACCESS=y
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+index 5f3f651..706bdaa 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas_%.bbappend
+@@ -24,6 +24,12 @@ SRC_URI_append = " \
+     file://0004-HACK-Allow-DomD-enumerate-PCI-devices.patch \
+     file://0005-HACK-pcie-renesas-emulate-reading-from-ECAM-under-Xe.patch \
+     file://0006-net-renesas-rswitch-fix-disabling-offload-with-defau.patch \
++    file://can.cfg \
++    file://0001-arm64-dts-renesas-add-gpio7-node.patch \
++    file://0002-arm64-dts-renesas-add-canfd-nodes.patch \
++    file://0003-pfc-renesas-add-PFC-channels-for-CANFD.patch \
++    file://0004-pfc-renesas-make-control-domain-GPIO-access-as-a-con.patch \
++    file://0005-can-canfd-renesas-update-code-to-support-S4-board.patch \
+ "
+ 
+ ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
+-- 
+2.34.1
+
