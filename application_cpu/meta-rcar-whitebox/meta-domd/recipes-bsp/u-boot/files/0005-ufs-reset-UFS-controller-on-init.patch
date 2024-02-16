@@ -1,0 +1,64 @@
+From 81317be638e7095531a1d9894b61b10f83c01382 Mon Sep 17 00:00:00 2001
+From: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Date: Tue, 7 Nov 2023 15:34:40 +0200
+Subject: [PATCH 5/5] ufs: reset UFS controller on init
+
+UFS controller should be explicitly reset on init because it can
+be in an improper state (e.g. if UFS was used before in IPL U-boot).
+Without such reset, on Spider rev 1.1 and 1.2, device present bit is
+not set in UFS status register which makes UFS inoperable.
+
+Signed-off-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+Reviewed-by: Dmytro Firsov <dmytro_firsov@epam.com>
+---
+ drivers/ufs/renesas-ufs.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/drivers/ufs/renesas-ufs.c b/drivers/ufs/renesas-ufs.c
+index bf46dfabd3..f2b099411b 100644
+--- a/drivers/ufs/renesas-ufs.c
++++ b/drivers/ufs/renesas-ufs.c
+@@ -13,6 +13,7 @@
+ #include <linux/delay.h>
+ #include <linux/iopoll.h>
+ #include <ufs.h>
++#include <reset.h>
+ 
+ #include "ufs.h"
+ 
+@@ -312,6 +313,7 @@ static int rcar_ufs_init(struct ufs_hba *hba)
+ {
+ 	int ret;
+ 	struct clk clk;
++	struct reset_ctl reset_ctl;
+ 	const struct ufs_renesas_init_param *p;
+ 
+ 	ret = clk_get_by_index(hba->dev, 0, &clk);
+@@ -326,6 +328,24 @@ static int rcar_ufs_init(struct ufs_hba *hba)
+ 		return ret;
+ 	}
+ 
++	ret = reset_get_by_index(hba->dev, 0, &reset_ctl);
++	if (ret) {
++		dev_err(hba->dev, "failed to get UFS reset signal\n");
++		return ret;
++	}
++
++	ret = reset_assert(&reset_ctl);
++	if (ret) {
++		dev_err(hba->dev, "failed to assert UFS reset signal\n");
++		return ret;
++	}
++
++	ret = reset_deassert(&reset_ctl);
++	if (ret) {
++		dev_err(hba->dev, "failed to deassert UFS reset signal\n");
++		return ret;
++	}
++
+ 	for (p = ufs_param; p < ufs_param + ARRAY_SIZE(ufs_param); p++)
+ 		ufs_renesas_reg_control(hba, p);
+ 
+-- 
+2.25.1
+

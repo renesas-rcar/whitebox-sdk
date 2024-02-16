@@ -15,6 +15,8 @@ SRC_URI_append = " \
     file://0004-config-spider-Add-config-for-ufs.patch \
     file://0005-config-s4sk-Add-config-for-ufs.patch \
     file://0006-arm-dts-r8a779f0-s4sk-Add-Renesas-UFS-HCD-support.patch \
+    file://0004-clk-renesas-Add-and-enable-CPG-reset-driver-for-Gen4.patch \
+    file://0005-ufs-reset-UFS-controller-on-init.patch \
 "
 
 # Backport from upstream
