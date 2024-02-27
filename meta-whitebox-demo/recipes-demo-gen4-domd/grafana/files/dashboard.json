@@ -331,7 +331,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 25
       },
@@ -364,7 +364,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -378,8 +379,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 4,
+        "w": 2,
+        "x": 3,
         "y": 25
       },
       "id": 41,
@@ -419,6 +420,31 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 5,
+        "y": 25
+      },
+      "id": 49,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<style>\r\n.btn {\r\n  background-color: #199319;\r\n  color: white;\r\n  padding: 25px 25px;\r\n  height: 100%;\r\n}\r\n</style>\r\n\r\n<button class=\"btn\" onclick=\"vissv2server_restart();\">\r\nvissv2server<br>restart\r\n</button>\r\n\r\n<script>\r\nfunction get_req_v2(url){\r\n  var xhr = new XMLHttpRequest();\r\n  xhr.open(\"GET\", url);\r\n  xhr.send();\r\n  xhr.onload = ()=> {\r\n    console.log(\"Get response\", xhr.response);\r\n  };\r\n}\r\nfunction vissv2server_restart() {\r\n  var hostname = window.location.hostname;\r\n  const url = \"http://\" + hostname + \":8000/viss_restart\";\r\n  get_req_v2(url);\r\n}\r\n</script>\r\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.2.0",
+      "title": "Panel Title",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -432,7 +458,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -527,7 +554,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -624,7 +652,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "#EAB839",
@@ -1353,6 +1382,6 @@
   "timezone": "",
   "title": "Whitebox_demo_sample",
   "uid": "WhiteboxDemo",
-  "version": 5,
+  "version": 2,
   "weekStart": ""
 }
