@@ -43,7 +43,7 @@ done
 # Prepare working directory
 cd ${SCRIPT_DIR}
 if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work-s4 ]] ;then
-    rm -rf ./work-s4/yocto/build/gen4
+    rm -rf ./work-s4
     mkdir -p ./work-s4
 fi
 cd ./work-s4

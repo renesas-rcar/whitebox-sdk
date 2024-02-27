@@ -67,8 +67,8 @@ done
 # Prepare working directory
 cd ${SCRIPT_DIR}
 if [[ "$CLEAN_BUILD_FLAG" == true || ! -e ./work ]] ;then
-    rm -rf ./work/yocto
-    mkdir -p ./work/yocto
+    rm -rf ./work
+    mkdir -p ./work
 fi
 cd ./work
 
