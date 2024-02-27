@@ -1183,7 +1183,33 @@ parameters:
                 - [BG_COLOR_AFTER, "11, 99, 33"]
                 - [BASE_COLOR_AFTER, "179,255,179"]
                 - [ANIME_COLOR_AFTER, "0,255,102"]
-
+    "orange":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "123, 70, 0"]
+                - [BASE_COLOR_AFTER, "200,140,100"]
+                - [ANIME_COLOR_AFTER, "220,130,0"]
+    "red":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "153, 20, 20"]
+                - [BASE_COLOR_AFTER, "190,90,90"]
+                - [ANIME_COLOR_AFTER, "240,30,30"]
+    "gray":
+      overrides:
+        components:
+          gen3-domd:
+            builder:
+              conf:
+                - [BG_COLOR_AFTER, "90, 90, 90"]
+                - [BASE_COLOR_AFTER, "120,120,120"]
+                - [ANIME_COLOR_AFTER, "180,180,180"]
 # ===================================================================================================================
 
   ENABLE_WHITEBOX_SDK:
