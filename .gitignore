@@ -1,7 +1,7 @@
 /work
 /common_data
 /prebuilt_gsx
-/proprietary
+/proprietary/*.zip
 /work-s4
 /scripts
 /deploy
