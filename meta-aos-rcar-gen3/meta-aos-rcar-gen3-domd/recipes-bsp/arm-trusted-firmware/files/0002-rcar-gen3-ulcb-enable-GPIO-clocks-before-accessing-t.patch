@@ -1,0 +1,81 @@
+From 064663712cab46a77ece2a8d5df46f55edbd523d Mon Sep 17 00:00:00 2001
+From: Dmytro Firsov <dmytro_firsov@epam.com>
+Date: Tue, 26 Sep 2023 14:43:10 +0300
+Subject: [PATCH 2/2] rcar-gen3: ulcb: enable GPIO clocks before accessing to
+ CPLD
+
+ULCB uses external CPLD (connected via SPI) for power management.
+CPLD SPI interface connected via GPIO pins to SoC, so they should
+be operable to establish any communication.
+
+Previously, ULCB reset handler relied on EL1 drivers and expected,
+that clocks for GPIO2 and GPIO6 devices will be enabled before
+reset is issued. But mentioned GPIOs has disabled clocks in some cases
+which leads to board freeze during reset.
+
+Enable these clocks explicitly before CPLD communication.
+
+Note: GPIO_OUTDT6 was removed from CPLD code, as it already defined in
+included headers (rcar_private.h).
+
+Signed-off-by: Dmytro Firsov <dmytro_firsov@epam.com>
+Co-authored-by: Volodymyr Babchuk <volodymyr_babchuk@epam.com>
+
+---
+ drivers/renesas/rcar/cpld/ulcb_cpld.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/renesas/rcar/cpld/ulcb_cpld.c b/drivers/renesas/rcar/cpld/ulcb_cpld.c
+index 5ffb2e197..28ff5beef 100644
+--- a/drivers/renesas/rcar/cpld/ulcb_cpld.c
++++ b/drivers/renesas/rcar/cpld/ulcb_cpld.c
+@@ -5,6 +5,9 @@
+  */
+ 
+ #include <lib/mmio.h>
++
++#include "cpg_registers.h"
++#include "rcar_private.h"
+ #include "ulcb_cpld.h"
+ 
+ #define SCLK			8	/* GP_6_8 */
+@@ -18,7 +21,6 @@
+ 
+ /* General output registers */
+ #define GPIO_OUTDT2		0xE6052008
+-#define GPIO_OUTDT6		0xE6055408
+ 
+ /* General input/output switching registers */
+ #define GPIO_INOUTSEL2		0xE6052004
+@@ -31,6 +33,10 @@
+ #define PFC_GPSR2		0xE6060108
+ #define PFC_GPSR6		0xE6060118
+ 
++/* GPIO clock control target bits*/
++#define CPG_SYS_GPIO2_BIT		0x400	/* 10th bit */
++#define CPG_SYS_GPIO6_BIT		0x40	/* 6th bit */
++
+ static void gpio_set_value(uint32_t addr, uint8_t gpio, uint32_t val)
+ {
+ 	uint32_t reg;
+@@ -106,9 +112,16 @@ static void cpld_init(void)
+ 	gpio_direction_output(GPIO_INOUTSEL6, MOSI);
+ }
+ 
++static void gpio_clocks_enable(void)
++{
++	mstpcr_write(CPG_SMSTPCR9, CPG_MSTPSR9, CPG_SYS_GPIO2_BIT);
++	mstpcr_write(CPG_SMSTPCR9, CPG_MSTPSR9, CPG_SYS_GPIO6_BIT);
++}
++
+ void rcar_cpld_reset_cpu(void)
+ {
+-	cpld_init();
++	gpio_clocks_enable();
+ 
++	cpld_init();
+ 	cpld_write(CPLD_ADDR_RESET, 1);
+ }
+-- 
+2.34.1
+

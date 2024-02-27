@@ -1,0 +1,32 @@
+From dbb24361afdd17b69d9217d4a4b37f89a26d6134 Mon Sep 17 00:00:00 2001
+From: Dmytro Firsov <dmytro_firsov@epam.com>
+Date: Tue, 26 Sep 2023 14:39:37 +0300
+Subject: [PATCH 1/2] rcar-gen3: plat: fix copy-paste issue with runtime
+ console
+
+During initialization driver set runtime flag to wrong console
+instance (probably copy-paste issue). It leads to console output
+absence in BL31 handlers in runtime.
+Use correct instance to fix it.
+
+Signed-off-by: Dmytro Firsov <dmytro_firsov@epam.com>
+---
+ plat/renesas/common/rcar_common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plat/renesas/common/rcar_common.c b/plat/renesas/common/rcar_common.c
+index 3d3418dca..c827de22d 100644
+--- a/plat/renesas/common/rcar_common.c
++++ b/plat/renesas/common/rcar_common.c
+@@ -95,7 +95,7 @@ void rcar_console_runtime_init(void)
+ 	if (!ret)
+ 		panic();
+ 
+-	console_set_scope(&rcar_boot_console, CONSOLE_FLAG_RUNTIME);
++	console_set_scope(&rcar_runtime_console, CONSOLE_FLAG_RUNTIME);
+ }
+ 
+ void rcar_console_runtime_end(void)
+-- 
+2.34.1
+
