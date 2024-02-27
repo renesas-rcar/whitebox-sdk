@@ -964,6 +964,15 @@ parameters:
       overrides:
         variables:
           USE_UFS: "1"
+        components:
+          gen4-dom0:
+            builder:
+              conf:
+                - [EXTRA_IMAGECMD_ext4, "-b 4096"]
+          gen4-domd:
+            builder:
+              conf:
+                - [EXTRA_IMAGECMD_ext4, "-b 4096"]
         images:
           gen4_full:
             sector_size: 4096
