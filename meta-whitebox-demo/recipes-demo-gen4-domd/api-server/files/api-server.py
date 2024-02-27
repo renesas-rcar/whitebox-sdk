@@ -16,6 +16,10 @@ def power_contorl(command):
     cmd = [POWER_SCRIPT, command]
     subprocess.run(cmd, stdout=None, stderr=None )
 
+def viss_restart():
+    cmd = ["systemctl", "restart", "vissv2server"]
+    subprocess.run(cmd, stdout=None, stderr=None )
+
 def snort_control(command):
     cmd = ["systemctl", "***COMMAND***", "snort-tsn0"]
     if command == "on":
@@ -50,6 +54,8 @@ class HttpHandler(BaseHTTPRequestHandler):
             power_contorl(args.rstrip())
         elif command == "snort":
             snort_control(args.rstrip())
+        elif command == "viss_restart":
+            viss_restart()
         # Others
         else:
             # Print command
