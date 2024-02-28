@@ -46,6 +46,8 @@ sed -i "s/s4sk/${GEN4_BOARD}/" deploy/${GEN4_BOARD}_ipl/Flash_Bootloader_S4.ttl
 cp work/gen3_full.img.gz deploy/$GEN3_BOARD.mmc.full.img.gz
 cp -r work/yocto/build/gen3/domd/tmp/deploy/images/h3ulcb/firmware \
     ./deploy/${GEN3_BOARD}_ipl
+cp work/yocto/build/gen3/domd/tmp/deploy/images/h3ulcb/*.srec \
+    ./deploy/${GEN3_BOARD}_ipl/
 cp -r work/yocto/build/gen3/domd/tmp/deploy/images/h3ulcb/renesas-bsp-rom-writer_64bit \
     ./deploy/${GEN3_BOARD}_ipl/
 
