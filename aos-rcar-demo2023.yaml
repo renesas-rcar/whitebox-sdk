@@ -419,6 +419,9 @@ components:
         - [NODE_ID, "%{GEN3_DOMD_NODE_ID}"]
         - [NODE_TYPE, "%{UNIT_MODEL}-%{UNIT_VERSION}-${NODE_ID}"]
 
+        # Ignore OP-TEE common recipe, Gen3 use old one.
+        - [BBMASK_append, "|meta-aos-rcar-common/meta-aos-rcar-common-domd/recipes-security/optee"]
+
       build_target: "%{GEN3_XT_DOMD_IMAGE}"
       layers:
         - "../../../poky/meta"
