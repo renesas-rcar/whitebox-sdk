@@ -1,0 +1,22 @@
+From 02ddab068413aa898bc384424cc12011e4d26a05 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 13 Mar 2024 17:47:14 +0900
+Subject: [PATCH 7/7] configs: s4sk: Add missing config from spider
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ configs/r8a779f0_s4sk_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/r8a779f0_s4sk_defconfig b/configs/r8a779f0_s4sk_defconfig
+index 6afa5bf74d..94527feca1 100644
+--- a/configs/r8a779f0_s4sk_defconfig
++++ b/configs/r8a779f0_s4sk_defconfig
+@@ -69,3 +69,4 @@ CONFIG_DM_SCSI=y
+ CONFIG_CMD_SCSI=y
+ CONFIG_UFS=y
+ CONFIG_RENESAS_UFS=y
++CONFIG_ENV_OVERWRITE=y
+-- 
+2.34.1
+
