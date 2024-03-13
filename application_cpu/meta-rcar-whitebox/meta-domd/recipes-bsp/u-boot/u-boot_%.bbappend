@@ -1,7 +1,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-BRANCH = "v2020.10/rcar-5.1.1.rc9"
-SRCREV = "616f05eb5a88014037bd92ea0f1c3bfe6ea2444a"
+BRANCH = "v2020.10/rcar-5.1.1.rc10"
+SRCREV = "9ddd54cbb5d2e65fab77bede0b1db35dca539848"
 
 SRC_URI_append = " \
     file://0001-HACK-Improve-large-file-download-via-TFTP.patch \
@@ -15,6 +15,7 @@ SRC_URI_append = " \
     file://0004-config-spider-Add-config-for-ufs.patch \
     file://0005-config-s4sk-Add-config-for-ufs.patch \
     file://0006-arm-dts-r8a779f0-s4sk-Add-Renesas-UFS-HCD-support.patch \
+    file://0007-configs-s4sk-Add-missing-config-from-spider.patch \
 "
 
 # Backport from upstream
