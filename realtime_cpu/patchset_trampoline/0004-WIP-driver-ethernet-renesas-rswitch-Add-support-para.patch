@@ -1,0 +1,267 @@
+From 7ad42a44b04b8c01eda3ccb9a8548dab2073c0ab Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Fri, 2 Feb 2024 13:51:26 +0900
+Subject: [PATCH 4/4] WIP: driver: ethernet: renesas: rswitch: Add support
+ parallel_mode
+
+This patch supports rswitch parallel_mode by setting all ports.
+By the default, TSN0 and GWCA1 are assigend to CA55,
+then TSN1 and GWCA0 are assigned to CR52.
+And, TSN2 is not assigned to any cores.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../cortex-a-r/armv8/spider/ethernet/eth.oil  | 18 ++---
+ libraries/drivers/ethernet/renesas/rswitch.c  | 80 +++++++++++++------
+ 2 files changed, 65 insertions(+), 33 deletions(-)
+
+diff --git a/examples/cortex-a-r/armv8/spider/ethernet/eth.oil b/examples/cortex-a-r/armv8/spider/ethernet/eth.oil
+index 59bb6e7a..b7f4a17e 100644
+--- a/examples/cortex-a-r/armv8/spider/ethernet/eth.oil
++++ b/examples/cortex-a-r/armv8/spider/ethernet/eth.oil
+@@ -55,23 +55,23 @@ CPU eth {
+   };
+ 
+   /* ethernet driver needs */
+-  TASK gwca1_rx_tx_task {
++  TASK gwca0_rx_tx_task {
+     PRIORITY = 2;
+     AUTOSTART = FALSE;
+     ACTIVATION = 1;
+     SCHEDULE = FULL;
+   };
+ 
+-  ISR gwca1_rx_tx_int {
++  ISR gwca0_rx_tx_int {
+     CATEGORY = 2;
+     PRIORITY = 2;
+-    SOURCE = GWCA1_RX_TX_INT;
++    SOURCE = GWCA0_RX_TX_INT;
+   };
+ 
+-  ISR gwca1_rx_ts_int {
++  ISR gwca0_rx_ts_int {
+     CATEGORY = 2;
+     PRIORITY = 3;
+-    SOURCE = GWCA1_RX_TS_INT;
++    SOURCE = GWCA0_RX_TS_INT;
+   };
+ 
+   ISR coma_err_int {
+@@ -80,15 +80,15 @@ CPU eth {
+     SOURCE = COMA_ERR_INT;
+   };
+ 
+-  ISR gwca1_err_int {
++  ISR gwca0_err_int {
+     CATEGORY = 2;
+     PRIORITY = 5;
+-    SOURCE = GWCA1_ERR_INT;
++    SOURCE = GWCA0_ERR_INT;
+   };
+ 
+-  ISR etha0_err_int {
++  ISR etha1_err_int {
+     CATEGORY = 2;
+     PRIORITY = 6;
+-    SOURCE = ETHA0_ERR_INT;
++    SOURCE = ETHA1_ERR_INT;
+   };
+ };
+diff --git a/libraries/drivers/ethernet/renesas/rswitch.c b/libraries/drivers/ethernet/renesas/rswitch.c
+index c1613bfa..6021ecff 100644
+--- a/libraries/drivers/ethernet/renesas/rswitch.c
++++ b/libraries/drivers/ethernet/renesas/rswitch.c
+@@ -19,8 +19,8 @@
+ #define GWCA0_PORT_NUM   3
+ #define GWCA1_PORT_NUM   4
+ 
+-#define TSN_PORT_IN_USE   TSNA0_PORT_NUM
+-#define GWCA_PORT_IN_USE  (GWCA1_PORT_NUM - PORT_TSNA_N)
++#define TSN_PORT_IN_USE   TSNA1_PORT_NUM
++#define GWCA_PORT_IN_USE  (GWCA0_PORT_NUM - PORT_TSNA_N)
+ 
+ /* GWCA */
+ enum rswitch_gwca_mode {
+@@ -507,6 +507,25 @@ static int rswitch_gwca_hw_init(struct rswitch_device *rswitch)
+     CHECK_RET(rswitch_gwca_change_mode(gwca, GWMC_OPC_DISABLE));
+     CHECK_RET(rswitch_gwca_change_mode(gwca, GWMC_OPC_OPERATION));
+ 
++    // Setup GWCA which is not used in CR52 for parallel mode
++    struct rswitch_gwca *gwca_sub = &gwca_props[(1 - GWCA_PORT_IN_USE)];
++    CHECK_RET(rswitch_gwca_change_mode(gwca_sub, GWMC_OPC_DISABLE));
++    CHECK_RET(rswitch_gwca_change_mode(gwca_sub, GWMC_OPC_CONFIG));
++    CHECK_RET(rswitch_gwca_mcast_table_reset(gwca_sub));
++    CHECK_RET(rswitch_gwca_axi_ram_reset(gwca_sub));
++
++    /* Full setting flow */
++    reg_write32(GWVCC_VEM_SC_TAG, gwca_sub->base_addr + GWVCC);
++    reg_write32(0, gwca_sub->base_addr + GWTTFC);
++    reg_write32(descriptors_addr, gwca_sub->base_addr + GWDCBAC1);
++    reg_write32(0x00, gwca_sub->base_addr + GWDCBAC0);
++
++    gwca_sub->speed = 1000;
++    rswitch_gwca_set_rate_limit(gwca_sub);
++
++    CHECK_RET(rswitch_gwca_change_mode(gwca_sub, GWMC_OPC_DISABLE));
++    CHECK_RET(rswitch_gwca_change_mode(gwca_sub, GWMC_OPC_OPERATION));
++
+     return 0;
+ }
+ 
+@@ -616,6 +635,12 @@ static void rswitch_fwd_init(struct rswitch_device *rswitch)
+     /* Static routing GWCA --> ETHA. */
+     reg_write32(0, rswitch->fwd_base_addr + FWPBFC(gwca_port_num));
+     reg_write32(BIT(eth_port_num), rswitch->fwd_base_addr + FWPBFC(gwca_port_num));
++
++    // Setup GWCA1 and TSN0 port setting for parallel mode
++    reg_write32(BIT(GWCA1_PORT_NUM), rswitch->fwd_base_addr + FWPBFC(TSNA0_PORT_NUM));
++    reg_write32(0, rswitch->fwd_base_addr + FWPBFC(GWCA1_PORT_NUM));
++    reg_write32(BIT(TSNA0_PORT_NUM), rswitch->fwd_base_addr + FWPBFC(GWCA1_PORT_NUM));
++
+ }
+ 
+ static __unused void rswitch_get_data_irq_status(struct rswitch_device *rswitch, uint32 *dis)
+@@ -643,10 +668,10 @@ static void rswitch_enadis_data_irq(struct rswitch_gwca *gwca, int index,
+ static void rswitch_enable_irqs(void)
+ {
+     /* Enables IRQs on the core side */
+-    enable_int(GWCA1_RX_TX_IRQ);
+-    enable_int(GWCA1_RX_TS_IRQ);
+-    enable_int(GWCA1_ERR_IRQ);
+-    enable_int(ETHA0_ERR_IRQ);
++    enable_int(GWCA0_RX_TX_IRQ);
++    enable_int(GWCA0_RX_TS_IRQ);
++    enable_int(GWCA0_ERR_IRQ);
++    enable_int(ETHA1_ERR_IRQ);
+     enable_int(COMA_ERR_IRQ);
+ }
+ 
+@@ -826,6 +851,13 @@ int rswitch_open(void)
+     rswitch_enadis_data_irq(rsw_dev.gwca, rsw_dev.gwca->rx_chain.chain_index,
+                             TRUE);
+ 
++    // Setup for parallel mode
++    struct rswitch_etha *etha0 = &etha_props[TSNA0_PORT_NUM];
++    etha0->speed = rsw_dev.etha->speed;
++
++    CHECK_RET(rswitch_etha_hw_init(etha0));
++    CHECK_RET(rswitch_phy_init(etha0));
++
+     return 0;
+ }
+ 
+@@ -905,18 +937,18 @@ static void rswitch_get_interrupt_source_and_clear()
+ /*****************************************************************************/
+ /*****************************************************************************/
+ 
+-#define APP_ISR_gwca1_rx_tx_int_START_SEC_CODE
++#define APP_ISR_gwca0_rx_tx_int_START_SEC_CODE
+ #include "tpl_memmap.h"
+ static int nb_int = 0;
+ 
+-ISR(gwca1_rx_tx_int)
++ISR(gwca0_rx_tx_int)
+ {
+     nb_int++;
+-    ActivateTask(gwca1_rx_tx_task);
++    ActivateTask(gwca0_rx_tx_task);
+     CallTerminateISR2();
+ }
+ 
+-TASK(gwca1_rx_tx_task) {
++TASK(gwca0_rx_tx_task) {
+     struct rswitch_gwca_chain *chain;
+     struct rswitch_ext_ts_desc *ts_desc;
+     struct rswitch_ext_desc *desc;
+@@ -993,33 +1025,33 @@ TASK(gwca1_rx_tx_task) {
+     TerminateTask();
+ }
+ 
+-FUNC(void, OS_CODE) GWCA1_RX_TX_INT_ClearFlag(void)
++FUNC(void, OS_CODE) GWCA0_RX_TX_INT_ClearFlag(void)
+ {
+ 	//debug_msg("%s", __func__);
+     rswitch_get_interrupt_source_and_clear();
+ }
+ 
+-#define APP_ISR_gwca1_rx_tx_int_STOP_SEC_CODE
++#define APP_ISR_gwca0_rx_tx_int_STOP_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+ /*****************************************************************************/
+ /*****************************************************************************/
+ 
+-#define APP_ISR_gwca1_rx_ts_int_START_SEC_CODE
++#define APP_ISR_gwca0_rx_ts_int_START_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+-ISR(gwca1_rx_ts_int)
++ISR(gwca0_rx_ts_int)
+ {
+ 	debug_msg("%s", __func__);
+ 	CallTerminateISR2();
+ }
+ 
+-FUNC(void, OS_CODE) GWCA1_RX_TS_INT_ClearFlag(void)
++FUNC(void, OS_CODE) GWCA0_RX_TS_INT_ClearFlag(void)
+ {
+ 	debug_msg("%s", __func__);
+ }
+ 
+-#define APP_ISR_gwca1_rx_ts_int_STOP_SEC_CODE
++#define APP_ISR_gwca0_rx_ts_int_STOP_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+ /*****************************************************************************/
+@@ -1045,39 +1077,39 @@ FUNC(void, OS_CODE) COMA_ERR_INT_ClearFlag(void)
+ /*****************************************************************************/
+ /*****************************************************************************/
+ 
+-#define APP_ISR_gwca1_err_int_START_SEC_CODE
++#define APP_ISR_gwca0_err_int_START_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+-ISR(gwca1_err_int)
++ISR(gwca0_err_int)
+ {
+ 	debug_msg("%s", __func__);
+ 	CallTerminateISR2();
+ }
+ 
+-FUNC(void, OS_CODE) GWCA1_ERR_INT_ClearFlag(void)
++FUNC(void, OS_CODE) GWCA0_ERR_INT_ClearFlag(void)
+ {
+ 	debug_msg("%s", __func__);
+ }
+ 
+-#define APP_ISR_gwca1_err_int_STOP_SEC_CODE
++#define APP_ISR_gwca0_err_int_STOP_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+ /*****************************************************************************/
+ /*****************************************************************************/
+ 
+-#define APP_ISR_etha0_err_int_START_SEC_CODE
++#define APP_ISR_etha1_err_int_START_SEC_CODE
+ #include "tpl_memmap.h"
+ 
+-ISR(etha0_err_int)
++ISR(etha1_err_int)
+ {
+ 	debug_msg("%s", __func__);
+ 	CallTerminateISR2();
+ }
+ 
+-FUNC(void, OS_CODE) ETHA0_ERR_INT_ClearFlag(void)
++FUNC(void, OS_CODE) ETHA1_ERR_INT_ClearFlag(void)
+ {
+ 	debug_msg("%s", __func__);
+ }
+ 
+-#define APP_ISR_etha0_err_int_STOP_SEC_CODE
++#define APP_ISR_etha1_err_int_STOP_SEC_CODE
+ #include "tpl_memmap.h"
+-- 
+2.34.1
+
