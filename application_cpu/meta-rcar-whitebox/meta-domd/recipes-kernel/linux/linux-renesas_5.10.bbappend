@@ -37,6 +37,13 @@ KBUILD_DEFCONFIG = ""
 # Don't build defaul DTBs
 KERNEL_DEVICETREE = ""
 
+# Applying IPMMU WA
+do_compile_prepend () {
+    sed -i ${S}/arch/${ARCH}/boot/dts/renesas/r8a779f0-${MACHINE}-xen.dts \
+        -e 's/, <&ipmmu_hc 1[6-9]>//' \
+        -e 's/, <&ipmmu_hc 2[0-3]>//'
+}
+
 # Add ADDITIONAL_DEVICE_TREES to SRC_URIs and to KERNEL_DEVICETREEs
 python __anonymous () {
     for fname in (d.getVar("ADDITIONAL_DEVICE_TREES") or "").split():
