@@ -1,0 +1,333 @@
+From dc505f6ddc9e2c63c649b35ba2eafbe3dfd53385 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 15 Feb 2024 10:54:42 +0900
+Subject: [PATCH] driver: spider: can: Add support channel 1 and send same
+ frame via channel 0/1
+
+This patch enables channel 1 of CAN controller and sending same packet channel 0 and 1.
+And, this is tested on R-Car S4 Starter Kit and CAN0 + CAN1.
+Some modification for CAN controller 1 channel 1(CAN9) is contained in this patch,
+but it has not been tested on Spider board yet.
+
+Limitation:
+This patch expects CAN0 and CAN1 has correct bus connection.
+If either one is disconnected, FIFO becomes full and transmitting frame will be stopped.
+
+Note: can_demo.c modification is used to avoid packet storm by loopback connection.
+loopback connection means that CAN0, CAN1 and USB2CAN with Host PC are connected same bus.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../cortex-a-r/armv8/spider/sample/can_demo.c |   8 ++
+ libraries/drivers/can/renesas/spider_can.c    | 134 +++++++++++++-----
+ 2 files changed, 103 insertions(+), 39 deletions(-)
+
+diff --git a/examples/cortex-a-r/armv8/spider/sample/can_demo.c b/examples/cortex-a-r/armv8/spider/sample/can_demo.c
+index bfbae42a..9b722c96 100644
+--- a/examples/cortex-a-r/armv8/spider/sample/can_demo.c
++++ b/examples/cortex-a-r/armv8/spider/sample/can_demo.c
+@@ -96,6 +96,7 @@ TASK(can_task)
+ 	uint8 payload[TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE];
+ 	int i;
+ 	Can_IdType id_without_flags, id_flags;
++	uint32 prev_id = -1;
+ 
+ 	// Send a frame to tell that the program is ready
+ 	can_pdu.id = 0x123 | TPL_CAN_ID_TYPE_STANDARD;
+@@ -111,6 +112,12 @@ TASK(can_task)
+ 	{
+ 		if (CanIf_ReadRxPduData(0, &pdu_info) == E_OK)
+ 		{
++			// Ignore loopback packet
++			if(prev_id == pointer_can_pdu->id) {
++				prev_id = -1;
++				continue;
++			}
++
+ 			// Make sure the payload size is compatible with CAN-FD
+ 			pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
+ 			if (pointer_can_pdu->length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
+@@ -142,6 +149,7 @@ TASK(can_task)
+ 
+ 			// Send the incremented frame back
+ 			CanIf_Transmit(0, &pdu_info);
++			prev_id = pointer_can_pdu->id;
+ 		}
+ 	}
+ }
+diff --git a/libraries/drivers/can/renesas/spider_can.c b/libraries/drivers/can/renesas/spider_can.c
+index 19704040..5ee7fda2 100644
+--- a/libraries/drivers/can/renesas/spider_can.c
++++ b/libraries/drivers/can/renesas/spider_can.c
+@@ -34,6 +34,7 @@
+ #define PROTECTION_ENABLE_KEY 0xA5A5A500
+ 
+ #define SPIDER_CAN_RECEIVED_DATA_FLAG(ctrl) (!(((volatile struct __tag5579 *) ctrl->base_address)->CFDFESTS.UINT32 & 0x00000001))
++#define SPIDER_CAN_RECEIVED_DATA_FLAG_CH1(ctrl) (!(((volatile struct __tag5579 *) ctrl->base_address)->CFDFESTS.UINT32 & 0x00000002))
+ 
+ /**
+  * The CAN clock that feeds the prescalers (in Hertz).
+@@ -109,7 +110,8 @@ static int spider_can_configure_baud_rate_registers(struct tpl_can_controller_t
+ 	nominal_bitrate_conf_reg.NSJW = baud_rate_config->CanControllerSyncJumpWidth;
+ 	nominal_bitrate_conf_reg.NTSEG1 = baud_rate_config->CanControllerSeg1;
+ 	nominal_bitrate_conf_reg.NTSEG2 = baud_rate_config->CanControllerSeg2;
+-	ctrl_base_address->CFDC0NCFG.BIT = nominal_bitrate_conf_reg;
++	ctrl_base_address->CFDC0NCFG.BIT = nominal_bitrate_conf_reg; // channel 0
++	ctrl_base_address->CFDC1NCFG.BIT = nominal_bitrate_conf_reg; // channel 1
+ 
+ 	if (baud_rate_config->use_fd_configuration)
+ 	{
+@@ -137,13 +139,16 @@ static int spider_can_configure_baud_rate_registers(struct tpl_can_controller_t
+ 		can_fd_config_reg.FDOE = 0; // Disable FD-only mode to allow both modes
+ 		can_fd_config_reg.REFE = 0; // Disable RX edge filter for now
+ 		can_fd_config_reg.CLOE = 0; // Disable classical-only mode to allow both modes
+-		ctrl_base_address->CFDC0FDCFG.BIT = can_fd_config_reg;
++		ctrl_base_address->CFDC0FDCFG.BIT = can_fd_config_reg; // channel 0
++		ctrl_base_address->CFDC1FDCFG.BIT = can_fd_config_reg; // channel 1
+ 	}
+ 	else
+ 	{
+ 		// Disable CAN-FD
+-		ctrl_base_address->CFDC0DCFG.UINT32 = 0;
+-		ctrl_base_address->CFDC0FDCFG.UINT32 = 0;
++		ctrl_base_address->CFDC0DCFG.UINT32 = 0;  // channel 0
++		ctrl_base_address->CFDC0FDCFG.UINT32 = 0; // channel 0
++		ctrl_base_address->CFDC1DCFG.UINT32 = 0;  // channel 1
++		ctrl_base_address->CFDC1FDCFG.UINT32 = 0; // channel 1
+ 	}
+ 
+ 	// Cache some configuration parameters to quickly access to these information in the transmit() function
+@@ -173,18 +178,18 @@ static void spider_can_configure_gpios(struct tpl_can_controller_t *ctrl)
+ 		PFC1.PMMER7_B0A0 = 0x00000001;
+ 
+ 		// Select the peripheral function for the CAN pins
+-		val = PFC1.GPSR7_B0A0 | 0x00000003;
++		val = PFC1.GPSR7_B0A0 | 0x000000FF; //channel 0 to 1
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.GPSR7_B0A0 = val;
+ 
+ 		// Select the CAN function for the CAN GPIOs
+-		val = PFC1.IP0SR7_B0A0 & ~0x00000003;
++		val = PFC1.IP0SR7_B0A0 & ~0x0000FFFF; // channel 0 to 1
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.IP0SR7_B0A0 = val;
+ 
+ 		// Set the drive strength of the CAN TX pin to 7/8
+-		val = PFC1.DRV0CTRL7_B0A0 & ~0x0000000F;
+-		val |= 0x00000003;
++		val = PFC1.DRV0CTRL7_B0A0 & ~0x0000FFFF; // channel 0 to 1
++		val |= 0x00003333;
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.DRV0CTRL7_B0A0 = val;
+ 	}
+@@ -194,18 +199,18 @@ static void spider_can_configure_gpios(struct tpl_can_controller_t *ctrl)
+ 		PFC1.PMMER7_B0A0 = 0x00000001;
+ 
+ 		// Select the peripheral function for the CAN pins
+-		val = PFC1.GPSR7_B0A0 | 0x00030000;
++		val = PFC1.GPSR7_B0A0 | 0x00FF0000; // channel 0 to 1
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.GPSR7_B0A0 = val;
+ 
+ 		// Select the CAN function for the CAN GPIOs
+-		val = PFC1.IP2SR7_B0A0 & ~0x00000003;
++		val = PFC1.IP2SR7_B0A0 & ~0x0000FFFF; // channel 0 to 1
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.IP2SR7_B0A0 = val;
+ 
+ 		// Set the drive strength of the CAN TX pin to 7/8
+-		val = PFC1.DRV2CTRL7_B0A0 & ~0x0000000F;
+-		val |= 0x00000003;
++		val = PFC1.DRV2CTRL7_B0A0 & ~0x0000FFFF; // channel 0 to 1
++		val |= 0x00003333;
+ 		PFC1.PMMR7_B0A0 = ~val;
+ 		PFC1.DRV2CTRL7_B0A0 = val;
+ 	}
+@@ -267,6 +272,9 @@ static int spider_can_init(struct tpl_can_controller_config_t *config)
+ 	// Release the channel 0 from sleep mode (TODO add support for a bitmask of enabled channels)
+ 	ctrl_base_address->CFDC0CTR.UINT32 = 0x00000001;
+ 	while (ctrl_base_address->CFDC0STS.BIT.CSLPSTS);
++	// Release the channel 1 from sleep mode
++	ctrl_base_address->CFDC1CTR.UINT32 = 0x00000001;
++	while (ctrl_base_address->CFDC1STS.BIT.CSLPSTS);
+ 
+ 	// Configure bus speed
+ 	if (spider_can_configure_baud_rate_registers(ctrl, &config->baud_rate_config) != 0)
+@@ -274,11 +282,20 @@ static int spider_can_init(struct tpl_can_controller_config_t *config)
+ 
+ 	// Configure rule table (create 1 rule that match all possible frames in reception and transmission)
+ 	ctrl_base_address->CFDGAFLECTR.UINT32 = 1 << 8; // Enable write access for page 0
+-	ctrl_base_address->CFDGAFLCFG0.UINT32 = 1 << 16; // Configure one rule for channel 0
+-	ctrl_base_address->CFDGAFLID1.UINT32 = 0; // Do not set IDs as they won't be taken into account with the mask register
+-	ctrl_base_address->CFDGAFLM1.UINT32 = 0; // Accept all received CAN frames
+-	ctrl_base_address->CFDGAFLP01.UINT32 = 0; // Disable DLC check
+-	ctrl_base_address->CFDGAFLP11.UINT32 = 0x00000001; // Use RX FIFO 0 as target for reception
++	{ // channel 0
++		ctrl_base_address->CFDGAFLCFG0.UINT32 = 1 << 16; // Configure one rule for channel 0
++		ctrl_base_address->CFDGAFLID1.UINT32 = 0; // Do not set IDs as they won't be taken into account with the mask register
++		ctrl_base_address->CFDGAFLM1.UINT32 = 0; // Accept all received CAN frames
++		ctrl_base_address->CFDGAFLP01.UINT32 = 0; // Disable DLC check
++		ctrl_base_address->CFDGAFLP11.UINT32 = 0x00000001; // Use RX FIFO 0 as target for reception
++	}
++	{ // channel 1
++		ctrl_base_address->CFDGAFLCFG0.UINT32 |= 1; // Configure one rule for channel 1
++		ctrl_base_address->CFDGAFLID2.UINT32 = 0; // Do not set IDs as they won't be taken into account with the mask register
++		ctrl_base_address->CFDGAFLM2.UINT32 = 0; // Accept all received CAN frames
++		ctrl_base_address->CFDGAFLP02.UINT32 = 0; // Disable DLC check
++		ctrl_base_address->CFDGAFLP12.UINT32 = 0x00000002; // Use RX FIFO 1 as target for reception
++	}
+ 	ctrl_base_address->CFDGAFLECTR.UINT32 = 0; // Disable write access for page 0
+ 
+ 	// Disable the reception message buffers as FIFO is used instead
+@@ -296,8 +313,12 @@ static int spider_can_init(struct tpl_can_controller_config_t *config)
+ 	// The default maximum allowed payload size is 8 bytes, set a 64-byte payload if CAN-FD is enabled
+ 	if (config->baud_rate_config.use_fd_configuration)
+ 		val |= 0x07 << 4;
++	// channel 0
+ 	ctrl_base_address->CFDCFCC0.UINT32 = val;
+ 	ctrl_base_address->CFDCFCCE0.UINT32 = 0; // Enable transmission
++	// channel 1
++	ctrl_base_address->CFDCFCC3.UINT32 = val;
++	ctrl_base_address->CFDCFCCE3.UINT32 = 0; // Enable transmission
+ 
+ 	// Switch the module to global operation mode
+ 	ctrl_base_address->CFDGCTR.UINT32 &= 0xFFFFFFFC;
+@@ -316,18 +337,29 @@ static int spider_can_init(struct tpl_can_controller_config_t *config)
+ 	// Switch the required CAN channels to operation mode, TODO handle multiple channels
+ 	ctrl_base_address->CFDC0CTR.UINT32 = 0;
+ 	while (ctrl_base_address->CFDC0STS.BIT.CRSTSTS);
+-
++	// channel 1
++	ctrl_base_address->CFDC1CTR.UINT32 = 0;
++	while (ctrl_base_address->CFDC1STS.BIT.CRSTSTS);
++	
+ 	spider_can_configure_gpios(ctrl);
+ 
+ 	// Enable reception FIFO (the write must be done separately, after all other bits of the register have been configured, and when the module is in global operation mode)
+ 	val = ctrl_base_address->CFDRFCC0.UINT32;
+ 	val |= 0x00000001;
+ 	ctrl_base_address->CFDRFCC0.UINT32 = val;
++	// channel 1
++	val = ctrl_base_address->CFDRFCC1.UINT32;
++	val |= 0x00000001;
++	ctrl_base_address->CFDRFCC1.UINT32 = val;
+ 
+ 	// Enable transmission FIFO, the requirements are the same than the reception FIFO
+ 	val = ctrl_base_address->CFDCFCC0.UINT32;
+ 	val |= 0x00000001;
+ 	ctrl_base_address->CFDCFCC0.UINT32 = val;
++	// channel 1
++	val = ctrl_base_address->CFDCFCC3.UINT32;
++	val |= 0x00000001;
++	ctrl_base_address->CFDCFCC3.UINT32 = val;
+ 
+ 	return E_OK;
+ }
+@@ -350,7 +382,8 @@ static Std_ReturnType spider_transmit(struct tpl_can_controller_t *ctrl, const C
+ 	struct spider_can_priv *priv = ctrl->priv;
+ 
+ 	// If the FIFO is full, wait for a transmission to finish to get a free FIFO slot
+-	while (ctrl_base_address->CFDFFSTS.BIT.CF0FLL);
++	while (ctrl_base_address->CFDFFSTS.BIT.CF0FLL); // channel 0
++	while (ctrl_base_address->CFDFFSTS.BIT.CF3FLL); // channel 1
+ 
+ 	// Cache the protocol type of the frame
+ 	val = pdu_info->id & TPL_CAN_ID_TYPE_MASK;
+@@ -364,34 +397,55 @@ static Std_ReturnType spider_transmit(struct tpl_can_controller_t *ctrl, const C
+ 		val = (pdu_info->id & TPL_CAN_ID_EXTENDED_MASK) | (1 << 31); // Tell this is an extended ID frame
+ 	else
+ 		val = pdu_info->id & TPL_CAN_ID_STANDARD_MASK;
+-	ctrl_base_address->CFDCFID0.UINT32 = val;
++	ctrl_base_address->CFDCFID0.UINT32 = val; // channel 0
++	ctrl_base_address->CFDCFID3.UINT32 = val; // channel 1
+ 
+ 	// Set the payload size
+ 	val = tpl_can_get_dlc_from_length(pdu_info->length, &adjusted_payload_length);
+-	ctrl_base_address->CFDCFPTR0.UINT32 = val << 28;
++	ctrl_base_address->CFDCFPTR0.UINT32 = val << 28; // channel 0
++	ctrl_base_address->CFDCFPTR3.UINT32 = val << 28; // channel 1
+ 
+ 	// Set the frame payload
+ 	if (!is_can_fd && pdu_info->length > TPL_CAN_CLASSIC_FRAME_MAXIMUM_PAYLOAD_SIZE)
+ 		return E_NOT_OK;
+ 	if (pdu_info->length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
+ 		return E_NOT_OK;
+-	src = pdu_info->sdu;
+-	dest = ctrl_base_address->CFDCFDF0_0.UINT8;
+-	// Use a for loop instead of memcpy() to make sure the buffer registers are accessed one byte at a time
+-	// Using memcpy() triggers a data abort exception for a 7-byte CAN payload
+-	for (i = 0; i < pdu_info->length; i++)
+-	{
+-		*dest = *src;
+-		src++;
+-		dest++;
++	{ // channel 0
++		src = pdu_info->sdu;
++		dest = ctrl_base_address->CFDCFDF0_0.UINT8;
++		// Use a for loop instead of memcpy() to make sure the buffer registers are accessed one byte at a time
++		// Using memcpy() triggers a data abort exception for a 7-byte CAN payload
++		for (i = 0; i < pdu_info->length; i++)
++		{
++			*dest = *src;
++			src++;
++			dest++;
++		}
++		// Pad the remaining data if needed if this is a CAN-FD frame
++		for (; i < adjusted_payload_length; i++)
++		{
++			*dest = 0;
++			dest++;
++		}
+ 	}
+-	// Pad the remaining data if needed if this is a CAN-FD frame
+-	for (; i < adjusted_payload_length; i++)
+-	{
+-		*dest = 0;
+-		dest++;
++	{ // channel 1
++		src = pdu_info->sdu;
++		dest = ctrl_base_address->CFDCFDF0_3.UINT8;
++		// Use a for loop instead of memcpy() to make sure the buffer registers are accessed one byte at a time
++		// Using memcpy() triggers a data abort exception for a 7-byte CAN payload
++		for (i = 0; i < pdu_info->length; i++)
++		{
++			*dest = *src;
++			src++;
++			dest++;
++		}
++		// Pad the remaining data if needed if this is a CAN-FD frame
++		for (; i < adjusted_payload_length; i++)
++		{
++			*dest = 0;
++			dest++;
++		}
+ 	}
+-
+ 	// Configure the frame format
+ 	val = 0; // This corresponds to a classic CAN frame and also initializes the register bits not changed by the CAN-FD specific code
+ 	if (is_can_fd)
+@@ -402,10 +456,12 @@ static Std_ReturnType spider_transmit(struct tpl_can_controller_t *ctrl, const C
+ 			// TODO add BRS support
+ 		}
+ 	}
+-	ctrl_base_address->CFDCFFDCSTS0.UINT32 = val;
++	ctrl_base_address->CFDCFFDCSTS0.UINT32 = val; // channel 0
++	ctrl_base_address->CFDCFFDCSTS3.UINT32 = val; // channel 1
+ 
+ 	// Start the frame transmission
+-	ctrl_base_address->CFDCFPCTR0.UINT32 = 0x000000FF;
++	ctrl_base_address->CFDCFPCTR0.UINT32 = 0x000000FF; // channel 0
++	ctrl_base_address->CFDCFPCTR3.UINT32 = 0x000000FF; // channel 1
+ 
+ 	return E_OK;
+ }
+@@ -486,5 +542,5 @@ Exit:
+ 
+ static int spider_is_data_available(struct tpl_can_controller_t *ctrl)
+ {
+-	return SPIDER_CAN_RECEIVED_DATA_FLAG(ctrl);
++	return SPIDER_CAN_RECEIVED_DATA_FLAG(ctrl) | SPIDER_CAN_RECEIVED_DATA_FLAG_CH1(ctrl);
+ }
+-- 
+2.34.1
+
