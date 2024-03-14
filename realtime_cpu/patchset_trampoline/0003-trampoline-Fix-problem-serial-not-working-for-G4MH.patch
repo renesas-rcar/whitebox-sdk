@@ -1,7 +1,7 @@
-From a0ed77afaa48d4744fad351efb5cb6ddbf19b1cf Mon Sep 17 00:00:00 2001
+From e4c43df4d08e06a705363899f2f0b1e6392e6564 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 12 Dec 2023 18:24:04 +0900
-Subject: [PATCH 3/3] trampoline: Fix problem serial not working for G4MH
+Subject: [PATCH 3/8] trampoline: Fix problem serial not working for G4MH
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -32,5 +32,5 @@ index e56b5765..ab01ec3d 100644
    /* Clear bits TE and RE in HSSCR to 0 */
    SERIAL_SCR =  SERIAL_SCR_INT_VALUE;
 -- 
-2.25.1
+2.34.1
 

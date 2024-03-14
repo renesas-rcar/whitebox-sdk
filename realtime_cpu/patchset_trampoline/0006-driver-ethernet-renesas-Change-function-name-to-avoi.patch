@@ -1,0 +1,53 @@
+From 96b43a82d5c2eaeb8167b16627cbb6dd045d3b86 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 14 Mar 2024 11:56:36 +0900
+Subject: [PATCH 6/8] driver: ethernet: renesas: Change function name to avoid
+ duplication
+
+get_time function is also implemented in coremark.
+Thus, this patch changes function name to avoid duplicattion
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/drivers/ethernet/renesas/eth_serdes.c | 2 +-
+ libraries/drivers/ethernet/renesas/utils.c      | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/libraries/drivers/ethernet/renesas/eth_serdes.c b/libraries/drivers/ethernet/renesas/eth_serdes.c
+index d65ffdf5..99c4278a 100644
+--- a/libraries/drivers/ethernet/renesas/eth_serdes.c
++++ b/libraries/drivers/ethernet/renesas/eth_serdes.c
+@@ -70,7 +70,7 @@ static int eth_serdes_wait_for_update(uint32 ch, uint16 offset, uint32 mask,
+     uint32 start_time;
+     uint32 reg_val;
+ 
+-    start_time = get_time();
++    start_time = rswitch_get_time();
+ 
+     do {
+         reg_val = ETH_SERDES_REG_READ(ch, offset);
+diff --git a/libraries/drivers/ethernet/renesas/utils.c b/libraries/drivers/ethernet/renesas/utils.c
+index c3941441..16bef016 100644
+--- a/libraries/drivers/ethernet/renesas/utils.c
++++ b/libraries/drivers/ethernet/renesas/utils.c
+@@ -72,7 +72,7 @@ void reg_write32(uint32 data, uint32 addr)
+ }
+ 
+ extern volatile VAR(uint32, OS_VAR) tpl_time_counter;
+-uint32 get_time(void)
++uint32 rswitch_get_time(void)
+ {
+     return tpl_time_counter;
+ }
+@@ -84,7 +84,7 @@ uint32 get_elapsed_time(uint32 start_val)
+ 
+ void ms_delay(uint32 value)
+ {
+-    uint32 start_time = get_time();
++    uint32 start_time = rswitch_get_time();
+ 
+     while(get_elapsed_time(start_time) < value);
+ }
+-- 
+2.34.1
+

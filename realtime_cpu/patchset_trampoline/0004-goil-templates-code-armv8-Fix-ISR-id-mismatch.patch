@@ -1,0 +1,46 @@
+From 7c4d19bc4cc72956b175e21a9d678fca371a3d4c Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 14 Mar 2024 17:56:27 +0900
+Subject: [PATCH 4/8] goil: templates: code: armv8: Fix ISR id mismatch
+
+Currently, interrupt handler has same id so that interrup doesn't work
+correctly on envrionment which has multiple ISR.
+This is caused by the scope if indexISR2 variable.
+
+And, even if this issue is fixed, function order and index is not
+matched always because function order is change by priotiry.
+So, non-expected function may be called.
+
+Thus, this patch fixes to use defined variable instead of index.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../code/cortex-a-r/armv8/interrupt_table.goilTemplate        | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/goil/templates/code/cortex-a-r/armv8/interrupt_table.goilTemplate b/goil/templates/code/cortex-a-r/armv8/interrupt_table.goilTemplate
+index 23521de5..b15d1b66 100755
+--- a/goil/templates/code/cortex-a-r/armv8/interrupt_table.goilTemplate
++++ b/goil/templates/code/cortex-a-r/armv8/interrupt_table.goilTemplate
+@@ -88,7 +88,6 @@ foreach objList in objForSRC do
+ FUNC(void, OS_CODE) % !objList_KEY %_Handler(void)
+ {
+ %
+-  let indexISR2 := 0
+   foreach obj in objList do
+     if obj::KIND == "ISR" then
+ # ISR 1
+@@ -100,9 +99,8 @@ FUNC(void, OS_CODE) % !objList_KEY %_Handler(void)
+         if obj::CATEGORY == 2 then
+ # ISR2
+ %
+-  tpl_central_interrupt_handler(% !([TASKS length] + indexISR2) %);
++  tpl_central_interrupt_handler(% !obj::NAME %_id);
+ %
+-          let indexISR2 := indexISR2 + 1
+         else
+           error obj::CATEGORY : "This interrupt category ".obj::CATEGORY." does not exist"
+         end if
+-- 
+2.34.1
+

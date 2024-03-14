@@ -125,9 +125,3 @@ if [ "$1" == "s4sk" ]; then
     arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/cr52_can_disable.srec
 fi
 
-# build eathernet project
-cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/ethernet
-chmod +x ./build.sh
-./build.sh
-arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
-
