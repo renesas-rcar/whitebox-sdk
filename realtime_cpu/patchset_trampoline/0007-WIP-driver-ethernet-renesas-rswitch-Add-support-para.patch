@@ -1,7 +1,7 @@
-From 7ad42a44b04b8c01eda3ccb9a8548dab2073c0ab Mon Sep 17 00:00:00 2001
+From 9f052970cca44a55526949411a9a41dd6b44ed80 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Fri, 2 Feb 2024 13:51:26 +0900
-Subject: [PATCH 4/4] WIP: driver: ethernet: renesas: rswitch: Add support
+Subject: [PATCH 7/8] WIP: driver: ethernet: renesas: rswitch: Add support
  parallel_mode
 
 This patch supports rswitch parallel_mode by setting all ports.

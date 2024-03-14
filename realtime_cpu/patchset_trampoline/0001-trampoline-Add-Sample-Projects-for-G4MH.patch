@@ -1,9 +1,10 @@
-From 6eac8d5413a98805a76f919e782dc6dd523cd222 Mon Sep 17 00:00:00 2001
+From 3a968a34c7addec83f45645091ae8c48ed4a78c6 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 12 Dec 2023 12:25:03 +0900
-Subject: [PATCH 1/3] trampoline: Add Sample Projects for G4MH
+Subject: [PATCH 1/8] trampoline: Add Sample Projects for G4MH
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---
  examples/rh850/sample/benchmark.c             |  92 ++++++++
  examples/rh850/sample/build.sh                |  17 ++
@@ -18,11 +19,10 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  examples/rh850/sample/iccom_ll.h              |  42 ++++
  examples/rh850/sample/memory_unlocker.c       |  49 ++++
  examples/rh850/sample/memory_unlocker.h       |  51 +++++
- examples/rh850/sample/sample.c                |  17 ++
- examples/rh850/sample/sample.oil              |  88 +++++++
- examples/rh850/sample/sample_not_can.c        |  15 ++
+ examples/rh850/sample/sample.c                |  21 ++
+ examples/rh850/sample/sample.oil              |  89 ++++++++
  examples/rh850/sample/sample_not_can.oil      |  77 +++++++
- 17 files changed, 1117 insertions(+)
+ 16 files changed, 1107 insertions(+)
  create mode 100644 examples/rh850/sample/benchmark.c
  create mode 100644 examples/rh850/sample/build.sh
  create mode 100755 examples/rh850/sample/build_not_can.sh
@@ -38,7 +38,6 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  create mode 100644 examples/rh850/sample/memory_unlocker.h
  create mode 100644 examples/rh850/sample/sample.c
  create mode 100644 examples/rh850/sample/sample.oil
- create mode 100644 examples/rh850/sample/sample_not_can.c
  create mode 100644 examples/rh850/sample/sample_not_can.oil
 
 diff --git a/examples/rh850/sample/benchmark.c b/examples/rh850/sample/benchmark.c
@@ -1041,21 +1040,25 @@ index 00000000..af442d23
 +#endif
 diff --git a/examples/rh850/sample/sample.c b/examples/rh850/sample/sample.c
 new file mode 100644
-index 00000000..096a2c3d
+index 00000000..ef6bbfb8
 --- /dev/null
 +++ b/examples/rh850/sample/sample.c
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,21 @@
 +#include "tpl_os.h"
 +#include "spider_serial.h"
 +
 +extern void memory_unlocker(void);
 +extern void iccom_init(void);
++#ifdef USE_CAN
 +extern int can_demo_init(void);
++#endif
 +
 +FUNC(int, OS_APPL_CODE) main(void)
 +{
 +	iccom_init();
++#ifdef USE_CAN
 +	can_demo_init();
++#endif
 +	memory_unlocker();
 +	Serial_Init();
 +	StartOS(OSDEFAULTAPPMODE);
@@ -1064,10 +1067,10 @@ index 00000000..096a2c3d
 +
 diff --git a/examples/rh850/sample/sample.oil b/examples/rh850/sample/sample.oil
 new file mode 100644
-index 00000000..a4d42b72
+index 00000000..edb4af72
 --- /dev/null
 +++ b/examples/rh850/sample/sample.oil
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,89 @@
 +OIL_VERSION = "4.2";
 +
 +IMPLEMENTATION trampoline {
@@ -1110,6 +1113,7 @@ index 00000000..a4d42b72
 +      CFLAGS="-Ospeed -Oinline_size";
 +      CFLAGS="-I../coremark -I../coremark/barebones -DITERATIONS=30000";
 +      CFLAGS="-DHSCIF_1843200BPS";
++      CFLAGS="-DUSING_CAN";
 +      LINKER = "rlink";
 +      SYSTEM = CMAKE;
 +      LIBRARY = serial;
@@ -1156,30 +1160,9 @@ index 00000000..a4d42b72
 +  };
 +
 +};
-diff --git a/examples/rh850/sample/sample_not_can.c b/examples/rh850/sample/sample_not_can.c
-new file mode 100644
-index 00000000..73b67b89
---- /dev/null
-+++ b/examples/rh850/sample/sample_not_can.c
-@@ -0,0 +1,15 @@
-+#include "tpl_os.h"
-+#include "spider_serial.h"
-+
-+extern void memory_unlocker(void);
-+extern void iccom_init(void);
-+
-+FUNC(int, OS_APPL_CODE) main(void)
-+{
-+	iccom_init();
-+	memory_unlocker();
-+	Serial_Init();
-+	StartOS(OSDEFAULTAPPMODE);
-+	return 0;
-+}
-+
 diff --git a/examples/rh850/sample/sample_not_can.oil b/examples/rh850/sample/sample_not_can.oil
 new file mode 100644
-index 00000000..f4d2728f
+index 00000000..6a28a735
 --- /dev/null
 +++ b/examples/rh850/sample/sample_not_can.oil
 @@ -0,0 +1,77 @@
@@ -1204,7 +1187,7 @@ index 00000000..f4d2728f
 +    BUILD = TRUE {
 +      TRAMPOLINE_BASE_PATH = "../../../";
 +      APP_NAME = "sample_exe";
-+      APP_SRC = "sample_not_can.c";
++      APP_SRC = "sample.c";
 +      APP_SRC = "memory_unlocker.c";
 +      APP_SRC = "iccom.c";
 +      APP_SRC = "iccom_ll.c"; 
@@ -1261,5 +1244,5 @@ index 00000000..f4d2728f
 +
 +};
 -- 
-2.25.1
+2.34.1
 

@@ -1,0 +1,37 @@
+From 4eae7a3f0def1f57cdc1515835a373eaf5422639 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 14 Mar 2024 10:33:43 +0900
+Subject: [PATCH 5/8] Update .gitignore
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .gitignore | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index 9e50f973..affb36c6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -27,3 +27,19 @@ tmpExamplesCompilation
+ *.ind
+ ## VSCode
+ .vscode
++
++## temporary object for building
++build.py
++make.py
++*_exe.elf
++*.elf.bin
++*_exe.elf.hex
++*.map
++## venv
++/.venv
++## Whitebox SDK sample project
++examples/cortex-a-r/armv8/spider/sample/sample/
++examples/cortex-a-r/armv8/spider/sample/sample_not_can/
++coremark/
++dhrystone/
++dhrystone-2.1.tar.gz
+-- 
+2.34.1
+

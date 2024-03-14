@@ -1,0 +1,303 @@
+From 02ed3b35b22e2df3e05859b98ed07a7c689f5e66 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 14 Mar 2024 11:39:41 +0900
+Subject: [PATCH 8/8] examples: cortex-a-r: sample: Integrate ethernet feature
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../cortex-a-r/armv8/spider/sample/ethernet.c | 45 ++++++++++
+ .../cortex-a-r/armv8/spider/sample/sample.oil | 82 ++++++++++++++++++-
+ .../armv8/spider/sample/sample_not_can.oil    | 79 +++++++++++++++++-
+ 3 files changed, 200 insertions(+), 6 deletions(-)
+ create mode 100644 examples/cortex-a-r/armv8/spider/sample/ethernet.c
+
+diff --git a/examples/cortex-a-r/armv8/spider/sample/ethernet.c b/examples/cortex-a-r/armv8/spider/sample/ethernet.c
+new file mode 100644
+index 00000000..3b168b79
+--- /dev/null
++++ b/examples/cortex-a-r/armv8/spider/sample/ethernet.c
+@@ -0,0 +1,45 @@
++#include "tpl_os.h"
++#include "utils.h"
++#include "spider_serial.h"
++#include "string.h"
++#include "lwip/netif.h"
++#include "lwip/ip4_addr.h"
++#include "lwip/timeouts.h"
++#include "ethif.h"
++
++#define APP_Task_ethernet_init_START_SEC_CODE
++#include "tpl_memmap.h"
++
++ip4_addr_t ip4_addr, net_mask, gateway;
++struct netif ethif_netif;
++
++TASK(ethernet_init) {
++	rswitch_enable_clock_and_reset();
++	port_init();
++
++	lwip_init();
++
++	IP4_ADDR(&ip4_addr, 192, 168, 1, 2);
++	IP4_ADDR(&net_mask, 255, 255, 255, 0);
++	IP4_ADDR(&gateway, 0, 0, 0, 0);
++
++	netif_add(&ethif_netif, &ip4_addr, &net_mask, &gateway, NULL,
++				ethif_init, netif_input);
++
++	netif_set_up(&ethif_netif);
++
++	TerminateTask();
++}
++#define APP_Task_ethernet_init_STOP_SEC_CODE
++#include "tpl_memmap.h"
++
++#define APP_Task_ethernet_init_START_SEC_CODE
++#include "tpl_memmap.h"
++
++TASK(ethernet_monitor) {
++	sys_check_timeouts();
++	TerminateTask();
++}
++
++#define APP_Task_ethernet_init_STOP_SEC_CODE
++#include "tpl_memmap.h"
+diff --git a/examples/cortex-a-r/armv8/spider/sample/sample.oil b/examples/cortex-a-r/armv8/spider/sample/sample.oil
+index 07f4b1cf..bd7f5438 100644
+--- a/examples/cortex-a-r/armv8/spider/sample/sample.oil
++++ b/examples/cortex-a-r/armv8/spider/sample/sample.oil
+@@ -20,6 +20,7 @@ CPU iccom {
+       APP_SRC = "can_demo.c";
+       APP_SRC = "iccom.c";
+       APP_SRC = "iccom_ll.c";
++      APP_SRC = "ethernet.c";
+       APP_SRC = "benchmark.c";
+       APP_SRC = "dhrystone/dhry_1.c";
+       APP_SRC = "dhrystone/dhry_2.c";
+@@ -44,10 +45,10 @@ CPU iccom {
+       CFLAGS="-DTIME=TIME";
+       // CFLAGS="-DCOREMARK_DEBUG"; // for Debug
+       CFLAGS="-I./coremark -I./coremark/barebones -DITERATIONS=30000";
+-      CFLAGS="-DUSE_CAN";
++      CFLAGS="-DUSE_CAN -DNO_SYS";
+       LIBRARY = can;
+       LIBRARY = serial;
+-
++      LIBRARY = lwip;
+     };
+     SYSTEM_CALL = TRUE;
+     MEMMAP = TRUE {
+@@ -61,22 +62,95 @@ CPU iccom {
+   APPMODE std {};
+ 
+   TASK iccom {
+-    PRIORITY = 1;
++    PRIORITY = 2;
+     AUTOSTART = TRUE { APPMODE = std; };
+     ACTIVATION = 1;
+     SCHEDULE = FULL;
+   };
+ 
+   TASK can_task {
+-    PRIORITY = 1;
++    PRIORITY = 1; // infinite loop task
+     AUTOSTART = TRUE { APPMODE = std; };
+     ACTIVATION = 1;
+     SCHEDULE = FULL;
+   };
+ 
++  TASK ethernet_init {
++    PRIORITY = 3;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK gwca0_rx_tx_task {
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK ethernet_monitor {
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  /*
++   * ARARM
++   */
++
++  ALARM ethernet_monitor_ethernet_monitor {
++    COUNTER = SystemCounter;
++    ACTION = ACTIVATETASK {
++      TASK = ethernet_monitor;
++    };
++    AUTOSTART = TRUE {
++      APPMODE = std;
++      ALARMTIME = 1;
++      CYCLETIME = 1;
++    };
++  };
++
++  /*
++   * ISR
++   */
++
+   ISR iccomInt {
+     CATEGORY = 2;
+     PRIORITY = 1;
+     SOURCE = ICCOM_INT;
+   };
++
++  /* ethernet driver needs */
++  ISR gwca0_rx_tx_int {
++    CATEGORY = 2;
++    PRIORITY = 2;
++    SOURCE = GWCA0_RX_TX_INT;
++  };
++
++  ISR gwca0_rx_ts_int {
++    CATEGORY = 2;
++    PRIORITY = 3;
++    SOURCE = GWCA0_RX_TS_INT;
++  };
++
++  ISR coma_err_int {
++    CATEGORY = 2;
++    PRIORITY = 4;
++    SOURCE = COMA_ERR_INT;
++  };
++
++  ISR gwca0_err_int {
++    CATEGORY = 2;
++    PRIORITY = 5;
++    SOURCE = GWCA0_ERR_INT;
++  };
++
++  ISR etha1_err_int {
++    CATEGORY = 2;
++    PRIORITY = 6;
++    SOURCE = ETHA1_ERR_INT;
++  };
++
+ };
+diff --git a/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
+index c22e477b..d9dac089 100644
+--- a/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
++++ b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
+@@ -19,6 +19,7 @@ CPU iccom {
+       APP_SRC = "sample.c";
+       APP_SRC = "iccom.c";
+       APP_SRC = "iccom_ll.c";
++      APP_SRC = "ethernet.c";
+       APP_SRC = "benchmark.c";
+       APP_SRC = "dhrystone/dhry_1.c";
+       APP_SRC = "dhrystone/dhry_2.c";
+@@ -43,8 +44,9 @@ CPU iccom {
+       CFLAGS="-DTIME=TIME";
+       // CFLAGS="-DCOREMARK_DEBUG"; // for Debug
+       CFLAGS="-I./coremark -I./coremark/barebones -DITERATIONS=30000";
++      CFLAGS="-DNO_SYS";
+       LIBRARY = serial;
+-
++      LIBRARY = lwip;
+     };
+     SYSTEM_CALL = TRUE;
+     MEMMAP = TRUE {
+@@ -58,15 +60,88 @@ CPU iccom {
+   APPMODE std {};
+ 
+   TASK iccom {
+-    PRIORITY = 1;
++    PRIORITY = 2;
+     AUTOSTART = TRUE { APPMODE = std; };
+     ACTIVATION = 1;
+     SCHEDULE = FULL;
+   };
+ 
++  TASK ethernet_init {
++    PRIORITY = 3;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK gwca0_rx_tx_task {
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  TASK ethernet_monitor {
++    PRIORITY = 2;
++    AUTOSTART = FALSE;
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++
++  /*
++   * ARARM
++   */
++
++  ALARM ethernet_monitor_ethernet_monitor {
++    COUNTER = SystemCounter;
++    ACTION = ACTIVATETASK {
++      TASK = ethernet_monitor;
++    };
++    AUTOSTART = TRUE {
++      APPMODE = std;
++      ALARMTIME = 1;
++      CYCLETIME = 1;
++    };
++  };
++
++  /*
++   * ISR
++   */
++
+   ISR iccomInt {
+     CATEGORY = 2;
+     PRIORITY = 1;
+     SOURCE = ICCOM_INT;
+   };
++
++  /* ethernet driver needs */
++  ISR gwca0_rx_tx_int {
++    CATEGORY = 2;
++    PRIORITY = 2;
++    SOURCE = GWCA0_RX_TX_INT;
++  };
++
++  ISR gwca0_rx_ts_int {
++    CATEGORY = 2;
++    PRIORITY = 3;
++    SOURCE = GWCA0_RX_TS_INT;
++  };
++
++  ISR coma_err_int {
++    CATEGORY = 2;
++    PRIORITY = 4;
++    SOURCE = COMA_ERR_INT;
++  };
++
++  ISR gwca0_err_int {
++    CATEGORY = 2;
++    PRIORITY = 5;
++    SOURCE = GWCA0_ERR_INT;
++  };
++
++  ISR etha1_err_int {
++    CATEGORY = 2;
++    PRIORITY = 6;
++    SOURCE = ETHA1_ERR_INT;
++  };
++
+ };
+-- 
+2.34.1
+

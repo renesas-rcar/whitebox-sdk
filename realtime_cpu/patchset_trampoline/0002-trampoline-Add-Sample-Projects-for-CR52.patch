@@ -1,9 +1,10 @@
-From ec30bf9028b337f2b7443f69f47915fb56d319f6 Mon Sep 17 00:00:00 2001
+From 76d35b8e467dcc32969a2471597ffa844f30e04c Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 12 Dec 2023 18:34:42 +0900
-Subject: [PATCH 2/3] trampoline: Add Sample Projects for CR52
+Subject: [PATCH 2/8] trampoline: Add Sample Projects for CR52
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---
  .../armv8/spider/sample/benchmark.c           | 114 +++++++
  .../cortex-a-r/armv8/spider/sample/build.sh   |  15 +
@@ -15,11 +16,10 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  .../cortex-a-r/armv8/spider/sample/iccom_ll.c | 165 ++++++++++
  .../cortex-a-r/armv8/spider/sample/iccom_ll.h |  42 +++
  .../cortex-a-r/armv8/spider/sample/iodefine.h | 307 ++++++++++++++++++
- .../cortex-a-r/armv8/spider/sample/sample.c   |  13 +
- .../cortex-a-r/armv8/spider/sample/sample.oil |  83 +++++
- .../armv8/spider/sample/sample_not_can.c      |  10 +
+ .../cortex-a-r/armv8/spider/sample/sample.c   |  17 +
+ .../cortex-a-r/armv8/spider/sample/sample.oil |  82 +++++
  .../armv8/spider/sample/sample_not_can.oil    |  72 ++++
- 14 files changed, 1297 insertions(+)
+ 13 files changed, 1290 insertions(+)
  create mode 100644 examples/cortex-a-r/armv8/spider/sample/benchmark.c
  create mode 100755 examples/cortex-a-r/armv8/spider/sample/build.sh
  create mode 100755 examples/cortex-a-r/armv8/spider/sample/build_not_can.sh
@@ -32,7 +32,6 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  create mode 100755 examples/cortex-a-r/armv8/spider/sample/iodefine.h
  create mode 100644 examples/cortex-a-r/armv8/spider/sample/sample.c
  create mode 100644 examples/cortex-a-r/armv8/spider/sample/sample.oil
- create mode 100644 examples/cortex-a-r/armv8/spider/sample/sample_not_can.c
  create mode 100644 examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
 
 diff --git a/examples/cortex-a-r/armv8/spider/sample/benchmark.c b/examples/cortex-a-r/armv8/spider/sample/benchmark.c
@@ -1216,29 +1215,33 @@ index 00000000..c399b0b3
 +#endif
 diff --git a/examples/cortex-a-r/armv8/spider/sample/sample.c b/examples/cortex-a-r/armv8/spider/sample/sample.c
 new file mode 100644
-index 00000000..090c9412
+index 00000000..a0bea246
 --- /dev/null
 +++ b/examples/cortex-a-r/armv8/spider/sample/sample.c
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,17 @@
 +#include <string.h>
 +#include "spider_serial.h"
 +
++#ifdef USE_CAN
 +extern int can_demo_init(void);
++#endif
 +
 +FUNC(int, OS_APPL_CODE) main(void)
 +{
 +	Serial_Init();
++#ifdef USE_CAN
 +	can_demo_init();
++#endif
 +	StartOS(OSDEFAULTAPPMODE);
 +	return 0;
 +}
 +
 diff --git a/examples/cortex-a-r/armv8/spider/sample/sample.oil b/examples/cortex-a-r/armv8/spider/sample/sample.oil
 new file mode 100644
-index 00000000..3464ccf6
+index 00000000..07f4b1cf
 --- /dev/null
 +++ b/examples/cortex-a-r/armv8/spider/sample/sample.oil
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,82 @@
 +OIL_VERSION = "4.2";
 +
 +IMPLEMENTATION trampoline {
@@ -1273,7 +1276,7 @@ index 00000000..3464ccf6
 +      APP_NAME = "sample_exe.elf";
 +      CFLAGS  = "-O3";
 +      CFLAGS  = "-DHSCIF_1843200BPS";
-+      LDFLAGS = "-Map=iccom.map";
++      LDFLAGS = "-Map=sample.map";
 +      COMPILER = "arm-none-eabi-gcc";
 +      CPPCOMPILER = "arm-none-eabi-g++";
 +      ASSEMBLER = "arm-none-eabi-as";
@@ -1285,6 +1288,7 @@ index 00000000..3464ccf6
 +      CFLAGS="-DTIME=TIME";
 +      // CFLAGS="-DCOREMARK_DEBUG"; // for Debug
 +      CFLAGS="-I./coremark -I./coremark/barebones -DITERATIONS=30000";
++      CFLAGS="-DUSE_CAN";
 +      LIBRARY = can;
 +      LIBRARY = serial;
 +
@@ -1309,9 +1313,7 @@ index 00000000..3464ccf6
 +
 +  TASK can_task {
 +    PRIORITY = 1;
-+    AUTOSTART = TRUE {
-+            APPMODE = std;
-+    };
++    AUTOSTART = TRUE { APPMODE = std; };
 +    ACTIVATION = 1;
 +    SCHEDULE = FULL;
 +  };
@@ -1322,25 +1324,9 @@ index 00000000..3464ccf6
 +    SOURCE = ICCOM_INT;
 +  };
 +};
-diff --git a/examples/cortex-a-r/armv8/spider/sample/sample_not_can.c b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.c
-new file mode 100644
-index 00000000..3daa98fa
---- /dev/null
-+++ b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.c
-@@ -0,0 +1,10 @@
-+#include <string.h>
-+#include "spider_serial.h"
-+
-+FUNC(int, OS_APPL_CODE) main(void)
-+{
-+	Serial_Init();
-+	StartOS(OSDEFAULTAPPMODE);
-+	return 0;
-+}
-+
 diff --git a/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
 new file mode 100644
-index 00000000..1cdb468e
+index 00000000..c22e477b
 --- /dev/null
 +++ b/examples/cortex-a-r/armv8/spider/sample/sample_not_can.oil
 @@ -0,0 +1,72 @@
@@ -1362,7 +1348,7 @@ index 00000000..1cdb468e
 +
 +    BUILD = TRUE {
 +      TRAMPOLINE_BASE_PATH = "../../../../..";
-+      APP_SRC = "sample_not_can.c";
++      APP_SRC = "sample.c";
 +      APP_SRC = "iccom.c";
 +      APP_SRC = "iccom_ll.c";
 +      APP_SRC = "benchmark.c";
@@ -1377,7 +1363,7 @@ index 00000000..1cdb468e
 +      APP_NAME = "sample_exe.elf";
 +      CFLAGS  = "-O3";
 +      CFLAGS  = "-DHSCIF_1843200BPS";
-+      LDFLAGS = "-Map=iccom.map";
++      LDFLAGS = "-Map=sample.map";
 +      COMPILER = "arm-none-eabi-gcc";
 +      CPPCOMPILER = "arm-none-eabi-g++";
 +      ASSEMBLER = "arm-none-eabi-as";
@@ -1417,5 +1403,5 @@ index 00000000..1cdb468e
 +  };
 +};
 -- 
-2.25.1
+2.34.1
 

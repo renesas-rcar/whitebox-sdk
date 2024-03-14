@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 GITHUB_URL=https://github.com/TrampolineRTOS/trampoline
-COMMIT=d930f9447a237feb062ef3040b980cb9d2b748e7
+COMMIT=1ff0f13860c756df64b260bfb22913a4538e637d
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
 
 export PATH=~/.local/bin:$PATH
@@ -124,10 +124,4 @@ if [ "$1" == "s4sk" ]; then
     ./build_not_can.sh
     arm-none-eabi-objcopy -O srec --srec-forceS3 sample_exe.elf $SCRIPT_DIR/deploy/cr52_can_disable.srec
 fi
-
-# build eathernet project
-cd ${SOURCE_DIR}/examples/cortex-a-r/armv8/spider/ethernet
-chmod +x ./build.sh
-./build.sh
-arm-none-eabi-objcopy -O srec --srec-forceS3 eth_exe.elf $SCRIPT_DIR/deploy/cr52_eth.srec
 
