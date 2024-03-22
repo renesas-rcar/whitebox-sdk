@@ -11,4 +11,6 @@ And also, files are licensed under the same license as original repository.
   - icu
 - [3]: meta-aws: 6fea710d1b3c8a5ad93e7811e75d8f4cf5962bb2
   - aws-iot-fleetwise
+- [4]: meta-openembedded/meta-networking: cb27ff9dcb2258e9cf07dd6ab95bfb408c8232af
+  - vsomeip
 
