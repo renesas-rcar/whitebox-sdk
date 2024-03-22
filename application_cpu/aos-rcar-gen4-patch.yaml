@@ -32,6 +32,7 @@
                 - [IMAGE_INSTALL_append, " rps-setup"]
                 - [IMAGE_INSTALL_append, " hw-routing-script"]
                 - [IMAGE_INSTALL_append, " pktgen-script"]
+                - [IMAGE_INSTALL_append, " vsomeip vsomeip-test"]
                 - [USE_UFS, "%{USE_UFS}"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
