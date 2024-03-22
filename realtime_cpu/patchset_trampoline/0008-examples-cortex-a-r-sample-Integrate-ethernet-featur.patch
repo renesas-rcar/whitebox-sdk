@@ -107,7 +107,7 @@ index 07f4b1cf..bd7f5438 100644
    };
  
 +  TASK ethernet_init {
-+    PRIORITY = 2;
++    PRIORITY = 3;
 +    AUTOSTART = TRUE { APPMODE = std; };
 +    ACTIVATION = 1;
 +    SCHEDULE = FULL;
@@ -220,7 +220,7 @@ index c22e477b..d9dac089 100644
    };
  
 +  TASK ethernet_init {
-+    PRIORITY = 2;
++    PRIORITY = 3;
 +    AUTOSTART = TRUE { APPMODE = std; };
 +    ACTIVATION = 1;
 +    SCHEDULE = FULL;
