@@ -37,6 +37,7 @@ EXTRA_OECMAKE += "-DTEST_IP_MASTER=10.0.3.1 \
                   -DTEST_IP_SLAVE=10.0.3.2 \
                   -DTEST_IP_SLAVE_SECOND=10.0.3.3 \
                   -DTEST_UID=1000 -DTEST_GID=1000 \
+                  -DENABLE_SIGNAL_HANDLING=1 \
                  "
 
 RDEPENDS:${PN}-test = "bash lsof"
