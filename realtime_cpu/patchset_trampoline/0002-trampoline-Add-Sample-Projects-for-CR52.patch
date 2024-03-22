@@ -549,7 +549,7 @@ index 00000000..cd6d63e6
 +
 +TASK(iccom) {
 +	iccom_init();
-+	ms_sleep (200);
++	// ms_sleep (200);
 +	print(STARTUP_LOG);
 +	TerminateTask();
 +}
