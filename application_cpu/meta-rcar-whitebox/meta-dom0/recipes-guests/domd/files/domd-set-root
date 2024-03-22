@@ -43,6 +43,14 @@ if echo "${BOOT_STORAGE}" | grep -q 'mmc' ; then
 fi
 STORAGE_PART="${BOOT_STORAGE}${PART_PREFIX}"
 
+# Enable/Disable RSwitch parallel_mode
+PARALLEL_MODE_FLAG=`cat /proc/device-tree/boot_dev/rswitch.parallel_mode`
+RSW_BOOTARGS=""
+if [[ "$PARALLEL_MODE_FLAG" == "1" ]]; then
+    RSW_BOOTARGS="rswitch.parallel_mode"
+fi
+sed -i "s/RSWITCH_PARALLEL_MODE/${RSW_BOOTARGS}/g" $DOMD_CFG_FILE
+
 # now make up the configuration
 echo "Mangling domain configuration: setting storage to ${BOOT_STORAGE}"
 sed -i "s/STORAGE_PART/${STORAGE_PART}/g" $DOMD_CFG_FILE
