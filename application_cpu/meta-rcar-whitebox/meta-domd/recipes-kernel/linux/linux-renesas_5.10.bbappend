@@ -29,6 +29,12 @@ SRC_URI_append = " \
     file://docker.cfg \
 "
 
+# Add support thermal driver
+SRC_URI_append = " \
+    file://thermal.cfg \
+    file://0001-arm64-dts-renesas-r8a779f0-Fix-thermal-driver-regist.patch \
+"
+
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
 
 # Ignore in-tree defconfig
