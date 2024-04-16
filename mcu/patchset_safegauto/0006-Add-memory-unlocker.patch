@@ -1,0 +1,144 @@
+From 2991a66a27ac37ddc6e56517cbb61861818ce514 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 16 Apr 2024 14:48:26 +0900
+Subject: [PATCH] Add memory unlocker
+
+This is ported from Trampoline OS.
+It allows Application core to use CAN module.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ hypervisor/obj/obj_1pe_atk2/sample1.c | 44 +++++++++++++++++++++++
+ hypervisor/obj/obj_1pe_atk2/sample1.h | 50 +++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
+
+diff --git a/hypervisor/obj/obj_1pe_atk2/sample1.c b/hypervisor/obj/obj_1pe_atk2/sample1.c
+index 4fe6ace..0bde866 100644
+--- a/hypervisor/obj/obj_1pe_atk2/sample1.c
++++ b/hypervisor/obj/obj_1pe_atk2/sample1.c
+@@ -1,5 +1,6 @@
+ #include "hv.h"
+ #include "syslog.h"
++#include "sample1.h"
+ 
+ #define TAUD_TO_CNT(us) (((us)*TAUD_PCLK_MHZ)/(1<<TAUD_CLK_PRS))
+ 
+@@ -161,6 +162,7 @@ startup_hook(void)
+ {
+     ID      coreid;
+     uint    taud0no;
++	int     channel;
+ 
+     GetCoreID(&coreid);
+     taud0no = hvint0_taud0no[coreid];
+@@ -253,6 +255,48 @@ startup_hook(void)
+     sil_wrw_mem(PBG20_PBGPROT1_m(2), (TBIT_HV_SPID|VM0_0_SPIDLIST|VM0_1_SPIDLIST));
+     sil_wrw_mem(PBGERRSLV20_PBGKCPROT, LOCKKEY_VAL);
+ 
++    /*
++     *  Memory unlocker ported from Trampoline OS
++     */
++	// Issue an AXI bus stop request
++	STBY_CTRL = 0x00000001;
++
++	// P-Bus group 2
++	PBG20KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	PBG20PROT0_m(2) = 0x000000D0; // STBC PBG protection release
++	PBG20PROT1_m(2) = 0x040000FF; // STBC PBG protection release SPID=0~7 enable
++	PBG21PROT0_m(1) = 0x000000D0; // Port configuration register PBG protection release
++	PBG21PROT1_m(1) = 0x040000FF; // Port configuration register PBG protection release　SPID=0~7 enable
++
++	// P-Bus group 3
++	PBG30KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	for (channel = 0; channel < 3; channel++) // Channels 13 to 15 correspond to the RSCFD1 CAN8 to CAN10
++		PBG32PROT0_m(channel + 13) = 0x000000D3;
++	for (channel = 0; channel < 5; channel++) // Channels 0 to 4 correspond to the RSCFD1 CAN11 to CAN15
++		PBG33PROT0_m(channel) = 0x000000D3;
++	PBG33PROT0_m(5) = 0x000000D3; // RSCFD1 common registers
++	PBG33PROT0_m(7) = 0x000000D3; // RSCFD1 global registers
++
++	// P-Bus group 7
++	PBG70KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	PBG70PROT0_m(3) = 0x000000D0; // RIIC0 PBG protection release
++	PBG70PROT1_m(3) = 0x000000FF; // RIIC0 PBG protection release SPID=0~7 enable
++
++	// P-Bus group 8
++	PBG80KCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++	for (channel = 0; channel < 8; channel++) // Channels 2 to 9 correspond to the RSCFD0 CAN0 to CAN7
++		PBG80PROT0_m(channel + 2) = 0x000000D3;
++	PBG80PROT0_m(10) = 0x000000D3; // RSCFD0 common registers
++	PBG80PROT0_m(12) = 0x000000D3; // RSCFD0 global registers
++
++	// H-Bus
++	HBGKCPROT_PFS = PROTECTION_DISABLE_KEY; // Write protect release
++	HBGPROT0_PFS = 0x000000D0; // HBG_PFS protection release
++	HBGPROT1_PFS = 0x000000FF; // HBG_PFS protection release　SPID=0~7 enable
++
++	// Standby Controller
++	MSRKCPROT = PROTECTION_DISABLE_KEY; // Write protect release
++
+     /*
+      *  起動ログの出力
+      */
+diff --git a/hypervisor/obj/obj_1pe_atk2/sample1.h b/hypervisor/obj/obj_1pe_atk2/sample1.h
+index dd71dc6..678ad5d 100644
+--- a/hypervisor/obj/obj_1pe_atk2/sample1.h
++++ b/hypervisor/obj/obj_1pe_atk2/sample1.h
+@@ -20,4 +20,54 @@ extern int hvc_test3(int arg0, int arg1, int arg3);
+ 
+ #endif /* TOPPERS_MACRO_ONLY */
+ 
++/*
++ * Memory unlocker ported from Trampoline OS
++ */
++#define PROTECTION_DISABLE_KEY 0xA5A5A501
++
++// Register base addresses
++#define MCCR_SELB1_base 0xF8F18200
++#define PBG20_base  0xFFDE0B00 // P-Bus Group 2L
++#define PBG21_base 0xFFDE0C00 // P-Bus Group 2L
++#define PBGERRSLV20_base 0xFFDE1000 // P-Bus Group 2L
++#define PBG32_base 0xFFC72D00 // P-Bus Group 3
++#define PBG33_base 0xFFC72E00 // P-Bus Group 3
++#define PBGERRSLV30_base 0xFFC73200 // P-Bus Group 3
++#define PBG70_base 0xFFF49400 // P-Bus Group 7
++#define PBGERRSLV70_base 0xFFF4A000 // P-Bus Group 7
++#define PBG80_base 0xFFF29300 // P-Bus Group 8
++#define PBGERRSLV80_base 0xFFF2A000 // P-Bus Group 8
++#define HBGERRSLV_PFS_base 0xF8F19700
++#define STBC_base 0xFF981000
++#define HBG_PFS_base 0xF8F12700
++
++// Register addresses
++#define STBY_CTRL (*(volatile unsigned long  *) (MCCR_SELB1_base + 0x0034))
++
++#define PBG20KCPROT (*(volatile unsigned long *) (PBGERRSLV20_base + 0x18))
++#define PBG20PROT0_m(m) (*(volatile unsigned long *) (PBG20_base + 0x0 + 0x8 * (m)))
++#define PBG20PROT1_m(m) (*(volatile unsigned long *) (PBG20_base + 0x4 + 0x8 * (m)))
++#define PBG21PROT0_m(m) (*(volatile unsigned long *) (PBG21_base + 0x0 + 0x8 * (m)))
++#define PBG21PROT1_m(m) (*(volatile unsigned long *) (PBG21_base + 0x4 + 0x8 * (m)))
++
++#define PBG30KCPROT (*(volatile unsigned long *) (PBGERRSLV30_base + 0x18))
++#define PBG32PROT0_m(m) (*(volatile unsigned long *) (PBG32_base + 0x0 + 0x8 * (m)))
++#define PBG32PROT1_m(m) (*(volatile unsigned long *) (PBG32_base + 0x4 + 0x8 * (m)))
++#define PBG33PROT0_m(m) (*(volatile unsigned long *) (PBG33_base + 0x0 + 0x8 * (m)))
++#define PBG33PROT1_m(m) (*(volatile unsigned long *) (PBG33_base + 0x4 + 0x8 * (m)))
++
++#define PBG70KCPROT (*(volatile unsigned long *) (PBGERRSLV70_base + 0x18))
++#define PBG70PROT0_m(m) (*(volatile unsigned long *) (PBG70_base + 0x0 + 0x8 * (m)))
++#define PBG70PROT1_m(m) (*(volatile unsigned long *) (PBG70_base + 0x4 + 0x8 * (m)))
++
++#define PBG80KCPROT (*(volatile unsigned long *) (PBGERRSLV80_base + 0x18))
++#define PBG80PROT0_m(m) (*(volatile unsigned long *) (PBG80_base + 0x0 + 0x8 * (m)))
++#define PBG80PROT1_m(m) (*(volatile unsigned long *) (PBG80_base + 0x4 + 0x8 * (m)))
++
++#define HBGKCPROT_PFS (*(volatile unsigned long *) (HBGERRSLV_PFS_base + 0x18))
++#define HBGPROT0_PFS (*(volatile unsigned long *) (HBG_PFS_base))
++#define HBGPROT1_PFS (*(volatile unsigned long *) (HBG_PFS_base + 0x4))
++
++#define MSRKCPROT (*(volatile unsigned long *) (STBC_base + 0x710))
++
+ #endif /* _SAMPLE1_H_ */
+-- 
+2.34.1
+

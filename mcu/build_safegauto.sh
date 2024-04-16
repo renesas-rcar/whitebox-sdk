@@ -47,6 +47,7 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0003-iccom-Change-to-ECHO-for-performance-processing.patch
     git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0004-Change-of-G4MH-start-address.patch
     git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0005-iccom-Add-get-OS-mode.patch
+    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0006-Add-memory-unlocker.patch
     wget https://www.toppers.jp/download.cgi/a-rtegen-1.4.0.src.tar.gz
     mkdir vm_atk2/vm1_atk2/common/tool
     tar zxvf a-rtegen-1.4.0.src.tar.gz -C vm_atk2/vm1_atk2/common/tool/
