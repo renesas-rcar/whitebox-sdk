@@ -23,13 +23,13 @@ Please refer to the official webpage:
 # Download repository
 Execute the following command:
 
-	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.1/tool/repo_init.sh )"
+	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.2/tool/repo_init.sh )"
 
 # Required packages
 
 1. ICUMX loader and Flash Writer package
    - This is not used for building, but it requires for executing Whitebox SDK.
-   - Please donwload "ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv3.16.1" or later from following:
+   - Please donwload "ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDKv3.16.2" or later from following:
 	 - https://www.renesas.com/products/automotive-products/automotive-system-chips-socs/y-ask-rcar-s4-1000base-t-r-car-s4-starter-kit#download
 2. CC-RH compiler
    - This is used for building G4MH software.
@@ -52,7 +52,7 @@ Since GUI operation is required during installation, it must be run on an Ubuntu
 Execute the following command:
 
 	cd whitebox-sdk
-	./build_whitebox_v5.1.sh  <BOARD>
+	./build_whitebox_v5.2.sh  <BOARD>
 
 `BOARD` is "spider" or "s4sk"
 
