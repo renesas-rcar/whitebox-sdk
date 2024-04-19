@@ -4,6 +4,7 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 GITHUB_URL=https://github.com/TrampolineRTOS/trampoline
 COMMIT=d930f9447a237feb062ef3040b980cb9d2b748e7
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
+export WINEDEBUG=fixme-all
 
 export PATH=~/.local/bin:$PATH
 

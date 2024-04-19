@@ -2,6 +2,7 @@
 
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 SOURCE_DIR=${SCRIPT_DIR}/safeg-auto
+export WINEDEBUG=fixme-all
 
 export PATH=~/.local/bin:$PATH
 
