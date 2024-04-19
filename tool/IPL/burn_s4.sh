@@ -21,7 +21,6 @@ WRITE_FLAG_G4MH=0
 WRITE_FLAG_CR52=0
 WRITE_FLAG_ALL=0
 SELECT_CAN=0
-SELECT_ETHER=0
 WRITE_PATTERN=""
 
 # Burn patterns: G4MH, CR52
@@ -48,7 +47,6 @@ Usage() {
     echo "    all: All writes (default)"
     echo "    g4mh: Write only G4MH"
     echo "    cr52: Write only CR52"
-    echo "    ether: Write only CR52 tranpoline with ethernet"
 
     echo "    -g: G4MH with CAN"
     echo "    -r: CR52 with CAN"
@@ -95,8 +93,6 @@ do
         else
             SELECT_CAN=0;
         fi
-    elif [[ "$param" == "ether" ]]; then
-        SELECT_ETHER=1;
     else
         echo -e "\e[31mERROR: Unsupported option\e[m"
 	    Usage; exit
@@ -149,11 +145,6 @@ else
     if [ "$WRITE_FLAG_CR52" -eq 1 ]; then
         WRITE_PATTERN="$WRITE_PATTERN rtos"
     fi
-fi
-
-if [ "$SELECT_ETHER" -eq 1 ]; then
-    cp ${CR52_TP_DIR}/cr52_eth.srec $CR52_NAME
-    WRITE_PATTERN="rtos"
 fi
 
 # Flash IPL
