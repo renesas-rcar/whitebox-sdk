@@ -34,7 +34,7 @@ BURN_PATTERS_NUM=$((${#BURN_PATTERNS[@]} / 2  -1))
 
 Usage() {
     echo "Usage:"
-    echo "    $0 board [option]"
+    echo "    $0 board [option] [option2] [s4sk option]"
     echo "board:"
     echo "    - spider: for S4 Spider"
     echo "    - s4sk: for S4 Starter Kit"
@@ -44,13 +44,14 @@ Usage() {
         echo -ne "G4MH=${BURN_PATTERNS[$((2*$key+0))]}\t"
         echo -e "CR52=${BURN_PATTERNS[$((2*$key+1))]}"
     done
-    echo "    all: All writes (default)"
-    echo "    g4mh: Write only G4MH"
-    echo "    cr52: Write only CR52"
-
-    echo "    -g: G4MH with CAN"
-    echo "    -r: CR52 with CAN"
     echo "    -h: Show this usage"
+    echo "option2:"
+    echo "    all:  Write loader and G4MH/CR52 OS specified by option (default)"
+    echo "    g4mh: Write only G4MH OS specified by option"
+    echo "    cr52: Write only CR52 OS specified by option"
+    echo "s4sk option:"
+    echo "    -g: Enable CAN on G4MH core"
+    echo "    -r: Enable CAN on CR52 core(default)"
 }
 
 if [[ $# < 1 ]] ; then
