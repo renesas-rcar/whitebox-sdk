@@ -42,7 +42,9 @@ Usage() {
     for key in `seq 1 ${BURN_PATTERS_NUM}`; do
         echo -ne "    -${key}: "
         echo -ne "G4MH=${BURN_PATTERNS[$((2*$key+0))]}\t"
-        echo -e "CR52=${BURN_PATTERNS[$((2*$key+1))]}"
+        echo -ne "CR52=${BURN_PATTERNS[$((2*$key+1))]}"
+        if [[ $key -eq 1 ]]; then echo -ne " (default)"; fi
+        echo -e ""
     done
     echo "    -h: Show this usage"
     echo "option2:"
@@ -51,7 +53,7 @@ Usage() {
     echo "    cr52: Write only CR52 OS specified by option"
     echo "s4sk option:"
     echo "    -g: Enable CAN on G4MH core"
-    echo "    -r: Enable CAN on CR52 core(default)"
+    echo "    -r: Enable CAN on CR52 core (default)"
 }
 
 if [[ $# < 1 ]] ; then
@@ -125,7 +127,7 @@ else
     esac
     case $CR52 in
         "Trampoline")
-            if [ "$BURN_PATTERN" -ne 2 ] && [ "$SELECT_CAN" -eq 0 ]; then
+            if [ "$BURN_PATTERN" -eq 2 ] || [ "$SELECT_CAN" -eq 0 ]; then
                 cp ${CR52_TP_DIR}/cr52.srec $CR52_NAME
             else
                 cp ${CR52_TP_DIR}/cr52_can_disable.srec $CR52_NAME
