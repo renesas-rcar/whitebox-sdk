@@ -7,7 +7,7 @@ if [[ $(git --version > /dev/null 2>&1 ; echo $?) -ne 0 ]]; then
     echo sudo apt install git
     sudo apt install git
 else
-    echo "--> Skipped because git clinet is already installed."
+    echo "--> Skipped because git client is already installed."
 fi
 echo ------ # splitter
 
