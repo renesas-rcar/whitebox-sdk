@@ -1,0 +1,49 @@
+From 7c6d4f6e655bc953fbbc2be235a430e21b91cbab Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 14 May 2024 21:02:04 +0900
+Subject: [PATCH] driver: rswitch: Reduce wait time to initilialize quickly
+
+The `rswitch_reg_wait` function is a polling function that checks
+whether the write register operation has completed.
+Therefore, it does not require a long wait time.
+This patch introduces the `ETH_WAIT_US` macro instead of `ms_delay` to
+change the wait time.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/drivers/ethernet/renesas/rswitch.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/libraries/drivers/ethernet/renesas/rswitch.c b/libraries/drivers/ethernet/renesas/rswitch.c
+index 6021ecff..bc3f11fd 100644
+--- a/libraries/drivers/ethernet/renesas/rswitch.c
++++ b/libraries/drivers/ethernet/renesas/rswitch.c
+@@ -275,15 +275,23 @@ extern FUNC(void, OS_CODE) CallTerminateISR2(void);
+ rx_callback_fn rx_cb = NULL;
+ 
+ #define RSWITCH_TIMEOUT_MS  10000
++#define ETH_CPUCLK_MHZ 1066UL
++#define ETH_WAIT_US(t) \
++    { \
++        volatile uint32 cnt; \
++        for (cnt = 0; \
++             cnt < (((uint32)ETH_CPUCLK_MHZ * ((uint32)t)) + (uint32)1); \
++             cnt++); \
++    }
+ static int rswitch_reg_wait(uint32 addr, uint32 mask, uint32 expected)
+ {
+     int i;
+ 
+-    for (i = 0; i < RSWITCH_TIMEOUT_MS; i++) {
++    for (i = 0; i < RSWITCH_TIMEOUT_MS * 1000; i++) {
+         if ((reg_read32(addr) & mask) == expected)
+             return 0;
+ 
+-        ms_delay(1);
++        ETH_WAIT_US(1);
+     }
+ 
+     return ERR_TIMEOUT;
+-- 
+2.34.1
+
