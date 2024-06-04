@@ -69,6 +69,7 @@ if [[ ! -e "${ZEPHYR_DIR}/zephyr" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     git am ${ZEPHYR_PATCH}/*.patch
     west update
     west zephyr-export
+    pip install docutils==0.18.1 # Avoid error when installing sphinx
     pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
 fi
 
