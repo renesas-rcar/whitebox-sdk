@@ -23,7 +23,7 @@ Please refer to the official webpage:
 # Download repository
 Execute the following command:
 
-	bash -c "$(wget -O- https://raw.githubusercontent.com/renesas-rcar/whitebox-sdk/v5.2/tool/repo_init.sh )"
+	bash -c "$(wget -O- https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/repo_init.sh )"
 
 # Required packages
 
