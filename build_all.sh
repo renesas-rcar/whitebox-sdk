@@ -41,6 +41,13 @@ mv deploy/ICUMX_Loader_and_Flashwriter_Package_for_R-Car_S4_Starter_Kit_SDK* dep
 cp work-s4/yocto/build/gen4/domd/tmp/deploy/images/$GEN4_BOARD/*.srec -t deploy/${GEN4_BOARD}_ipl
 mv deploy/${GEN4_BOARD}_ipl/Flash_Bootloader_S4SK.ttl deploy/${GEN4_BOARD}_ipl/Flash_Bootloader_S4.ttl
 sed -i "s/s4sk/${GEN4_BOARD}/" deploy/${GEN4_BOARD}_ipl/Flash_Bootloader_S4.ttl
+wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/burn_s4.py -O deploy/${GEN4_BOARD}_ipl/burn_s4.py
+wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/ipl_burning.py -O deploy/${GEN4_BOARD}_ipl/ipl_burning.py
+wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/ipl_burning.json -O deploy/${GEN4_BOARD}_ipl/ipl_burning.json
+sed -i -e 's/    prepare_flash_loader(BOARD, G4MHOS, CR52OS, USE_CAN)//' deploy/${GEN4_BOARD}_ipl/burn_s4.py
+sed -i deploy/${GEN4_BOARD}_ipl/burn_s4.py \
+    -e 's/App_CDD_ICCOM_S4_Sample_CR52/dummy_rtos/' \
+    -e 's/App_CDD_ICCOM_S4_Sample_G4MH/dummy_g4mh_case0/' deploy/${GEN4_BOARD}_ipl/burn_s4.py
 
 ./build_h3.sh h3ulcb-4x2g -cdf
 cp work/gen3_full.img.gz deploy/$GEN3_BOARD.mmc.full.img.gz
@@ -50,6 +57,7 @@ cp work/yocto/build/gen3/domd/tmp/deploy/images/h3ulcb/*.srec \
     ./deploy/${GEN3_BOARD}_ipl/
 cp -r work/yocto/build/gen3/domd/tmp/deploy/images/h3ulcb/renesas-bsp-rom-writer_64bit \
     ./deploy/${GEN3_BOARD}_ipl/
+
 
 ls deploy/
 echo "Build finished"
