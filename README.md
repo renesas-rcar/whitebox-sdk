@@ -33,13 +33,13 @@ Execute the following command:
 	 - https://www.renesas.com/products/automotive-products/automotive-system-chips-socs/y-ask-rcar-s4-1000base-t-r-car-s4-starter-kit#download
 2. CC-RH compiler
    - This is used for building G4MH software.
-   - Please donwload "RH850 Compiler CC-RH V2.05.00 for e2 studio" from following:
+   - Please donwload "RH850 Compiler CC-RH V2.06.01 (Linux)" from following:
      - https://www.renesas.com/us/en/software-tool/c-compiler-package-rh850-family#download
 
 Please copy avobe files under the tool directory:
 
 	cd whitebox-sdk/tool
-	cp <download directry>/CC-RH_V20500_setup-doc.zip .
+	cp <download directry>/cc-rh_v20601_for_linux_amd64-doc.zip .
 	cp <download directry>/ICUMX_Loader_and_Flashwriter_Package_*.zip .
 
 # Tool setup

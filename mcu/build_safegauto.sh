@@ -4,7 +4,8 @@ SCRIPT_DIR=$(cd `dirname $0` && pwd)
 SOURCE_DIR=${SCRIPT_DIR}/safeg-auto
 export WINEDEBUG=fixme-all
 
-export PATH=~/.local/bin:$PATH
+export PATH=${SCRIPT_DIR}/../tool/CC-RH/bin:$PATH
+export HLNK_DIR="${SCRIPT_DIR}/../tool/CC-RH"
 
 CLEAN_BUILD_FLAG=false
 Usage() {
@@ -33,12 +34,6 @@ done
 if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
     print_err "ERROR: CC-RH compiler may not be installed correctly."
     exit -1
-fi
-if [[ "$(which rlink | grep no)" != "" ]]; then
-    export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
-fi
-if [[ "${HLNK_DIR:-""}" == "" ]]; then
-    export HLNK_DIR="C:\Program Files (x86)\Renesas\RH\2_5_0"
 fi
 
 if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then

@@ -6,7 +6,8 @@ COMMIT=d930f9447a237feb062ef3040b980cb9d2b748e7
 SOURCE_DIR=${SCRIPT_DIR}/trampoline
 export WINEDEBUG=fixme-all
 
-export PATH=~/.local/bin:$PATH
+export PATH=${SCRIPT_DIR}/../tool/CC-RH/bin:$PATH
+export HLNK_DIR="${SCRIPT_DIR}/../tool/CC-RH"
 
 CLEAN_BUILD_FLAG=false
 Usage() {
@@ -84,13 +85,6 @@ if [ "$1" == "s4sk" ]; then
 elif [ "$1" == "spider" ];  then
     sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample.oil
     sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample_not_can.oil
-fi
-
-if [[ "$(which rlink | grep no)" != "" ]]; then
-    export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
-fi
-if [[ "${HLNK_DIR:-""}" == "" ]]; then
-    export HLNK_DIR="C:\Program Files (x86)\Renesas\RH\2_5_0"
 fi
 
 # Setup python build env for building goil
