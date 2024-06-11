@@ -1,33 +1,26 @@
-From 9d2a5d761a67a3420bc2389da0f1eaf1a01ebadd Mon Sep 17 00:00:00 2001
+From 10a87d1d226dd3482f6d1464e64caa3664ca5dee Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Mon, 13 Feb 2023 22:59:37 +0900
-Subject: [PATCH] rte: Add compile environment
+Subject: [PATCH 09/10] rte: Add compile environment
 
 Add files needed to build rte
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Signed-off-by: Kimura Takuto <kimura.takuto@sunnygiken.co.jp>
+
+Remove changes for rtegen.sh. This is not mandatory.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---
- .../tool/a-rtegen-1.4.0/bin/bin/rtegen.sh     |     2 +-
  .../bin/schema/AUTOSAR_4-0-3_STRICT.xsd       | 50811 ++++++++++++++++
  .../tool/a-rtegen-1.4.0/bin/schema/xml.xsd    |   116 +
- 3 files changed, 50928 insertions(+), 1 deletion(-)
+ 2 files changed, 50927 insertions(+)
  create mode 100644 vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/AUTOSAR_4-0-3_STRICT.xsd
  create mode 100644 vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/xml.xsd
 
-diff --git a/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/bin/rtegen.sh b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/bin/rtegen.sh
-index d883a3d..c25b938 100755
---- a/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/bin/rtegen.sh
-+++ b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/bin/rtegen.sh
-@@ -1,4 +1,4 @@
--#!/bin/sh
-+#!/bin/bash
- BASEDIR=$(dirname "$0")
- PLATFORM_NAME=$(uname -o)
- 
 diff --git a/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/AUTOSAR_4-0-3_STRICT.xsd b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/AUTOSAR_4-0-3_STRICT.xsd
 new file mode 100644
-index 0000000..7b64a2c
+index 0000000..927c473
 --- /dev/null
 +++ b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/AUTOSAR_4-0-3_STRICT.xsd
 @@ -0,0 +1,50811 @@
@@ -50844,7 +50837,7 @@ index 0000000..7b64a2c
 +</xsd:schema>
 diff --git a/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/xml.xsd b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/xml.xsd
 new file mode 100644
-index 0000000..fbd8876
+index 0000000..0f13678
 --- /dev/null
 +++ b/vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0/bin/schema/xml.xsd
 @@ -0,0 +1,116 @@

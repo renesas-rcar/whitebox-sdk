@@ -1,7 +1,7 @@
-From 6a1795002c9ad5aa58c0f36cf8d9ab2c6357fc7d Mon Sep 17 00:00:00 2001
+From 1345e04fc56982117821ef1c6f75e86a113b5a5a Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 14 Feb 2023 12:38:28 +0900
-Subject: [PATCH] iccom.flash.rte: ADD iccom flash driver and rte
+Subject: [PATCH 01/10] iccom.flash.rte: ADD iccom flash driver and rte
 
 -Change compile option to rcar S4
 -Add iccom driver
@@ -15,8 +15,7 @@ Signed-off-by: Kimura Takuto <kimura.takuto@sunnygiken.co.jp>
  Makefile.config                               |      8 +-
  common/iodefine.h                             | 358015 +++++++++++++++
  hypervisor/Makefile                           |      1 +
- .../obj_1pe_atk2/cs_plus_renesas_rcar_s4.mtpj |    921 +-
- hypervisor/obj/obj_1pe_atk2/sample1.c         |    128 +-
+ hypervisor/obj/obj_1pe_atk2/sample1.c         |    126 +-
  hypervisor/obj/obj_1pe_atk2/sample1.yaml      |     24 +-
  hypervisor/src/Makefile.hv                    |     17 +-
  hypervisor/src/ccrh/u2a16.clnk                |      2 +-
@@ -34,7 +33,7 @@ Signed-off-by: Kimura Takuto <kimura.takuto@sunnygiken.co.jp>
  vm_atk2/atk2-sc1_1.4.2/library/vasyslog.c     |      2 +
  .../target/rh850u2a_gcc/target_config.c       |     32 +-
  vm_atk2/vm1_atk2/Makefile                     |      5 +
- .../{Rte_Type.h => app/C_Init_Code.c}         |     43 +-
+ .../{Rte_Type.h => app/C_Init_Code.c}         |     45 +-
  vm_atk2/vm1_atk2/app/EcuM.c                   |    119 +
  vm_atk2/vm1_atk2/app/EcuM.h                   |     74 +
  vm_atk2/vm1_atk2/app/EcuM_Callout.h           |    148 +
@@ -64,7 +63,7 @@ Signed-off-by: Kimura Takuto <kimura.takuto@sunnygiken.co.jp>
  vm_atk2/vm2_atk2/Makefile                     |      5 +
  vm_atk2/vm2_atk2/u2a_pe1_vm2.clnk             |      2 +-
  vm_atk2/vm2_atk2/u2a_pe1_vm2.ld               |     12 +-
- 53 files changed, 361508 insertions(+), 3153 deletions(-)
+ 52 files changed, 360621 insertions(+), 3119 deletions(-)
  create mode 100644 common/iodefine.h
  create mode 100755 vm_atk2/atk2-sc1_1.4.2/cfg/cfg/cfg
  mode change 100644 => 100755 vm_atk2/atk2-sc1_1.4.2/cfg/cfg/cfg.exe
@@ -139,7 +138,7 @@ index 53e8f81..ad81f30 100644
  #  ターゲット毎の定義
 diff --git a/common/iodefine.h b/common/iodefine.h
 new file mode 100644
-index 0000000..a7896b1
+index 0000000..b8a3d80
 --- /dev/null
 +++ b/common/iodefine.h
 @@ -0,0 +1,358015 @@
@@ -358337,24 +358336,6 @@ index 49bbff3..4fe6ace 100644
 -        sil_wrw_mem(PBG52_PBGPROT1_m(11), (TBIT_HV_SPID|VM2_SPIDLIST));
 -        sil_wrw_mem(PBGERRSLV50_PBGKCPROT, LOCKKEY_VAL);
 -#endif /* RLIN3_PORT1 == 1 */
--
--#if RLIN3_PORT1 == 4
--        /*
--         *  RLIN34へのアクセス権の設定
--         */
--        sil_wrw_mem(PBGERRSLV30_PBGKCPROT, UNLOCKKEY_VAL);
--        sil_wrw_mem(PBG32_PBGPROT1_m(3), (TBIT_HV_SPID|VM2_SPIDLIST));
--        sil_wrw_mem(PBGERRSLV30_PBGKCPROT, LOCKKEY_VAL);
--#endif /* RLIN3_PORT1 == 4 */
--
--#if RLIN3_PORT1 == 5
--        /*
--         *  RLIN35へのアクセス権の設定
--         */
--        sil_wrw_mem(PBGERRSLV50_PBGKCPROT, UNLOCKKEY_VAL);
--        sil_wrw_mem(PBG52_PBGPROT1_m(13), (TBIT_HV_SPID|VM2_SPIDLIST));
--        sil_wrw_mem(PBGERRSLV50_PBGKCPROT, LOCKKEY_VAL);
--#endif /* RLIN3_PORT1 == 5 */
 +    /*
 +     *  RLIN31へのアクセス権の設定
 +     */
@@ -358376,7 +358357,24 @@ index 49bbff3..4fe6ace 100644
 +    sil_wrw_mem(PBG32_PBGPROT1_m(3), (TBIT_HV_SPID|VM0_1_SPIDLIST));
 +    sil_wrw_mem(PBGERRSLV30_PBGKCPROT, LOCKKEY_VAL);
 +#endif /* RLIN3_PORT1 */
-+
+ 
+-#if RLIN3_PORT1 == 4
+-        /*
+-         *  RLIN34へのアクセス権の設定
+-         */
+-        sil_wrw_mem(PBGERRSLV30_PBGKCPROT, UNLOCKKEY_VAL);
+-        sil_wrw_mem(PBG32_PBGPROT1_m(3), (TBIT_HV_SPID|VM2_SPIDLIST));
+-        sil_wrw_mem(PBGERRSLV30_PBGKCPROT, LOCKKEY_VAL);
+-#endif /* RLIN3_PORT1 == 4 */
+-
+-#if RLIN3_PORT1 == 5
+-        /*
+-         *  RLIN35へのアクセス権の設定
+-         */
+-        sil_wrw_mem(PBGERRSLV50_PBGKCPROT, UNLOCKKEY_VAL);
+-        sil_wrw_mem(PBG52_PBGPROT1_m(13), (TBIT_HV_SPID|VM2_SPIDLIST));
+-        sil_wrw_mem(PBGERRSLV50_PBGKCPROT, LOCKKEY_VAL);
+-#endif /* RLIN3_PORT1 == 5 */
 +    /*
 +     *  MSRへのアクセス権の設定
 +     */
@@ -358812,7 +358810,7 @@ index e4c91ef..2c2f4f5 100644
  APPL_CFLAGS =
  APPL_LIBS =
 diff --git a/vm_atk2/atk2-sc1_1.4.2/arch/v850_gcc/rcar_s4.h b/vm_atk2/atk2-sc1_1.4.2/arch/v850_gcc/rcar_s4.h
-index 5c2d204..3dd55d6 100644
+index 5c2d204..12a07dc 100644
 --- a/vm_atk2/atk2-sc1_1.4.2/arch/v850_gcc/rcar_s4.h
 +++ b/vm_atk2/atk2-sc1_1.4.2/arch/v850_gcc/rcar_s4.h
 @@ -531,6 +531,7 @@
@@ -358973,21 +358971,22 @@ index e4ab5b5..7c41667 100644
 + *  Copyright (C) 2013-2016 by Center for Embedded Computing Systems
   *              Graduate School of Information Science, Nagoya Univ., JAPAN
 - *  Copyright (C) 2013-2017 by FUJI SOFT INCORPORATED, JAPAN
-+ *  Copyright (C) 2014-2016 by AISIN COMCRUISE Co., Ltd., JAPAN
-+ *  Copyright (C) 2014-2016 by eSOL Co.,Ltd., JAPAN
-+ *  Copyright (C) 2013-2016 by FUJI SOFT INCORPORATED, JAPAN
-+ *  Copyright (C) 2014-2016 by NEC Communication Systems, Ltd., JAPAN
-  *  Copyright (C) 2013-2016 by Panasonic Advanced Technology Development Co., Ltd., JAPAN
-  *  Copyright (C) 2013-2014 by Renesas Electronics Corporation, JAPAN
-+ *  Copyright (C) 2014-2016 by SCSK Corporation, JAPAN
-  *  Copyright (C) 2013-2016 by Sunny Giken Inc., JAPAN
+- *  Copyright (C) 2013-2016 by Panasonic Advanced Technology Development Co., Ltd., JAPAN
+- *  Copyright (C) 2013-2014 by Renesas Electronics Corporation, JAPAN
+- *  Copyright (C) 2013-2016 by Sunny Giken Inc., JAPAN
 - *  Copyright (C) 2013-2017 by TOSHIBA CORPORATION, JAPAN
 - *  Copyright (C) 2013-2017 by Witz Corporation
-- *  Copyright (C) 2014-2016 by AISIN COMCRUISE Co., Ltd., JAPAN
-- *  Copyright (C) 2014-2016 by eSOL Co.,Ltd., JAPAN
+  *  Copyright (C) 2014-2016 by AISIN COMCRUISE Co., Ltd., JAPAN
+  *  Copyright (C) 2014-2016 by eSOL Co.,Ltd., JAPAN
 - *  Copyright (C) 2014-2017 by NEC Communication Systems, Ltd., JAPAN
 - *  Copyright (C) 2014-2017 by SCSK Corporation, JAPAN
 - *  Copyright (C) 2015-2017 by SUZUKI MOTOR CORPORATION
++ *  Copyright (C) 2013-2016 by FUJI SOFT INCORPORATED, JAPAN
++ *  Copyright (C) 2014-2016 by NEC Communication Systems, Ltd., JAPAN
++ *  Copyright (C) 2013-2016 by Panasonic Advanced Technology Development Co., Ltd., JAPAN
++ *  Copyright (C) 2013-2014 by Renesas Electronics Corporation, JAPAN
++ *  Copyright (C) 2014-2016 by SCSK Corporation, JAPAN
++ *  Copyright (C) 2013-2016 by Sunny Giken Inc., JAPAN
 + *  Copyright (C) 2015-2016 by SUZUKI MOTOR CORPORATION
 + *  Copyright (C) 2013-2016 by TOSHIBA CORPORATION, JAPAN
 + *  Copyright (C) 2013-2016 by Witz Corporation
@@ -359007,18 +359006,18 @@ index e4ab5b5..7c41667 100644
 - */
 +#include "Std_Types.h"
 +#include "EcuM.h"
-+
+ 
+-#ifndef RTE_TYPE_H
+-#define RTE_TYPE_H
 +sint32
 +main(void)
 +{
 +	/* プログラムが動作するためにECU上で最低限必要となる初期化一式を完了させる */
  
--#ifndef RTE_TYPE_H
--#define RTE_TYPE_H
+-#endif /* RTE_TYPE_H */
 +	/* EcuMの初期化 */
 +	EcuM_Init();
- 
--#endif /* RTE_TYPE_H */
++
 +	while (1) {
 +	}
 +}

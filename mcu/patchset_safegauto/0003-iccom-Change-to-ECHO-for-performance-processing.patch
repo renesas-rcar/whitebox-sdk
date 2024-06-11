@@ -1,7 +1,7 @@
-From 16a194cf3a038a0c502023c4fb3e7f50cceb6b3a Mon Sep 17 00:00:00 2001
+From 91257650ab7cf2fc2ac36aa56be29fce042ff4b6 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Mon, 3 Apr 2023 16:59:50 +0900
-Subject: [PATCH 3/3] iccom: Change to ECHO for performance processing
+Subject: [PATCH 03/10] iccom: Change to ECHO for performance processing
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -201,5 +201,5 @@ index 64bd6bd..a435a13 100644
 +
  #endif //__ICCOM_LL_H__
 -- 
-2.25.1
+2.34.1
 

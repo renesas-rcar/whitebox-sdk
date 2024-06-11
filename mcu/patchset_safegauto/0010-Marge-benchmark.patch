@@ -1,7 +1,7 @@
-From 082231a128c8198bcb8a9ca6a6ea99424adfab93 Mon Sep 17 00:00:00 2001
+From 0814ad2a02d7a2a71aed7e0741a2e937520abf52 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Fri, 29 Sep 2023 13:40:16 +0900
-Subject: [PATCH] Marge benchmark
+Subject: [PATCH 10/10] Marge benchmark
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -20,9 +20,9 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  vm_atk2/vm1_atk2/dhry.h                 |  1 +
  vm_atk2/vm1_atk2/dhry_1.c               |  1 +
  vm_atk2/vm1_atk2/dhry_2.c               |  1 +
- vm_atk2/vm1_atk2/iccom/iccom_cdd.c      | 91 ++++++++++++++----------
+ vm_atk2/vm1_atk2/iccom/iccom_cdd.c      | 89 +++++++++++++----------
  vm_atk2/vm1_atk2/iccom/iccom_commands.h |  1 +
- 17 files changed, 182 insertions(+), 39 deletions(-)
+ 17 files changed, 181 insertions(+), 38 deletions(-)
  create mode 100644 vm_atk2/vm1_atk2/benchmark.c
  create mode 120000 vm_atk2/vm1_atk2/core_list_join.c
  create mode 120000 vm_atk2/vm1_atk2/core_main.c
@@ -367,7 +367,12 @@ index d2922fc..997bc5b 100644
 -    {
 -        iccom_clear_interrupt();
 -    	iccom_get_in_msg_reg(&target_message);
--
++	iccom_get_in_ctrl_reg(&target_control);
++	if ((target_control & ICCOM_INT_TRIGGER) == ICCOM_INT_TRIGGER)
++	{
++		iccom_clear_interrupt();
++		iccom_get_in_msg_reg(&target_message);
+ 
 -    	switch (iccom_get_msg_type(target_control)) {
 -    	case ICCOM_MSG_DATA:
 -    		rx_size = (size_t)target_message;
@@ -393,12 +398,6 @@ index d2922fc..997bc5b 100644
 -    {
 -        /* Do nothing */
 -    }
-+	iccom_get_in_ctrl_reg(&target_control);
-+	if ((target_control & ICCOM_INT_TRIGGER) == ICCOM_INT_TRIGGER)
-+	{
-+		iccom_clear_interrupt();
-+		iccom_get_in_msg_reg(&target_message);
-+
 +		switch (iccom_get_msg_type(target_control)) {
 +		case ICCOM_MSG_DATA:
 +			rx_size = (size_t)target_message;
@@ -440,5 +439,5 @@ index f6cb33d..cebc669 100644
  
  #define FLASH_PAGE_SIZE			0x100	// 256 bytes
 -- 
-2.25.1
+2.34.1
 

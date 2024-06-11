@@ -1,7 +1,7 @@
-From eae9d003112239ea6d0325eb4b0f0c79c3ed0fa2 Mon Sep 17 00:00:00 2001
+From a088b756b09808c9035c76dfffbe80217ab099f6 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 16 May 2023 09:38:30 +0900
-Subject: [PATCH] iccom: Add get OS mode
+Subject: [PATCH 05/10] iccom: Add get OS mode
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -49,5 +49,5 @@ index 90f1a40..f6cb33d 100644
  
  #define FLASH_PAGE_SIZE			0x100	// 256 bytes
 -- 
-2.25.1
+2.34.1
 

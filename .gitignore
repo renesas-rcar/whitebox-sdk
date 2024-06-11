@@ -18,6 +18,7 @@ tool/ICUMX_Loader*
 mcu/safeg-auto/
 mcu/safeg-auto-bench/
 mcu/trampoline/
+mcu/a-rtegen-*.src.tar.gz
 
 # realtime_cpu
 realtime_cpu/zephyrproject
