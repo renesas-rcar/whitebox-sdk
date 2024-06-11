@@ -1,0 +1,27 @@
+From 83bc65bdae003ba082b5dcf569218b729d1d6f0c Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 11 Jun 2024 15:02:31 +0900
+Subject: [PATCH] Change path format to linux from windows
+
+To support linux native compiler, path format is changed by this patch.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ machines/rh850/g4mh/rcar_s4.clnk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/machines/rh850/g4mh/rcar_s4.clnk b/machines/rh850/g4mh/rcar_s4.clnk
+index 712fde3d..5eb7f84e 100644
+--- a/machines/rh850/g4mh/rcar_s4.clnk
++++ b/machines/rh850/g4mh/rcar_s4.clnk
+@@ -1,5 +1,5 @@
+--library=lib\v850e3v5\rhf8n.lib
+--library=lib\v850e3v5\libmalloc.lib
++-library=lib/v850e3v5/rhf8n.lib
++-library=lib/v850e3v5/libmalloc.lib
+ -start=RESET_PE0,EIINTTBL_PE0/400,.const,.INIT_DSEC.const,.INIT_BSEC.const,.text.cmn,syscall.text,.text,.data/00010000,.data.R,.bss,.stack.bss/FDE00000
+ -fsymbol=.text.cmn
+ -rom=.data=.data.R
+-- 
+2.34.1
+

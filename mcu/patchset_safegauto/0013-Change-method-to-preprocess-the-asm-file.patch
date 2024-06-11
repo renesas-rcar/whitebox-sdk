@@ -1,0 +1,39 @@
+From b63956925ec24fbc5086f7930e5983469fc8bb3d Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 11 Jun 2024 17:06:26 +0900
+Subject: [PATCH 13/14] Change method to preprocess the asm file
+
+From v2.06.00, CC-RH compiler doesn't preprocess except for c file.
+And, *.i file preprocessed by v2.05.00 compiler is almost same as
+original asm file.
+Thus, this patch changes that original asm file is used instead of *.i.
+By this patch, we can build with newer compiler.
+---
+ vm_atk2/atk2-sc1_1.4.2/utils/makedep_ccrh | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/vm_atk2/atk2-sc1_1.4.2/utils/makedep_ccrh b/vm_atk2/atk2-sc1_1.4.2/utils/makedep_ccrh
+index 0f15a92..166ef32 100644
+--- a/vm_atk2/atk2-sc1_1.4.2/utils/makedep_ccrh
++++ b/vm_atk2/atk2-sc1_1.4.2/utils/makedep_ccrh
+@@ -130,12 +130,16 @@ sub output_dependlist {
+ #
+ sub makedepend_one {
+ 	local($file) = @_;
+-	local($command, $input, $dir, $filename, $ofile);
++	local($command, $input, $dir, $filename, $ofile, $ext);
+ 
+     # ファイル名のみ取り出す．
+ 	($ofile = $file) =~ s/^(.*)\..*$/$1/;
+ 	($ofile = $ofile) =~ s!.*/|.*\\(.*)$!$1!;
++	($ext = $file) =~ s/$ofile//;
+ 	$ofile = $ofile.'.i';
++	if ( $ext == ".asm" ) {
++		$ofile = $file
++	}
+ 	$command = "$cc_path -P -Xpreprocess=comment,line -Xno_warning=11123 $cc_opts";
+ 	if ($opt_X) {
+ 		$command .= " -x c-header";
+-- 
+2.34.1
+

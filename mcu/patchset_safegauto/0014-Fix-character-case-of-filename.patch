@@ -1,0 +1,20 @@
+From 0d849c7af1b866532c513ed948bc66d7850faf68 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 11 Jun 2024 18:13:27 +0900
+Subject: [PATCH 14/14] Fix character case of filename
+
+This patch fixes error caused by character case.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ vm_atk2/vm1_atk2/app/{iccom_cdd_MemMap.h => ICCOM_CDD_MemMap.h} | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename vm_atk2/vm1_atk2/app/{iccom_cdd_MemMap.h => ICCOM_CDD_MemMap.h} (100%)
+
+diff --git a/vm_atk2/vm1_atk2/app/iccom_cdd_MemMap.h b/vm_atk2/vm1_atk2/app/ICCOM_CDD_MemMap.h
+similarity index 100%
+rename from vm_atk2/vm1_atk2/app/iccom_cdd_MemMap.h
+rename to vm_atk2/vm1_atk2/app/ICCOM_CDD_MemMap.h
+-- 
+2.34.1
+

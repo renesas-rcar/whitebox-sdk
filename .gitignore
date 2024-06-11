@@ -9,6 +9,8 @@ deploy_*
 # tool
 tool/CSPlus_CC_Package_V80900-doc-e*
 tool/CC-RH_*.zip
+tool/cc-rh_v20601_for_linux_amd64-doc.zip
+tool/CC-RH
 tool/tmp
 tool/kitware-archive.sh
 tool/ICUMX_Loader*

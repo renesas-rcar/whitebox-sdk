@@ -1,0 +1,90 @@
+From 9efb63f156e2a305cfe5b8c0c0e53a972b0c2846 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 11 Jun 2024 15:08:18 +0900
+Subject: [PATCH 12/14] Change path format to linux from windows
+
+To support linux native compiler, path format is changed by this patch.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ vm_atk2/atk2-sc1_1.4.2/arch/v850_ccrh/Makefile.prc | 14 +++++++-------
+ vm_atk2/vm1_atk2/Makefile                          |  2 +-
+ vm_prog/common/Makefile.common                     |  2 +-
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/vm_atk2/atk2-sc1_1.4.2/arch/v850_ccrh/Makefile.prc b/vm_atk2/atk2-sc1_1.4.2/arch/v850_ccrh/Makefile.prc
+index 3c676c1..2103d96 100644
+--- a/vm_atk2/atk2-sc1_1.4.2/arch/v850_ccrh/Makefile.prc
++++ b/vm_atk2/atk2-sc1_1.4.2/arch/v850_ccrh/Makefile.prc
+@@ -99,36 +99,36 @@ endif
+ #
+ ifeq ($(CORETYPE),RH850G3K)
+ 	COPTS := $(COPTS) -Xcpu=g3k
+-	LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhs4n.lib
++	LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhs4n.lib
+ endif
+ ifeq ($(CORETYPE),RH850G3M)
+ 	COPTS := $(COPTS) -Xcpu=g3m
+ 	ifeq ($(USE_HARD_FLOAT),true)
+ 		COPTS := $(COPTS) -DTOPPERS_USE_HFLOAT -Xfloat=fpu
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhf4n.lib 
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhf4n.lib 
+ 	else
+ 		COPTS := $(COPTS) -Xfloat=soft
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhs4n.lib
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhs4n.lib
+ 	endif
+ endif
+ ifeq ($(CORETYPE),RH850G3KH)
+ 	COPTS := $(COPTS) -Xcpu=g3kh
+ 	ifeq ($(USE_HARD_FLOAT),true)
+ 		COPTS := $(COPTS) -DTOPPERS_USE_HFLOAT -Xfloat=fpu
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhf4n.lib 
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhf4n.lib 
+ 	else
+ 		COPTS := $(COPTS) -Xfloat=soft
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhs4n.lib 
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhs4n.lib 
+ 	endif
+ endif
+ ifeq ($(CORETYPE),RH850G4MH20)
+ 	COPTS := $(COPTS) -Xcpu=g4mh
+ 	ifeq ($(USE_HARD_FLOAT),true)
+ 		COPTS := $(COPTS) -DTOPPERS_USE_HFLOAT -Xfloat=fpu
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhf4n.lib 
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhf4n.lib 
+ 	else
+ 		COPTS := $(COPTS) -Xfloat=soft
+-		LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhs4n.lib 
++		LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhs4n.lib 
+ 	endif
+ 	ifeq ($(USE_EIP),true)
+ 		CDEFS := $(CDEFS) -DTOPPERS_EIP_LEVEL=63
+diff --git a/vm_atk2/vm1_atk2/Makefile b/vm_atk2/vm1_atk2/Makefile
+index 8721b1f..d531736 100644
+--- a/vm_atk2/vm1_atk2/Makefile
++++ b/vm_atk2/vm1_atk2/Makefile
+@@ -35,6 +35,6 @@ include ../Makefile.ghs
+ endif
+ 
+ ifeq ($(COMPILER),CCRH)
+-LDFLAGS := -library=lib\\v850e3v5\\libmalloc.lib
++LDFLAGS := -library=lib/v850e3v5/libmalloc.lib
+ include ../Makefile.ccrh
+ endif
+diff --git a/vm_prog/common/Makefile.common b/vm_prog/common/Makefile.common
+index 8316279..51ad829 100644
+--- a/vm_prog/common/Makefile.common
++++ b/vm_prog/common/Makefile.common
+@@ -134,7 +134,7 @@ ASMFLAGS := $(ASMFLAGS) $(INCLUDES)
+ #  リンカスクリプトオプション
+ #
+ LDFLAGS := $(LDFLAGS) -debug -nocompress -NOOPtimize -show=symbol -memory=high -nologo 
+-LDFLAGS := $(LDFLAGS) -library=lib\\v850e3v5\\rhf4n.lib
++LDFLAGS := $(LDFLAGS) -library=lib/v850e3v5/rhf4n.lib
+ 
+ #
+ #  ビルドルール
+-- 
+2.34.1
+
