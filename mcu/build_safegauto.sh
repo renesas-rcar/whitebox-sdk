@@ -14,19 +14,24 @@ Usage() {
     echo "    -c: Clean build flag(Defualt is disable)"
     echo "    -h: Show this usage"
 }
+
+print_err () {
+    echo -e "\e[31m$*\e[m"
+}
+
 # Proc arguments
 while getopts "ch" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
-        *) echo -e "\e[31mERROR: Unsupported option \e[m"; Usage; exit;;
+        *) print_err "ERROR: Unsupported option"; Usage; exit;;
     esac
 done
 
 # check CC-RH compiler
 if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
-    echo -e "\e[31mERROR: CC-RH compiler may not be installed correctly.\e[m"
+    print_err "ERROR: CC-RH compiler may not be installed correctly."
     exit -1
 fi
 if [[ "$(which rlink | grep no)" != "" ]]; then
@@ -43,21 +48,17 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
 
     cd ${SOURCE_DIR}
     git reset --hard tags/v1.0.0; git clean -df
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-iccom.flash.rte-ADD-iccom-flash-driver-and-rte.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0002-iccom-Update-protocol-and-change-CTA-address.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0003-iccom-Change-to-ECHO-for-performance-processing.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0004-Change-of-G4MH-start-address.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0005-iccom-Add-get-OS-mode.patch
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0006-Add-memory-unlocker.patch
-    wget https://www.toppers.jp/download.cgi/a-rtegen-1.4.0.src.tar.gz
-    mkdir vm_atk2/vm1_atk2/common/tool
-    tar zxvf a-rtegen-1.4.0.src.tar.gz -C vm_atk2/vm1_atk2/common/tool/
-    rm a-rtegen-1.4.0.src.tar.gz
-    mv vm_atk2/vm1_atk2/common/tool/a-rtegen vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-rte-Add-compile-environment.patch
+    git am ${SCRIPT_DIR}/patchset_safegauto/*.patch
+
+    # Setup RTE envrionment
+    if [ ! -e ${SCRIPT_DIR}/a-rtegen-1.4.0.src.tar.gz ]; then
+        wget https://www.toppers.jp/download.cgi/a-rtegen-1.4.0.src.tar.gz -O ${SCRIPT_DIR}/a-rtegen-1.4.0.src.tar.gz
+    fi
+    tar zxvf ${SCRIPT_DIR}/a-rtegen-1.4.0.src.tar.gz -C vm_atk2/vm1_atk2/common/tool/
+    cp -r vm_atk2/vm1_atk2/common/tool/a-rtegen/* -t vm_atk2/vm1_atk2/common/tool/a-rtegen-1.4.0
+    rm -rf vm_atk2/vm1_atk2/common/tool/a-rtegen
 
     # benchmak sample
-    git --git-dir= apply -p1 ${SCRIPT_DIR}/patchset_safegauto/0001-Marge-benchmark.patch
     cd ${SOURCE_DIR}/vm_atk2/vm1_atk2/
     rm -rf ./dhrystone
     wget -c https://fossies.org/linux/privat/old/dhrystone-2.1.tar.gz

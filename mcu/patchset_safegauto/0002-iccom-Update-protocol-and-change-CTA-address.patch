@@ -1,15 +1,15 @@
-From 419c748820938615f99f0165d1f6c6eb633358a4 Mon Sep 17 00:00:00 2001
+From 1ee7695619285a73d1be09fb7aa2a6112274f9be Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Mon, 13 Mar 2023 09:32:13 +0900
-Subject: [PATCH] [PATCH] iccom: Update protocol and change CTA address
+Subject: [PATCH 02/10] iccom: Update protocol and change CTA address
 
 -Updated iccom protocol
 -Changed iccom CTA address from 0x47fc7000 to 0x47fc9000
 ---
  vm_atk2/vm1_atk2/iccom/iccom_cdd.c | 15 ++++++++-------
  vm_atk2/vm1_atk2/iccom/iccom_ll.c  |  6 +++---
- vm_atk2/vm1_atk2/iccom/iccom_ll.h  | 29 ++++++++++-------------------
- 3 files changed, 21 insertions(+), 29 deletions(-)
+ vm_atk2/vm1_atk2/iccom/iccom_ll.h  | 27 +++++++++------------------
+ 3 files changed, 20 insertions(+), 28 deletions(-)
 
 diff --git a/vm_atk2/vm1_atk2/iccom/iccom_cdd.c b/vm_atk2/vm1_atk2/iccom/iccom_cdd.c
 index e064b44..1696dd5 100644
@@ -118,16 +118,15 @@ index f362f5e..64bd6bd 100644
 -#define ICCOM_INIT_UNFINISHED          0x00000000UL
 -#define ICCOM_FATAL_DETECTED           0x00000020UL
 -#define ICCOM_FATAL_NOT_DETECTED       0x00000000UL
--
++// *** workalound
++#define ICCOM_INT_TRIGGER			0x00000001UL
+ 
 -#define ICCOM_INT_MASK                 0x00000001UL
 -#define ICCOM_SEND_MASK                0x00000002UL
 -#define ICCOM_SEND_CTA_MASK            0x00000004UL
 -#define ICCOM_ACK_CTA_MASK             0x00000008UL
 -#define ICCOM_INIT_MASK                0x00000010UL
 -#define ICCOM_FATAL_MASK               0x00000020UL
-+// *** workalound
-+#define ICCOM_INT_TRIGGER			0x00000001UL
-+
 +// IMPORTANT: Keep these masks aligned between CA55 and G4MH
 +#define ICCOM_CTRL_INT				(0x00000001U)
 +#define ICCOM_CTRL_BUFF_UPPER		(0x00000002U)
@@ -139,5 +138,5 @@ index f362f5e..64bd6bd 100644
  typedef enum {
      ICCOM_CHANNEL_0 = 0,
 -- 
-2.25.1
+2.34.1
 

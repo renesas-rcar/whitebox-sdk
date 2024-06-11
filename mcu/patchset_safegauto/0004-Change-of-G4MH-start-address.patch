@@ -1,7 +1,7 @@
-From c057b9dca303e093af85848f0e041e1a4883ecea Mon Sep 17 00:00:00 2001
+From d1cd39351c0ad2f3c83cfb599a39f408e6cd0e60 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Thu, 27 Apr 2023 11:39:58 +0900
-Subject: [PATCH 4/4] Change of G4MH start address
+Subject: [PATCH 04/10] Change of G4MH start address
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -18,5 +18,5 @@ index 3a6ccd9..0c7db52 100644
  -rom=.data=.data.R
 \ No newline at end of file
 -- 
-2.25.1
+2.34.1
 

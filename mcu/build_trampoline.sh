@@ -20,13 +20,17 @@ Usage() {
     echo "    -h: Show this usage"
 }
 
+print_err () {
+    echo -e "\e[31m$*\e[m"
+}
+
 if [[ $# < 1 ]]; then
-    echo -e "\e[31mERROR: Please select a board to build\e[m"
+    print_err "ERROR: Please select a board to build"
     Usage; exit
 fi
 
 if [[ "$1" != "spider" ]] && [[ "$1" != "s4sk" ]]; then
-    echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"
+    print_err "ERROR: Please \"input\" correct board name: spider or s4sk"
     Usage; exit
 fi
 
@@ -37,13 +41,13 @@ do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
-        *) echo -e "\e[31mERROR: Unsupported option \e[m"; Usage; exit;;
+        *) print_err "ERROR: Unsupported option"; Usage; exit;;
     esac
 done
 
 # check CC-RH compiler
 if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
-    echo -e "\e[31mERROR: CC-RH compiler may not be installed correctly.\e[m"
+    print_err "ERROR: CC-RH compiler may not be installed correctly."
     exit -1
 fi
 
