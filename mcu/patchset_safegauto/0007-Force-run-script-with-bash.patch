@@ -1,0 +1,31 @@
+From 325207f7bee232408ebe3fa5e88471750137bee2 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Tue, 11 Jun 2024 13:45:15 +0900
+Subject: [PATCH 07/10] Force run script with bash
+
+rtegen.sh has shebang "#!/bin/sh" and it fails in some cases.
+This patch forces to run script using bash.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ vm_atk2/vm1_atk2/common/configure.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/vm_atk2/vm1_atk2/common/configure.sh b/vm_atk2/vm1_atk2/common/configure.sh
+index 6376c08..ea910c8 100755
+--- a/vm_atk2/vm1_atk2/common/configure.sh
++++ b/vm_atk2/vm1_atk2/common/configure.sh
+@@ -28,7 +28,7 @@ fi
+ ruby $OS_PATH/utils/abrex/abrex.rb $APP_PATH/$APPLICATION.yaml
+ 
+ # A-RTEGENによるA-RTEモジュール作成
+-$RTE_PATH/bin/bin/rtegen.sh $OS_PATH/target/$TARGET/target_hw_counter.arxml ./arxml/SystemDesk.arxml $APP_PATH/$APPLICATION.arxml
++bash $RTE_PATH/bin/bin/rtegen.sh $OS_PATH/target/$TARGET/target_hw_counter.arxml ./arxml/SystemDesk.arxml $APP_PATH/$APPLICATION.arxml
+ 
+ # Rte_<xxx>ファイルを上位ディレクトリに移動
+-mv -f Rte* ./../rte/
+\ No newline at end of file
++mv -f Rte* ./../rte/
+-- 
+2.34.1
+

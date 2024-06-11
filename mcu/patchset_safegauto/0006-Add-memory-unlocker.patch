@@ -1,7 +1,7 @@
-From 2991a66a27ac37ddc6e56517cbb61861818ce514 Mon Sep 17 00:00:00 2001
+From 28661ef4ded3891541be0648dbcc4ca7e34f93d8 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Tue, 16 Apr 2024 14:48:26 +0900
-Subject: [PATCH] Add memory unlocker
+Subject: [PATCH 06/10] Add memory unlocker
 
 This is ported from Trampoline OS.
 It allows Application core to use CAN module.
