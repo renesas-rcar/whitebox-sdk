@@ -1230,7 +1230,7 @@ parameters:
             sources:
               - type: git
                 url: "https://github.com/renesas-rcar/whitebox-sdk.git"
-                rev: "v4.0"
+                rev: "v5.2"
             builder:
               conf:
                 - [BUILD_SDK, "%{BUILD_DOMD_SDK}"]
