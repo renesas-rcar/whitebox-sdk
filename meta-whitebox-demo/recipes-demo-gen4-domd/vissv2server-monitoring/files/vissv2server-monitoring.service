@@ -1,0 +1,15 @@
+[Unit]
+Description =Vissv2server monitoring
+After=local-fs.target network.target vissv2server.service
+ConditionPathExists=/usr/bin
+
+[Service]
+ExecStart=bash /usr/bin/vissv2server-monitoring/vissv2server-monitoring.sh
+WorkingDirectory=/usr/bin/vissv2server-monitoring
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

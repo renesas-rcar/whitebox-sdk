@@ -1295,9 +1295,9 @@ parameters:
                 - [IMAGE_INSTALL_append, " python3-pip python3-websockets"]
                 - [IMAGE_INSTALL_append, " alcohol-recv-server rh850-ota-master"]
                 - [IMAGE_INSTALL_append, " driving-sim-translator dummy-driving-sim"]
-                - [IMAGE_INSTALL_append, " monitoring-vissv2server"]
                 - [IMAGE_INSTALL_append, " api-server"]
                 - [IMAGE_INSTALL_append, " rps-setup"]
+                - [IMAGE_INSTALL_append, " vissv2server-monitoring"]
                 # For development
                 - [IMAGE_INSTALL_append, " vim curl htop"]
               layers:
