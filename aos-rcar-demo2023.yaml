@@ -921,6 +921,10 @@ parameters:
       default: true
       overrides:
         components:
+          gen4-dom0:
+            builder:
+              layers:
+                - "../../../../../meta-spider-support/meta-spider-support-dom0"
           gen4-domd:
             sources:
               - type: git

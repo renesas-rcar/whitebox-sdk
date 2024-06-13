@@ -16,6 +16,7 @@ SRC_URI_append = " \
     file://gpio.cfg \
     file://l3offload.cfg \
     file://ixgbe.cfg \
+    file://ufs.cfg \
     file://xen-chosen.dtsi;subdir=git/arch/arm64/boot/dts/renesas \
     file://0001-xen-blkback-update-persistent-grants-enablement-logi.patch \
 "
