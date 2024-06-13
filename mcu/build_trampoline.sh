@@ -126,3 +126,9 @@ if [ "$1" == "s4sk" ]; then
     cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh_can_disable.srec
 fi
 
+# Build CAN unlock sample
+cd ${SOURCE_DIR}/examples/rh850/can_unlock
+chmod +x ./build.sh
+./build.sh
+cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh_can_unlock.srec
+

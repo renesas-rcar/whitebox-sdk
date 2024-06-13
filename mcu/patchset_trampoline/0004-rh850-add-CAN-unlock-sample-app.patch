@@ -1,0 +1,604 @@
+From 71c0e3440c4ca913888e6995c2560d92284d4795 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 24 May 2024 19:20:42 +0700
+Subject: [PATCH] rh850: add CAN pre-config sample app
+
+Add an application to unlock CAN related register protection to allow
+using CAN from application domain.
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ examples/rh850/can_unlock/G4MH_Head.srec    |   7 +
+ examples/rh850/can_unlock/build.sh          |  22 ++
+ examples/rh850/can_unlock/canunlock.oil     |  53 ++++
+ examples/rh850/can_unlock/main.c            |  17 ++
+ examples/rh850/can_unlock/memory_unlocker.c | 291 ++++++++++++++++++++
+ examples/rh850/can_unlock/memory_unlocker.h | 151 ++++++++++
+ 6 files changed, 541 insertions(+)
+ create mode 100644 examples/rh850/can_unlock/G4MH_Head.srec
+ create mode 100644 examples/rh850/can_unlock/build.sh
+ create mode 100644 examples/rh850/can_unlock/canunlock.oil
+ create mode 100644 examples/rh850/can_unlock/main.c
+ create mode 100644 examples/rh850/can_unlock/memory_unlocker.c
+ create mode 100644 examples/rh850/can_unlock/memory_unlocker.h
+
+diff --git a/examples/rh850/can_unlock/G4MH_Head.srec b/examples/rh850/can_unlock/G4MH_Head.srec
+new file mode 100644
+index 000000000..8b3b240c8
+--- /dev/null
++++ b/examples/rh850/can_unlock/G4MH_Head.srec
+@@ -0,0 +1,7 @@
++S00F000064756D6D795F67346D680000F5
++S3150000000000040000000400001000813D00007000A4
++S31500000010FFFF7F70000000000F0C0C0C000F0000AB
++S31500000020FF0F0000000000020003000300000000B4
++S31500000200FFFFFF0F0000500000005000EFFFFFFF50
++S3110000021000006000FFFFFFFFFFFFFFFF84
++S70500000000FA
+diff --git a/examples/rh850/can_unlock/build.sh b/examples/rh850/can_unlock/build.sh
+new file mode 100644
+index 000000000..dc069c398
+--- /dev/null
++++ b/examples/rh850/can_unlock/build.sh
+@@ -0,0 +1,22 @@
++#!/usr/bin/env bash
++
++#stop on errors
++set -ex
++
++if [[ ! -d "_build" ]]
++then
++    mkdir _build
++fi
++
++echo "*** Run Goil ***"
++goil --target=rh850/g4mh --templates=../../../goil/templates/ canunlock.oil
++cd _build
++echo "*** Run CMake ***"
++cmake -G "Unix Makefiles" -D CMAKE_TOOLCHAIN_FILE=../canunlock/compiler.cmake ..
++echo "*** Run Make ***"
++make
++
++cd ..
++
++objcopy -O srec --srec-forceS3 _build/canunlock_exe.abs _build/canunlock_exe.s3
++rlink ./G4MH_Head.srec _build/canunlock_exe.s3 -fo=Stype -ou=G4MH_sample.srec
+diff --git a/examples/rh850/can_unlock/canunlock.oil b/examples/rh850/can_unlock/canunlock.oil
+new file mode 100644
+index 000000000..f34946a53
+--- /dev/null
++++ b/examples/rh850/can_unlock/canunlock.oil
+@@ -0,0 +1,53 @@
++OIL_VERSION = "4.2";
++
++IMPLEMENTATION trampoline {
++  TASK {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++
++  ISR {
++    UINT32 STACKSIZE = 2048 ;
++  } ;
++};
++
++CPU iccom {
++  OS config {
++    STATUS = EXTENDED;
++    PAINT_STACK = TRUE;
++    PAINT_REGISTERS = TRUE;
++    
++    BUILD = TRUE {
++      TRAMPOLINE_BASE_PATH = "../../../";
++      APP_NAME = "canunlock_exe";
++      APP_SRC = "main.c";
++      APP_SRC = "memory_unlocker.c";
++      LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
++      CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++      CFLAGS="-Xfloat=soft -Xdbl_size=8 -Xround=nearest";
++      CFLAGS="-DTIME=TIME";
++      CFLAGS="-Ospeed -Oinline_size";
++      CFLAGS="-DITERATIONS=30000";
++      CFLAGS="-DHSCIF_921600BPS";
++      LINKER = "rlink";
++      SYSTEM = CMAKE;
++      LIBRARY = can;
++    };
++    SYSTEM_CALL = TRUE;
++  };
++
++  APPMODE std {};
++
++  COUNTER SystemCounter {
++    SOURCE = SysTick;
++    MAXALLOWEDVALUE = 10000;
++    TICKSPERBASE = 1;
++    MINCYCLE = 1;
++  };
++
++  TASK unused_task {
++    PRIORITY = 1;
++    AUTOSTART = TRUE { APPMODE = std; };
++    ACTIVATION = 1;
++    SCHEDULE = FULL;
++  };
++};
+diff --git a/examples/rh850/can_unlock/main.c b/examples/rh850/can_unlock/main.c
+new file mode 100644
+index 000000000..8d4e26f49
+--- /dev/null
++++ b/examples/rh850/can_unlock/main.c
+@@ -0,0 +1,17 @@
++#include "tpl_os.h"
++#include "memory_unlocker.h"
++
++FUNC(int, OS_APPL_CODE) main(void)
++{
++	memory_unlocker();
++	can_clk_conf();
++
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++TASK(unused_task)
++{
++	TerminateTask();
++}
++
+diff --git a/examples/rh850/can_unlock/memory_unlocker.c b/examples/rh850/can_unlock/memory_unlocker.c
+new file mode 100644
+index 000000000..373d40b5c
+--- /dev/null
++++ b/examples/rh850/can_unlock/memory_unlocker.c
+@@ -0,0 +1,291 @@
++/** @file memory_unlocker.c
++ * Enable registers access for certain peripherals from the Application Domain.
++ */
++#include <tpl_os.h>
++#include "memory_unlocker.h"
++
++void memory_unlocker(void)
++{
++	unsigned int value0, value1;
++	unsigned char m;
++
++	value0 = (0 << 31) |  // LOCK=0: Register can be re-written
++//	 		 (1 <<  8) |  // GEN=1: Enables the guard setting
++			 (0 <<  8) |  // GEN=0: Disables the guard setting
++			 (1 <<  7) |  // SEC=1: R/W depends on other enable/disable settings from non-secure master
++			 (1 <<  6) |  // DBG=1: Enables R/W from debug master
++			 (1 <<  4) |  // UM=1: R/W depends on other enable/disable settings in user mode
++			 (1 <<  1) |  // WG=1: During write, PBGPROT1_m is not used as a judgment condition.
++			 (1 <<  0) ;  // RG=1: During read, PBGPROT1_m is not used as a judgment condition.
++	value1 = 0xFFFFFFFF;  // all SPID 
++
++	// PBG00, PGB01
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG00KCPROT = 0xA5A5A501;
++
++	// PBG00
++	for( m = 0; m <= 6; m++ ){
++		PBG00PROT0_m(m) = value0;
++		PBG00PROT1_m(m) = value1;
++	}
++
++	// PBG01
++	for( m = 0; m <= 1; m++ ){
++		PBG01PROT0_m(m) = value0;
++		PBG01PROT1_m(m) = value1;
++	}
++
++	// set write protect
++	PBG00KCPROT = 0xA5A5A500;
++
++	// PBG20, PGB21, PBG22
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG20KCPROT = 0xA5A5A501;
++		
++	// PBG20
++	for( m = 0; m <= 13; m++ ){
++		PBG20PROT0_m(m) = value0;
++		PBG20PROT1_m(m) = value1;
++	}
++		
++	// PBG21
++	for( m = 0; m <= 2; m++ ){
++		PBG21PROT0_m(m) = value0;
++		PBG21PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG20KCPROT = 0xA5A5A500;
++		
++		
++	// PBG30, PGB31, PBG32, PBG33
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG30KCPROT = 0xA5A5A501;
++		
++	// PBG30
++	for( m = 0; m <= 15; m++ ){
++		PBG30PROT0_m(m) = value0;
++		PBG30PROT1_m(m) = value1;
++	}
++		
++	// PBG31
++	for( m = 0; m <= 13; m++ ){
++		PBG31PROT0_m(m) = value0;
++		PBG31PROT1_m(m) = value1;
++	}
++		
++	// PBG32
++	for( m = 0; m <= 15; m++ ){
++		PBG32PROT0_m(m) = value0;
++		PBG32PROT1_m(m) = value1;
++	}
++		
++	// PBG33
++	for( m = 0; m <= 9; m++ ){
++		PBG33PROT0_m(m) = value0;
++		PBG33PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG30KCPROT = 0xA5A5A500;
++
++
++	// PBG40
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG40KCPROT = 0xA5A5A501;
++		
++	// PBG40
++	for( m = 0; m <= 5; m++ ){
++		PBG40PROT0_m(m) = value0;
++		PBG40PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG40KCPROT = 0xA5A5A500;
++
++
++	// PBG50
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG50KCPROT = 0xA5A5A501;
++		
++	// PBG50
++	for( m = 0; m <= 12; m++ ){
++		PBG50PROT0_m(m) = value0;
++		PBG50PROT1_m(m) = value1;
++	}
++		
++	// PBG51
++	for( m = 0; m <= 5; m++ ){
++		PBG51PROT0_m(m) = value0;
++		PBG51PROT1_m(m) = value1;
++	}
++		
++	// PBG52
++	for( m = 0; m <= 15; m++ ){
++		PBG52PROT0_m(m) = value0;
++		PBG52PROT1_m(m) = value1;
++	}
++		
++	// PBG53
++	for( m = 0; m <= 2; m++ ){
++		PBG53PROT0_m(m) = value0;
++		PBG53PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG50KCPROT = 0xA5A5A500;
++		
++		
++	// PBG6L0
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG6L0KCPROT = 0xA5A5A501;
++		
++	// PBG6L0
++	for( m = 0; m <= 3; m++ ){
++		PBG6L0PROT0_m(m) = value0;
++		PBG6L0PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG6L0KCPROT = 0xA5A5A500;
++		
++	// PBG6H0
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG6H0KCPROT = 0xA5A5A501;
++		
++	// PBG6H0
++	for( m = 0; m <= 1; m++ ){
++		PBG6H0PROT0_m(m) = value0;
++		PBG6H0PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG6H0KCPROT = 0xA5A5A500;
++		
++		
++	// PBG70
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG70KCPROT = 0xA5A5A501;
++		
++	// PBG70
++	for( m = 0; m <= 3; m++ ){
++		PBG70PROT0_m(m) = value0;
++		PBG70PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG70KCPROT = 0xA5A5A500;
++		
++		
++	// PBG80
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG80KCPROT = 0xA5A5A501;
++		
++	// PBG80
++	for( m = 0; m <= 12; m++ ){
++		PBG80PROT0_m(m) = value0;
++		PBG80PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG80KCPROT = 0xA5A5A500;
++		
++		
++	// PBG90
++	////////////////////////////////////////////////////
++	// release write protect
++	PBG90KCPROT = 0xA5A5A501;
++
++	// PBG90
++	for( m = 0; m <= 6; m++ ){
++		PBG90PROT0_m(m) = value0;
++		PBG90PROT1_m(m) = value1;
++	}
++		
++	// set write protect
++	PBG90KCPROT = 0xA5A5A500;
++
++	/* RELEASE ALL HBG */
++	value0 = (0 << 31) |  // LOCK=0: Register can be re-written
++//	 		 (1 <<  8) |  // GEN=1: Enables the guard setting
++			 (0 <<  8) |  // GEN=0: Disables the guard setting
++			 (1 <<  7) |  // SEC=1: R/W depends on other enable/disable settings from non-secure master
++			 (1 <<  6) |  // DBG=1: Enables R/W from debug master
++			 (1 <<  4) |  // UM=1: R/W depends on other enable/disable settings in user mode
++			 (1 <<  1) |  // WG=1: During write, PBGPROT1_m is not used as a judgment condition.
++			 (1 <<  0) ;  // RG=1: During read, PBGPROT1_m is not used as a judgment condition.
++	value1 = 0xFFFFFFFF;  // all SPID 
++		
++	// PBG00, PGB01
++	////////////////////////////////////////////////////
++	// release write protect
++	HBG92KCPROT = 0xA5A5A501;
++		
++	// HBG92
++	HBG92PROT0 = value0;
++	HBG92PROT1 = value1;
++
++	// set write protect
++	HBG92KCPROT = 0xA5A5A500;
++
++	/****************************************************
++			  Interrupt masking
++	****************************************************/
++	APPLINTMSKR04 = 0x03FFFFFF; // Unmask
++	APPLINTMSKR05 = 0x03FFFFFF;
++
++	/****************************************************
++			  Clock setting protection
++	****************************************************/
++	CLKKCPROT1 = 0xA5A5A501;
++
++	/****************************************************
++			  Module standby protection
++	****************************************************/
++	STBCKCPROT = 0xA5A5A501;
++	MSRKCPROT  = 0xA5A5A501;	
++
++	/****************************************************
++			  Reset controller protection
++	****************************************************/
++	RESKCPROT0 = 0xA5A5A501;
++}
++
++/* Pick some steps from CAN driver that enable clock supply for CAN */
++void can_clk_conf()
++{
++	uint32 val, temp;
++
++	// Make sure the clocks are stable (this is needed only on the G4MH core)
++	// Main oscillator
++	while ((MOSCS & 0x01 == 0) || (MOSCS & 0x02 == 0));
++	// The datasheet tells to wait 1.4us after the clock is stable, or to read the MOSCSTAB bit at least 4 times (take some margin here)
++	for (val = 0; val < 100; val++)
++		temp = MOSCS;
++	// PLL
++	while ((PLLS & 0x01 == 0) || (PLLS & 0x02 == 0));
++	// The datasheet tells to wait 1.4us after the clock is stable, or to read the PLLCLKSTAB bit at least 4 times (take some margin here)
++	for (val = 0; val < 100; val++)
++		temp = PLLS;
++
++	// Clock the CAN module with a 80MHz clock to be able to reach 8Mbit/s bus speed in CAN-FD mode (see datasheet table 13.6)
++	CLKD_PLLC = 0x00000001; // Make sure the PLL output clock is not divided
++	while (!(CLKD_PLLS & 0x02));
++	CKSC_CPUC = 0x00000000; // Select the PLL output as the source for the system clock
++	while (CKSC_CPUS & 0x1);
++	CKSC_RCANC = 0x00000001; // Make sure the clock is not divided
++
++	// Enable the two CAN controller clock
++	val = MSR_RSCFD;
++	val &= ~0x03;
++	MSR_RSCFD = val;
++}
+diff --git a/examples/rh850/can_unlock/memory_unlocker.h b/examples/rh850/can_unlock/memory_unlocker.h
+new file mode 100644
+index 000000000..8e6968522
+--- /dev/null
++++ b/examples/rh850/can_unlock/memory_unlocker.h
+@@ -0,0 +1,151 @@
++#ifndef H_MEMORY_UNLOCKER_H
++#define H_MEMORY_UNLOCKER_H
++
++#define PROTECTION_DISABLE_KEY 0xA5A5A501
++
++// Register base addresses
++#define PBG00_base          0xFFC6B080  // P-Bus Group 0
++#define PBG01_base          0xFFC6B100  // P-Bus Group 0
++#define PBGERRSLV00_base    0xFFC6B000  // P-Bus Group 0
++#define PBG20_base          0xFFDE0B00  // P-Bus Group 2L
++#define PBG21_base          0xFFDE0C00  // P-Bus Group 2L
++#define PBGERRSLV20_base    0xFFDE1000  // P-Bus Group 2L
++#define PBG30_base          0xFFC72B00  // P-Bus Group 3
++#define PBG31_base          0xFFC72C00  // P-Bus Group 3
++#define PBG32_base          0xFFC72D00  // P-Bus Group 3
++#define PBG33_base          0xFFC72E00  // P-Bus Group 3
++#define PBGERRSLV30_base    0xFFC73200  // P-Bus Group 3
++#define PBG40_base          0xFFC75300  // P-Bus Group 4
++#define PBGERRSLV40_base    0xFFC75400  // P-Bus Group 4
++#define PBG50_base          0xFFC7A300  // P-Bus Group 5
++#define PBG51_base          0xFFC7A400  // P-Bus Group 5
++#define PBG52_base          0xFFC7A500  // P-Bus Group 5
++#define PBG53_base          0xFFC7A600  // P-Bus Group 5
++#define PBGERRSLV50_base    0xFFC7B000  // P-Bus Group 5
++#define PBG6L0_base         0xFFC81000  // P-Bus Group 6L
++#define PBGERRSLV6L0_base   0xFFC83000  // P-Bus Group 6L
++#define PBG6H0_base         0xFF751000  // P-Bus Group 6H
++#define PBGERRSLV6H0_base   0xFF752000  // P-Bus Group 6H
++#define PBG70_base          0xFFF49400  // P-Bus Group 7
++#define PBGERRSLV70_base    0xFFF4A000  // P-Bus Group 7
++#define PBG80_base          0xFFF29300  // P-Bus Group 8
++#define PBGERRSLV80_base    0xFFF2A000  // P-Bus Group 8
++#define PBG90_base          0xFF0A1300  // P-Bus Group 9
++#define PBGERRSLV90_base    0xFF0A1400  // P-Bus Group 9
++
++// Register addresses
++#define STBY_CTRL (*(volatile unsigned long  *) (MCCR_SELB1_base + 0x0034))
++
++#define PBG00KCPROT         (*(volatile unsigned long  *)(PBGERRSLV00_base + 0x18))
++#define PBG00PROT0_m(m)     (*(volatile unsigned long  *)(PBG00_base + 0x0 + 0x8 * m))
++#define PBG00PROT1_m(m)     (*(volatile unsigned long  *)(PBG00_base + 0x4 + 0x8 * m))
++#define PBG01PROT0_m(m)     (*(volatile unsigned long  *)(PBG01_base + 0x0 + 0x8 * m))
++#define PBG01PROT1_m(m)     (*(volatile unsigned long  *)(PBG01_base + 0x4 + 0x8 * m))
++
++#define PBG20KCPROT         (*(volatile unsigned long  *)(PBGERRSLV20_base + 0x18))
++#define PBG20PROT0_m(m)     (*(volatile unsigned long  *)(PBG20_base + 0x0 + 0x8 * m))
++#define PBG20PROT1_m(m)     (*(volatile unsigned long  *)(PBG20_base + 0x4 + 0x8 * m))
++#define PBG21PROT0_m(m)     (*(volatile unsigned long  *)(PBG21_base + 0x0 + 0x8 * m))
++#define PBG21PROT1_m(m)     (*(volatile unsigned long  *)(PBG21_base + 0x4 + 0x8 * m))
++
++#define PBG30KCPROT         (*(volatile unsigned long  *)(PBGERRSLV30_base + 0x18))
++#define PBG30PROT0_m(m)     (*(volatile unsigned long  *)(PBG30_base + 0x0 + 0x8 * m))
++#define PBG30PROT1_m(m)     (*(volatile unsigned long  *)(PBG30_base + 0x4 + 0x8 * m))
++#define PBG31PROT0_m(m)     (*(volatile unsigned long  *)(PBG31_base + 0x0 + 0x8 * m))
++#define PBG31PROT1_m(m)     (*(volatile unsigned long  *)(PBG31_base + 0x4 + 0x8 * m))
++#define PBG32PROT0_m(m)     (*(volatile unsigned long  *)(PBG32_base + 0x0 + 0x8 * m))
++#define PBG32PROT1_m(m)     (*(volatile unsigned long  *)(PBG32_base + 0x4 + 0x8 * m))
++#define PBG33PROT0_m(m)     (*(volatile unsigned long  *)(PBG33_base + 0x0 + 0x8 * m))
++#define PBG33PROT1_m(m)     (*(volatile unsigned long  *)(PBG33_base + 0x4 + 0x8 * m))
++
++#define PBG40KCPROT          (*(volatile unsigned long  *)(PBGERRSLV40_base + 0x18))
++#define PBG40PROT0_m(m)      (*(volatile unsigned long  *)(PBG40_base + 0x0 + 0x8 * m))
++#define PBG40PROT1_m(m)      (*(volatile unsigned long  *)(PBG40_base + 0x4 + 0x8 * m))
++
++#define PBG50KCPROT          (*(volatile unsigned long  *)(PBGERRSLV50_base + 0x18))
++#define PBG50PROT0_m(m)      (*(volatile unsigned long  *)(PBG50_base + 0x0 + 0x8 * m))
++#define PBG50PROT1_m(m)      (*(volatile unsigned long  *)(PBG50_base + 0x4 + 0x8 * m))
++#define PBG51PROT0_m(m)      (*(volatile unsigned long  *)(PBG51_base + 0x0 + 0x8 * m))
++#define PBG51PROT1_m(m)      (*(volatile unsigned long  *)(PBG51_base + 0x4 + 0x8 * m))
++#define PBG52PROT0_m(m)      (*(volatile unsigned long  *)(PBG52_base + 0x0 + 0x8 * m))
++#define PBG52PROT1_m(m)      (*(volatile unsigned long  *)(PBG52_base + 0x4 + 0x8 * m))
++#define PBG53PROT0_m(m)      (*(volatile unsigned long  *)(PBG53_base + 0x0 + 0x8 * m))
++#define PBG53PROT1_m(m)      (*(volatile unsigned long  *)(PBG53_base + 0x4 + 0x8 * m))
++
++#define PBG6L0KCPROT        (*(volatile unsigned long  *)(PBGERRSLV6L0_base + 0x18))
++#define PBG6L0PROT0_m(m)    (*(volatile unsigned long  *)(PBG6L0_base + 0x0 + 0x8 * m))
++#define PBG6L0PROT1_m(m)    (*(volatile unsigned long  *)(PBG6L0_base + 0x4 + 0x8 * m))
++
++#define PBG6L1KCPROT        (*(volatile unsigned long  *)(PBGERRSLV6L1_base + 0x18))
++#define PBG6L1PROT0_m(m)    (*(volatile unsigned long  *)(PBG6L1_base + 0x0 + 0x8 * m))
++#define PBG6L1PROT1_m(m)    (*(volatile unsigned long  *)(PBG6L1_base + 0x4 + 0x8 * m))
++
++#define PBG6H0KCPROT        (*(volatile unsigned long  *)(PBGERRSLV6H0_base + 0x18))
++#define PBG6H0PROT0_m(m)    (*(volatile unsigned long  *)(PBG6H0_base + 0x0 + 0x8 * m))
++#define PBG6H0PROT1_m(m)    (*(volatile unsigned long  *)(PBG6H0_base + 0x4 + 0x8 * m))
++
++#define PBG70KCPROT         (*(volatile unsigned long  *)(PBGERRSLV70_base + 0x18))
++#define PBG70PROT0_m(m)     (*(volatile unsigned long  *)(PBG70_base + 0x0 + 0x8 * m))
++#define PBG70PROT1_m(m)     (*(volatile unsigned long  *)(PBG70_base + 0x4 + 0x8 * m))
++
++#define PBG80KCPROT         (*(volatile unsigned long  *)(PBGERRSLV80_base + 0x18))
++#define PBG80PROT0_m(m)     (*(volatile unsigned long  *)(PBG80_base + 0x0 + 0x8 * m))
++#define PBG80PROT1_m(m)     (*(volatile unsigned long  *)(PBG80_base + 0x4 + 0x8 * m))
++
++#define PBG90KCPROT         (*(volatile unsigned long  *)(PBGERRSLV90_base + 0x18))
++#define PBG90PROT0_m(m)     (*(volatile unsigned long  *)(PBG90_base + 0x0 + 0x8 * m))
++#define PBG90PROT1_m(m)     (*(volatile unsigned long  *)(PBG90_base + 0x4 + 0x8 * m))
++
++/*******************************************************************************
++**                      HBG                                                   **
++*******************************************************************************/
++#define HBG92_base        0xFF0D0000  // P-Bus Group 9
++#define HBGERRSLV92_base  0xFF0D1000  // P-Bus Group 9
++
++#define HBG92KCPROT (*(volatile unsigned long  *)(HBGERRSLV92_base + 0x18))
++#define HBG92PROT0  (*(volatile unsigned long  *)(HBG92_base + 0x00))
++#define HBG92PROT1  (*(volatile unsigned long  *)(HBG92_base + 0x04))
++
++#define HBGKCPROT_PFS (*(volatile unsigned long *) (HBGERRSLV_PFS_base + 0x18))
++#define HBGPROT0_PFS (*(volatile unsigned long *) (HBG_PFS_base))
++#define HBGPROT1_PFS (*(volatile unsigned long *) (HBG_PFS_base + 0x4))
++
++
++/*******************************************************************************
++**                      Control domain interrupt mask                         **
++*******************************************************************************/
++#define INTSWCD_base 0xF8F11000
++#define APPLINTMSKR04 (*(volatile unsigned long *) (INTSWCD_base + 0x50))
++#define APPLINTMSKR05 (*(volatile unsigned long *) (INTSWCD_base + 0x54))
++
++/*                        Clock protect register                              */
++#define CLKKCPROT1 (*(volatile unsigned long *) 0xFF980700)
++
++/*           Clock controller register                                        */
++#define CLKD_PLLC (*(volatile unsigned long *) 0xFF980120)
++#define CLKD_PLLS (*(volatile unsigned long *) 0xFF980128)
++#define CKSC_CPUC (*(volatile unsigned long *) 0xFF980100)
++#define CKSC_CPUS (*(volatile unsigned long *) 0xFF980180)
++#define CKSC_RCANC (*(volatile unsigned long *) 0xFF980150)
++#define MOSCS     (*(volatile unsigned long *) 0xFF988004)
++#define PLLS      (*(volatile unsigned long *) 0xFF980004)
++/*           Standby controller Register Key Code Protection Register         */
++#define STBCKCPROT (*(volatile unsigned long *) 0xFF981700)
++
++/*           Module Standby Register Key Code Protection Register             */
++#define MSRKCPROT (*(volatile unsigned long *) (0xFF981710))
++
++/*           Module standby controller                                        */
++#define MSR_RSCFD (*(volatile unsigned long *) 0xFF981000)
++
++/*              Reset Controller Register Key Code Protection                 */
++#define RESKCPROT0 (*(volatile unsigned long *) 0xFF980F00)
++
++
++/* CAN base address */
++#define RSCFD0_BASE_ADDR (0xFFF50000)
++#define RSCFD1_BASE_ADDR (0xFFD00000)
++
++void memory_unlocker(void);
++void can_clk_conf(void);
++#endif
+-- 
+GitLab
+
