@@ -45,9 +45,9 @@ wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/burn_s4.py -
 wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/ipl_burning.py -O deploy/${GEN4_BOARD}_ipl/ipl_burning.py
 wget https://raw.github.com/renesas-rcar/whitebox-sdk/v5.2/tool/IPL/ipl_burning.json -O deploy/${GEN4_BOARD}_ipl/ipl_burning.json
 sed -i -e 's/    prepare_flash_loader(BOARD, G4MHOS, CR52OS, USE_CAN)//' deploy/${GEN4_BOARD}_ipl/burn_s4.py
-sed -i deploy/${GEN4_BOARD}_ipl/burn_s4.py \
+sed -i deploy/${GEN4_BOARD}_ipl/ipl_burning.json \
     -e 's/App_CDD_ICCOM_S4_Sample_CR52/dummy_rtos/' \
-    -e 's/App_CDD_ICCOM_S4_Sample_G4MH/dummy_g4mh_case0/' deploy/${GEN4_BOARD}_ipl/burn_s4.py
+    -e 's/App_CDD_ICCOM_S4_Sample_G4MH/dummy_g4mh_case0/'
 
 ./build_h3.sh h3ulcb-4x2g -cdf
 cp work/gen3_full.img.gz deploy/$GEN3_BOARD.mmc.full.img.gz
