@@ -72,7 +72,7 @@ moulin ./aos-rcar-demo2023.yaml \
     #--GEN3_DEVICE disable \
 
 ninja
-ninja gen4_full.img.gz
+ninja gen4_full.img
 # Compress
 if [[ -e $(which pigz) ]];then
     pigz -kf gen4_full.img
