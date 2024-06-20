@@ -1,0 +1,47 @@
+From 4bdbf3af138013f22a44be1021260618ab494ea4 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 20 Jun 2024 11:56:09 +0900
+Subject: [PATCH] HACK: Imporve canfd initialize failure
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/rh850/sample/can_demo.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/examples/rh850/sample/can_demo.c b/examples/rh850/sample/can_demo.c
+index fd2d6680..634bdfbb 100644
+--- a/examples/rh850/sample/can_demo.c
++++ b/examples/rh850/sample/can_demo.c
+@@ -31,8 +31,18 @@
+ #include <string.h>
+ #include <tpl_os.h>
+ 
++#define CPUCLK_MHZ 400UL
++#define WAIT_US(t) \
++    { \
++        volatile uint32 cnt; \
++        for (cnt = 0; \
++             cnt < (((uint32)CPUCLK_MHZ * ((uint32)t)) + (uint32)1); \
++             cnt++); \
++    }
++
+ int can_demo_init(void)
+ {
++	int i;
+ 	// Statically list the configuration of each CAN controller used in the application
+ 	static tpl_can_controller_config_t can_controllers_config[] =
+ 	{
+@@ -82,7 +92,9 @@ int can_demo_init(void)
+ 	int ret;
+ 
+ 	// Initialize the CAN module 0 channel 0 with the enabled configuration
+-	ret = Can_Init(&can_config_type);
++	WAIT_US(10*1000);
++	for ( i=0; i<3 ++i)
++		ret = Can_Init(&can_config_type);
+ 	if (ret)
+ 		return -1;
+ 
+-- 
+2.34.1
+
