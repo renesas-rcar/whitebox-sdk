@@ -1,0 +1,98 @@
+From f114560103402494e4c8e6f72b48c3be9d184b7c Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 1 Jul 2024 17:42:36 +0900
+Subject: [PATCH 3/4] rh850: spider: can: Add support interrupts(RX/TX ch0)
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ goil/templates/config/rh850/config.oil     |  8 ++++--
+ libraries/drivers/can/renesas/spider_can.c | 33 ++++++++++++++++++++++
+ libraries/drivers/can/renesas/spider_can.h |  3 ++
+ 3 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/goil/templates/config/rh850/config.oil b/goil/templates/config/rh850/config.oil
+index 55d973d0..ac180e23 100755
+--- a/goil/templates/config/rh850/config.oil
++++ b/goil/templates/config/rh850/config.oil
+@@ -60,7 +60,9 @@ CPU renesas {
+     IT_TABLE_SIZE = 767;
+   };
+ 
+-  INTERRUPT iccomInt  { ID = 80; };
+-  INTERRUPT SysTick   { ID = 364; };
+-  INTERRUPT SysTick2  { ID = 365; };
++  INTERRUPT iccomInt          { ID = 80; };
++  INTERRUPT SysTick           { ID = 364; };
++  INTERRUPT SysTick2          { ID = 365; };
++  INTERRUPT RSCAN0_RX_Int     { ID = 297; };
++  INTERRUPT RSCAN0_TX_CH0_Int { ID = 300; };
+ };
+diff --git a/libraries/drivers/can/renesas/spider_can.c b/libraries/drivers/can/renesas/spider_can.c
+index 19704040..4ce2eade 100644
+--- a/libraries/drivers/can/renesas/spider_can.c
++++ b/libraries/drivers/can/renesas/spider_can.c
+@@ -322,16 +322,49 @@ static int spider_can_init(struct tpl_can_controller_config_t *config)
+ 	// Enable reception FIFO (the write must be done separately, after all other bits of the register have been configured, and when the module is in global operation mode)
+ 	val = ctrl_base_address->CFDRFCC0.UINT32;
+ 	val |= 0x00000001;
++	val |= (0x1 <<  1);  // FIFO Interrupt generation enabled
++	val |= (0x1 << 12);  // Interrupt generated at the end of every received message storage
+ 	ctrl_base_address->CFDRFCC0.UINT32 = val;
+ 
+ 	// Enable transmission FIFO, the requirements are the same than the reception FIFO
+ 	val = ctrl_base_address->CFDCFCC0.UINT32;
+ 	val |= 0x00000001;
++	val |= (0x1 <<  2); // Common FIFO TX Interrupt Enable
++	// val |= (0x1 << 12); // TX FIFO Mode: Interrupt generated for every successfully transmitted message;
+ 	ctrl_base_address->CFDCFCC0.UINT32 = val;
+ 
++	// Enable interrupt
++#ifndef __arm__ // for G4MH
++	INTC2.EIC297.BIT.EIP297 = 0x0;  // for RX
++	INTC2.EIC297.BIT.EIMK297 = 0x0; // for RX
++	INTC2.EIC300.BIT.EIP300 = 0x0;  // for TX ch0
++	INTC2.EIC300.BIT.EIMK300 = 0x0; // for TX ch0
++#else // for Cortex-R52
++#endif
++
+ 	return E_OK;
+ }
+ 
++void spider_can_clear_rx_interrupt(struct tpl_can_controller_config_t *config) {
++	uint32 val, *ptr;
++	struct tpl_can_controller_t *ctrl = config->controller;
++
++	volatile struct __tag5579 *ctrl_base_address = (volatile struct __tag5579 *) ctrl->base_address;
++	val = ctrl_base_address->CFDRFSTST0.UINT32; // iodefine.h has wrong struct name(CFDRFSTS0 is correct by UM)
++	val &= ~(0x1 << 3);
++	ctrl_base_address->CFDRFSTST0.UINT32 = val;
++}
++
++void spider_can_clear_tx_ch0_interrupt(struct tpl_can_controller_config_t *config) {
++	uint32 val, *ptr;
++	struct tpl_can_controller_t *ctrl = config->controller;
++
++	volatile struct __tag5579 *ctrl_base_address = (volatile struct __tag5579 *) ctrl->base_address;
++	val = ctrl_base_address->CFDCFSTS0.UINT32;
++	val &= ~(0x1 << 4);
++	ctrl_base_address->CFDCFSTS0.UINT32 = val;
++}
++
+ static int spider_set_baudrate(struct tpl_can_controller_t *ctrl, CanControllerBaudrateConfig *baud_rate_config)
+ {
+ 	// Does nothing for now
+diff --git a/libraries/drivers/can/renesas/spider_can.h b/libraries/drivers/can/renesas/spider_can.h
+index a18598f7..afad955f 100644
+--- a/libraries/drivers/can/renesas/spider_can.h
++++ b/libraries/drivers/can/renesas/spider_can.h
+@@ -47,4 +47,7 @@
+  */
+ extern tpl_can_controller_t spider_can_controller_0, spider_can_controller_1;
+ 
++
++void spider_can_clear_rx_interrupt(struct tpl_can_controller_config_t *config);
++void spider_can_clear_tx_ch0_interrupt(struct tpl_can_controller_config_t *config);
+ #endif
+-- 
+2.34.1
+
