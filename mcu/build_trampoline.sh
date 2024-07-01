@@ -123,6 +123,18 @@ export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
 rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 
+cd ${SOURCE_DIR}/examples/rh850/can_demo_isr
+chmod +x ./build.sh
+./build.sh
+cd ${SOURCE_DIR}
+rm -f G4MH_can_demo_isr.srec
+objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/can_demo_isr/_build/can_demo_isr_exe.abs can_demo_isr_exe.s3
+rlink ../G4MH_Head.srec can_demo_isr_exe.s3 -fo=Stype -ou=G4MH_can_demo_isr.srec
+rm -f can_demo_isr_exe.s3
+cp -f G4MH_can_demo_isr.srec ${SCRIPT_DIR}/deploy/g4mh.srec
+
+exit
+
 # build sample
 cd ${SOURCE_DIR}/examples/rh850/sample
 chmod +x ./build.sh
