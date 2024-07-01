@@ -8,29 +8,52 @@ export PATH=${SCRIPT_DIR}/../tool/CC-RH/bin:$PATH
 export HLNK_DIR="${SCRIPT_DIR}/../tool/CC-RH"
 
 CLEAN_BUILD_FLAG=false
+DISABLE_WARN_MSG_FLAG=false
 Usage() {
     echo "Usage:"
     echo "    $0 [option]"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
     echo "    -h: Show this usage"
+    echo "    -w: Disable warning message about CC-RH compiler for Linux"
 }
 
 print_err () {
     echo -e "\e[31m$*\e[m"
 }
+print_warn () {
+    echo -e "\e[33m$*\e[m"
+}
 
 # Proc arguments
-while getopts "ch" OPT
+while getopts "chw" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
+        w) DISABLE_WARN_MSG_FLAG=true;;
         *) print_err "ERROR: Unsupported option"; Usage; exit;;
     esac
 done
 
 # check CC-RH compiler
+if [ ! -e "${SCRIPT_DIR}/../tool/CC-RH/bin" ]; then
+    export PATH=~/.local/bin:$PATH
+    export HLNK_DIR="C:\Program Files (x86)\Renesas\RH\2_5_0"
+    export PATH="C:\Program Files (x86)\Renesas\RH\2_5_0\bin:${PATH}"
+    if [[ "$DISABLE_WARN_MSG_FLAG" == "false" ]]; then
+        print_warn "Note: CC-RH compiler for Linux isn't found in tool directory."
+        print_warn "          ${SCRIPT_DIR}/../tool/CC-RH/bin"
+        print_warn "      Whitebox SDK has changed to use linux native compiler since v5.4."
+        print_warn "      So please run setup again."
+        print_warn "      "
+        print_warn "      If you want to disable this message temporarily, please use -w option."
+        print_warn "      However, Windows compiler with Wine is deprecated and longer supported."
+        print_warn "      "
+        print_warn "      Program will proceed after 5 sec"
+        sleep 5s
+    fi
+fi
 if [[ "$(ccrh -v; echo $?)" -ne 0 ]]; then
     print_err "ERROR: CC-RH compiler may not be installed correctly."
     exit -1
