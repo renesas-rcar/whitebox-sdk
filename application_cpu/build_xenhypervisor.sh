@@ -66,13 +66,13 @@ if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     #############################################
     # Remove meta-aos-rcar-gen from repo list
     PARTERN='    - type: git
-      url: "https://github.com/aoscloud/meta-aos-rcar-gen4.git"
+      url: "https://github.com/aosedge/meta-aos-rcar-gen4.git"
       rev: "v1.0.0"'
     sed -i -z "s|${PARTERN//$'\n'/\\n}||" ./aos-rcar-gen4-wb.yaml
 
     # Prepare additional repo
     mkdir -p ./yocto
-    git clone https://github.com/aoscloud/meta-aos-rcar-gen4 \
+    git clone https://github.com/aosedge/meta-aos-rcar-gen4 \
     ./yocto/meta-aos-rcar-gen4
     cd ./yocto/meta-aos-rcar-gen4
     git checkout ${AOS_VERSION}

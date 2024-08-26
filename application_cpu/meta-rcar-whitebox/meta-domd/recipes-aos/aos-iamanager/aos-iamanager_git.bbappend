@@ -6,3 +6,4 @@ do_install_append() {
     fi
 }
 
+GO_IMPORT = "github.com/aosedge/aos_iamanager"
