@@ -47,10 +47,10 @@ common_data:
       url: "https://github.com/xen-troops/meta-xt-common.git"
       rev: "e27c46b"
     - type: git
-      url: "https://github.com/aoscloud/meta-aos-rcar-gen4.git"
+      url: "https://github.com/aosedge/meta-aos-rcar-gen4.git"
       rev: "v1.0.0"
     - type: git
-      url: https://github.com/aoscloud/meta-aos.git
+      url: https://github.com/aosedge/meta-aos.git
       rev: "v6.0.2"
   # Common configuration options for all yocto-based domains
   conf: &COMMON_CONF
