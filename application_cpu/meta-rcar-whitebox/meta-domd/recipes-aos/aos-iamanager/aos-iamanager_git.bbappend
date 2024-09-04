@@ -6,4 +6,4 @@ do_install_append() {
     fi
 }
 
-GO_IMPORT = "github.com/aosedge/aos_iamanager"
+SRC_URI := "${@d.getVar('SRC_URI').replace('git@github.com/aoscloud', 'git@github.com/aosedge')}"
