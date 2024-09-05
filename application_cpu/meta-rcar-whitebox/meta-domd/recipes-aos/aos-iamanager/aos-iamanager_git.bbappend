@@ -6,4 +6,4 @@ do_install_append() {
     fi
 }
 
-SRC_URI := "${@d.getVar('SRC_URI').replace('git@github.com/aoscloud', 'git@github.com/aosedge')}"
+SRC_URI := "${@d.getVar('SRC_URI').replace('git://github.com/aoscloud', 'git://github.com/aosedge')}"
