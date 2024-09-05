@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WB_VER=v5.3
+WB_VER=v5.3-next
 
 echo Install git client # Include a process to skip if the environment is already in.
 if [[ $(git --version > /dev/null 2>&1 ; echo $?) -ne 0 ]]; then
