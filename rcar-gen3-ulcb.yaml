@@ -195,6 +195,7 @@ parameters:
             builder:
               conf:
                 - [BBMASK_append, "|meta-whitebox-demo/recipes-demo-gen4-"]
+                - [BBMASK_append, "|meta-whitebox-demo/recipes-aos"]
                 - [PACKAGECONFIG_pn-systemd_append, " networkd"]
                 - [PACKAGECONFIG_pn-systemd_append, " timesyncd"]
                 - [PACKAGECONFIG_pn-systemd_append, " resolved"]
