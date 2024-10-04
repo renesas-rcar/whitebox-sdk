@@ -239,6 +239,7 @@ components:
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-dom0"
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-control-domain"
+        - "../../../../../meta-aos-rcar-update"
 
       build_target: core-image-thin-initramfs
       external_src:
@@ -316,6 +317,7 @@ components:
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domx"
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-domd"
         - "../../../../../meta-aos-rcar-gen4/meta-aos-rcar-gen4-driver-domain"
+        - "../../../../../meta-aos-rcar-update"
 
       target_images:
         - "tmp/deploy/images/%{GEN4_MACHINE}/Image"
@@ -368,6 +370,7 @@ components:
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
         - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+        - "../../../../../meta-aos-rcar-update"
 
       build_target: core-image-thin-initramfs
       external_src:
@@ -446,6 +449,7 @@ components:
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domd"
         - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-domd"
+        - "../../../../../meta-aos-rcar-update"
 
       target_images:
         - "tmp/deploy/images/%{GEN3_MACHINE}/Image"
@@ -506,6 +510,7 @@ components:
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
         - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+        - "../../../../../meta-aos-rcar-update"
 
       build_target: aos-update
       external_src:
@@ -566,6 +571,7 @@ components:
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-domx"
         - "../../../../../meta-aos-rcar-common/meta-aos-rcar-common-dom0"
         - "../../../../../meta-aos-rcar-gen3/meta-aos-rcar-gen3-dom0"
+        - "../../../../../meta-aos-rcar-update"
 
       build_target: aos-update
       external_src:
