@@ -15,6 +15,7 @@
             builder:
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-dom0"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-fix-master-branch-issue"
           domd:
             builder:
               conf:
@@ -37,6 +38,7 @@
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-fix-master-branch-issue"
               target_images:
                 - "tmp/deploy/images/%{MACHINE}/var/statestorage.db"
                 - "tmp/deploy/images/%{MACHINE}/boot-mmc.uImage"
@@ -44,6 +46,8 @@
             builder:
               conf:
                 - [IMAGE_INSTALL_append, " iproute2 iproute2-tc"]
+              layers:
+                - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-fix-master-branch-issue"
         images:
           full:
             partitions:
