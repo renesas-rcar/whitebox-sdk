@@ -6,7 +6,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 RDEPENDS_${PN} = "bash"
 
 DEPENDS_append = " nodejs-native"
-export NODE_OPTIONS="--max-old-space-size=8192"
+export NODE_OPTIONS="--max-old-space-size=6144"
 
 inherit go
 GO_IMPORT = "github.com/grafana/grafana"
@@ -36,6 +36,7 @@ S = "${WORKDIR}"
 B = "${S}/git-r0/src/github.com/grafana/grafana"
 
 do_compile_prepend() {
+    export GENERATE_SOURCEMAP=false
     cd ${S}
     cd ${B}
     git reset --hard
