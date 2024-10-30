@@ -72,17 +72,21 @@ cd zephyr-sdk-0.15.2
 python3 -m venv ${ZEPHYR_SDK_PATH}/.venv
 source ${ZEPHYR_SDK_PATH}/.venv/bin/activate
 pip install wheel
-pip install west
+pip install west -U
+CLONE_OPT_FLAG=""
+if [[ "$(west help init | grep CLONE_OPT)" != "" ]]; then
+    CLONE_OPT_FLAG=" -o--depth=1 "
+fi
 
 # Setup source code
 if [[ ! -e "${ZEPHYR_DIR}/zephyr" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     cd ${ZEPHYR_DIR}
     if [ ! -e "./.west/config" ]; then
-        west init -m  https://github.com/iotbzh/zephyr.git --manifest-rev 2022-12-20-s4sk ${ZEPHYR_DIR}
+        west init -m  https://github.com/iotbzh/zephyr.git --manifest-rev 2022-12-20-s4sk ${ZEPHYR_DIR} ${CLONE_OPT_FLAG}
     fi
     cd ${ZEPHYR_DIR}/zephyr
     git am ${ZEPHYR_PATCH}/*.patch
-    west update
+    west update -n
     west zephyr-export
     pip install docutils==0.18.1 # Avoid error when installing sphinx
     pip install -r ${ZEPHYR_DIR}/zephyr/scripts/requirements.txt
