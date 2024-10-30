@@ -6,6 +6,7 @@ ZEPHYR_SDK_PATH=${SCRIPT_DIR}/zephyr-sdk-0.15.2
 ZEPHYR_PATCH=${SCRIPT_DIR}/patchset_zephyr
 
 CLEAN_BUILD_FLAG=false
+ORIGINAL_ADDR_USED_FLAG=false
 Usage() {
     echo "Usage:"
     echo "    $0 board [option]"
@@ -15,14 +16,19 @@ Usage() {
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
     echo "    -h: Show this usage"
+    echo "    -o: Using original address"
+    echo "        Whitebox uses 0x40040000 to place cr52 program but"
+    echo "        but original S4 SDK uses 0xe2100000"
+    echo "        If this option is specified, 0xe210000 is used."
 }
 # Proc arguments
 OPTIND=2
-while getopts "ch" OPT
+while getopts "cho" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
         h) Usage; exit;;
+        o) ORIGINAL_ADDR_USED_FLAG=true;;
         *) echo -e "\e[31mERROR: Unsupported option\e[m"; Usage; exit;;
     esac
 done
@@ -36,6 +42,11 @@ fi
 if [ "$1" == "s4sk" ]; then BOARD="s4sk"
 elif [ "$1" == "spider" ]; then BOARD="spider"
 else echo -e "\e[31mERROR: Please "input" correct board name: spider or s4sk\e[m"; Usage; exit
+fi
+
+ADJUST_VMA_OPT="--adjust-vma=0x40040000" # For WhiteboxSDK env
+if [[ "${ORIGINAL_ADDR_USED_FLAG}" == "true" ]]; then
+    ADJUST_VMA_OPT="--adjust-vma=0xe2100000" # For original env
 fi
 
 if [[ "$CLEAN_BUILD_FLAG" == "true" ]]; then
@@ -80,7 +91,7 @@ fi
 # Build
 cd ${ZEPHYR_DIR}/zephyr
 west build -p always -b rcar_${BOARD}_cr52 samples/basic/blinky
-${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy -O srec --srec-forceS3 \
+${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy ${ADJUST_VMA_OPT} -O srec --srec-forceS3 \
     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
 # deploy
@@ -110,7 +121,7 @@ fi
 ## Build
 cd ${ZEPHYR_DIR}/zephyr
 west build -p always -b rcar_${BOARD}_cr52 samples/basic/benchmark
-${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy -O srec --srec-forceS3 \
+${ZEPHYR_SDK_PATH}/arm-zephyr-eabi/bin/arm-zephyr-eabi-objcopy ${ADJUST_VMA_OPT} -O srec --srec-forceS3 \
     ${ZEPHYR_DIR}/zephyr/build/zephyr/zephyr.elf build/zephyr/zephyr.srec
 
 # deploy
