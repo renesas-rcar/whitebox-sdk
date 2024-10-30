@@ -184,3 +184,29 @@ PACKAGES =+ "${PN}-systemtap"
 FILES_${PN}-systemtap = "${datadir}/systemtap"
 
 BBCLASSEXTEND = "native"
+
+####################################################################################
+# This workaround is ported from following:                                        #
+#   repo:     https://github.com/htot/meta-intel-edison                            #
+#   commit:   7d222937bc340a80319efb2e423886cce6d96ba0                             #
+#   filepath: meta-intel-edison-distro/recipes-devtools/nodejs/nodejs_%25.bbappend #
+####################################################################################
+# nodejs takes a long time to build and benifits from as much parallel
+# makes as possible while compiling. However in the linking stage it
+# will try to link 5 executables simultaneosly each consuming 4GB RAM
+# unless you have 20GB RAM available adding nodejs to you image will
+# be very time consuming. One way to fix this is by adding to you
+# local.conf file:
+
+# Restrict parallel build for nodjs
+#PARALLEL_MAKE:pn-nodejs = "-j 1"
+#PARALLEL_MAKE:pn-nodejs-native = "-j 1"
+
+# This will also slow down the compile phase.
+
+# A bit more targeted is the following which will leave parallel make
+# as is, but serialize the linkers.
+
+EXTRA_OEMAKE_prepend = "\
+LINK='flock /tmp ${CXX}' \
+"
