@@ -46,10 +46,14 @@ mkdir -p ${ZEPHYR_DIR}
 # Setup SDK
 cd ${SCRIPT_DIR}
 if [ ! -e "${ZEPHYR_SDK_PATH}" ]; then
-    wget -c https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.2/zephyr-sdk-0.15.2_linux-x86_64.tar.gz
-    tar xvf zephyr-sdk-0.15.2_linux-x86_64.tar.gz
-    rm -f zephyr-sdk-0.15.2_linux-x86_64.tar.gz
+    # Minimal SDK
+    wget -c https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.2/zephyr-sdk-0.15.2_linux-x86_64_minimal.tar.gz
+    tar xf zephyr-sdk-0.15.2_linux-x86_64_minimal.tar.gz
+    # toolchain
+    wget -c https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.15.2/toolchain_linux-x86_64_arm-zephyr-eabi.tar.gz
+    tar xf toolchain_linux-x86_64_arm-zephyr-eabi.tar.gz -C zephyr-sdk-0.15.2
 fi
+
 cd zephyr-sdk-0.15.2
 ./setup.sh -c
 
