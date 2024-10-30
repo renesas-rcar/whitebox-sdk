@@ -1,5 +1,5 @@
 [Unit]
-Description = WAII control service file
+Description = VISSR control service file
 
 [Unit]
 Wants=agt_server.service

@@ -1,12 +1,12 @@
 [Unit]
-Description = WAII : vissv2server
+Description = VISSR : vissv2server
 After=local-fs.target network.target
-PartOf=waii.target
+PartOf=vissr.target
 ConditionPathExists=/usr/bin
 
 [Service]
-ExecStart=/usr/bin/waii/vissv2server/vissv2server --dbfile=/var/statestorage.db --vssJson=/var/vsspathlist.json
-WorkingDirectory=/usr/bin/waii/vissv2server
+ExecStart=/usr/bin/vissr/vissv2server/vissv2server --dbfile=/var/statestorage.db --vssJson=/var/vsspathlist.json
+WorkingDirectory=/usr/bin/vissr/vissv2server
 Type=simple
 Restart=on-failure
 RestartSec=10
