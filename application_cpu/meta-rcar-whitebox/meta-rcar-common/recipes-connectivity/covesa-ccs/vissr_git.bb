@@ -1,6 +1,6 @@
-DESCRIPTION = "W3C Automotive Interface Implementation - WAII"
+DESCRIPTION = "vehicle-information-service-specification-reference-implementation (VISSR)"
 SECTION = "examples"
-HOMEPAGE = "https://github.com/w3c/automotive"
+HOMEPAGE = "https://covesa.github.io/vissr/"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 RDEPENDS_${PN} = "bash vss"
@@ -15,28 +15,28 @@ SRCREV = "576498184224cce2f9aac1e977652f9e4125d6a8"
 UPSTREAM_CHECK_COMMITS = "1"
 
 inherit go
-GO_IMPORT = "github.com/w3c/automotive-viss2"
+GO_IMPORT = "github.com/COVESA/vissr"
 GO_INSTALL = "${GO_IMPORT}/server"
 
 inherit systemd
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE_FILENAMES = " \
-    waii.target \
+    ${BPN}.target \
     agt_server.service \
     vissv2server.service \
 "
 SRC_URI_append = " \
-    file://waii.target \
+    file://${BPN}.target \
     file://agt_server.service \
     file://vissv2server.service \
 "
 SYSTEMD_SERVICE_${PN} = "${SYSTEMD_SERVICE_FILENAMES}"
 
 do_compile_prepend() {
-    cd ${S}/src/github.com/w3c/automotive-viss2/
+    cd ${S}/src/${GO_IMPORT}
     sed -i 's|.* => /home/.*||' ./go.mod
     go mod tidy -modcacherw
-    cd ${S}/src/github.com/w3c/automotive-viss2/server
+    cd ${S}/src/${GO_IMPORT}/server
     go mod tidy -modcacherw
     sed -i 's|"vss_vissv2.binary"|"../vss_vissv2.binary"|' ./vissv2server/vissv2server.go
 }
@@ -44,17 +44,17 @@ do_compile_prepend() {
 services="vissv2server agt_server"
 do_compile() {
     for service in ${services}; do \
-        cd ${S}/src/github.com/w3c/automotive-viss2/server/${service}
+        cd ${S}/src/${GO_IMPORT}/server/${service}
         go build -modcacherw
     done
 }
 
 FILES_${PN} = " \
-    ${USRBINPATH}/waii/* \
+    ${USRBINPATH}/${BPN}/* \
     /var/* \
 "
 
-DBFILE_PATH = "${S}/src/github.com/w3c/automotive-viss2/server/vissv2server/serviceMgr/statestorage.db"
+DBFILE_PATH = "${S}/src/${GO_IMPORT}/server/vissv2server/serviceMgr/statestorage.db"
 
 do_install() {
     # service file
@@ -64,13 +64,13 @@ do_install() {
     done
 
     # binary
-    install -d ${D}/${USRBINPATH}/waii
+    install -d ${D}/${USRBINPATH}/${BPN}
     for service in ${services} transport_sec; do \
-        cp -r ${S}/src/github.com/w3c/automotive-viss2/server/${service} \
-            ${D}/${USRBINPATH}/waii/
+        cp -r ${S}/src/${GO_IMPORT}/server/${service} \
+            ${D}/${USRBINPATH}/${BPN}/
     done
     # Remove source code from directory
-    find ${D}/${USRBINPATH}/waii/ -name "*.go" \
+    find ${D}/${USRBINPATH}/${BPN}/ -name "*.go" \
         | xargs rm -f
 
     # Copy dbfile
