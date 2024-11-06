@@ -7,17 +7,20 @@ SRC_URI_append = " \
     file://0001-HACK-Improve-large-file-download-via-TFTP.patch \
 "
 
-# UFS support patchset
+# UFS support patchset from meta-xt-prod-devel-rcar
 SRC_URI_append = " \
-    file://0001-ufs-flush-invalidate-command-buffer.patch \
-    file://0002-arm-dts-r8a779f0-Add-Renesas-UFS-HCD-support.patch \
+    file://0001-arm-dts-r8a779f0-Add-Renesas-UFS-HCD-support.patch \
+    file://0002-ufs-flush-invalidate-command-buffer.patch \
     file://0003-ufs-port-linux-driver-for-rcar-ufshcd.patch \
+    file://0004-clk-renesas-Add-and-enable-CPG-reset-driver-for-Gen4.patch \
+    file://0005-ufs-reset-UFS-controller-on-init.patch \
+"
+# UFS support patchset(Add config + support S4SK)
+SRC_URI_append = " \
     file://0004-config-spider-Add-config-for-ufs.patch \
     file://0005-config-s4sk-Add-config-for-ufs.patch \
     file://0006-arm-dts-r8a779f0-s4sk-Add-Renesas-UFS-HCD-support.patch \
     file://0007-configs-s4sk-Add-missing-config-from-spider.patch \
-    file://0004-clk-renesas-Add-and-enable-CPG-reset-driver-for-Gen4.patch \
-    file://0005-ufs-reset-UFS-controller-on-init.patch \
 "
 
 # Backport from upstream

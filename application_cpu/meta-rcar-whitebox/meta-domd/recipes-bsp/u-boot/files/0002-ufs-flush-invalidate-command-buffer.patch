@@ -1,0 +1,101 @@
+From 046fa758280728065df2f1ff0f0c864c27b2a5a0 Mon Sep 17 00:00:00 2001
+From: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
+Date: Mon, 8 May 2023 12:44:33 +0300
+Subject: [PATCH 2/5] ufs: flush/invalidate command buffer
+
+Cache maintenance required on platforms other than TI (which maitains cache
+coherency out of the box using L3 interconnect).
+
+Author: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
+Signed-off-by: Dmytro Firsov <dmytro_firsov@epam.com>
+Acked-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
+---
+ drivers/ufs/ufs.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/ufs/ufs.c b/drivers/ufs/ufs.c
+index 92b7e9fd7c..8e54342bd2 100644
+--- a/drivers/ufs/ufs.c
++++ b/drivers/ufs/ufs.c
+@@ -220,6 +220,13 @@ static int ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
+ 	return 0;
+ }
+ 
++static inline void ufs_invalidate_dcache(uintptr_t addr, size_t len)
++{
++	uintptr_t start = addr & ~((uintptr_t)ARCH_DMA_MINALIGN - 1);
++	uintptr_t end = roundup(addr + len, ARCH_DMA_MINALIGN);
++	invalidate_dcache_range(start, end);
++}
++
+ /**
+  * ufshcd_dme_set_attr - UIC command for DME_SET, DME_PEER_SET
+  *
+@@ -857,6 +864,7 @@ static inline int ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+  */
+ static inline int ufshcd_get_tr_ocs(struct ufs_hba *hba)
+ {
++	ufs_invalidate_dcache((uintptr_t)hba->utrdl, sizeof(struct utp_transfer_req_desc));
+ 	return le32_to_cpu(hba->utrdl->header.dword_2) & MASK_OCS;
+ }
+ 
+@@ -869,6 +877,7 @@ static int ufshcd_check_query_response(struct ufs_hba *hba)
+ {
+ 	struct ufs_query_res *query_res = &hba->dev_cmd.query.response;
+ 
++	ufs_invalidate_dcache((uintptr_t)hba->ucdl, sizeof(struct utp_transfer_cmd_desc));
+ 	/* Get the UPIU response */
+ 	query_res->response = ufshcd_get_rsp_upiu_result(hba->ucd_rsp_ptr) >>
+ 				UPIU_RSP_CODE_OFFSET;
+@@ -883,6 +892,8 @@ static int ufshcd_copy_query_response(struct ufs_hba *hba)
+ {
+ 	struct ufs_query_res *query_res = &hba->dev_cmd.query.response;
+ 
++	ufs_invalidate_dcache((uintptr_t)hba->ucdl, sizeof(struct utp_transfer_cmd_desc));
++
+ 	memcpy(&query_res->upiu_res, &hba->ucd_rsp_ptr->qr, QUERY_OSF_SIZE);
+ 
+ 	/* Get the descriptor */
+@@ -924,6 +935,8 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba, enum dev_cmd_type cmd_type,
+ 	if (err)
+ 		return err;
+ 
++	flush_dcache_range((uintptr_t)hba->ucdl, (uintptr_t)hba->ucdl + sizeof(struct utp_transfer_cmd_desc));
++	flush_dcache_range((uintptr_t)hba->utrdl, (uintptr_t)hba->utrdl + sizeof(struct utp_transfer_req_desc));
+ 	err = ufshcd_send_command(hba, TASK_TAG);
+ 	if (err)
+ 		return err;
+@@ -934,6 +947,7 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba, enum dev_cmd_type cmd_type,
+ 		return -EINVAL;
+ 	}
+ 
++	ufs_invalidate_dcache((uintptr_t)hba->ucdl, sizeof(struct utp_transfer_cmd_desc));
+ 	resp = ufshcd_get_req_rsp(hba->ucd_rsp_ptr);
+ 	switch (resp) {
+ 	case UPIU_TRANSACTION_NOP_IN:
+@@ -1442,6 +1456,7 @@ static void prepare_prdt_table(struct ufs_hba *hba, struct scsi_cmd *pccb)
+ 
+ 	prepare_prdt_desc(&prd_table[table_length - i - 1], buf, datalen - 1);
+ 
++	flush_dcache_range((uintptr_t)pccb->pdata, (uintptr_t)pccb->pdata + pccb->datalen);
+ 	req_desc->prd_table_length = table_length;
+ }
+ 
+@@ -1457,11 +1472,14 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
+ 	ufshcd_prepare_utp_scsi_cmd_upiu(hba, pccb, upiu_flags);
+ 	prepare_prdt_table(hba, pccb);
+ 
++	flush_dcache_range((uintptr_t)hba->ucdl, (uintptr_t)hba->ucdl + sizeof(struct utp_transfer_cmd_desc));
++	flush_dcache_range((uintptr_t)hba->utrdl, (uintptr_t)hba->utrdl + sizeof(struct utp_transfer_req_desc));
+ 	ufshcd_send_command(hba, TASK_TAG);
+ 
+ 	ocs = ufshcd_get_tr_ocs(hba);
+ 	switch (ocs) {
+ 	case OCS_SUCCESS:
++		ufs_invalidate_dcache((uintptr_t)hba->ucdl, sizeof(struct utp_transfer_cmd_desc));
+ 		result = ufshcd_get_req_rsp(hba->ucd_rsp_ptr);
+ 		switch (result) {
+ 		case UPIU_TRANSACTION_RESPONSE:
+-- 
+2.25.1
+

@@ -1,7 +1,7 @@
-From 1a8f3956e5a3049aeb0e63076e8ab47581a9cc03 Mon Sep 17 00:00:00 2001
+From 774c1dcab0a1d9531a9a83ef5fcfe53568046058 Mon Sep 17 00:00:00 2001
 From: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
 Date: Wed, 24 May 2023 11:25:14 +0300
-Subject: [PATCH 2/6] arm: dts: r8a779f0: Add Renesas UFS HCD support
+Subject: [PATCH 1/5] arm: dts: r8a779f0: Add Renesas UFS HCD support
 
 Add initial support for UFS HCD on R8A779F0 S4 board.
 
@@ -37,7 +37,7 @@ index 5b3c1a087a..ec18a6c507 100644
 +	status = "okay";
 +};
 diff --git a/arch/arm/dts/r8a779f0.dtsi b/arch/arm/dts/r8a779f0.dtsi
-index 741ab62e71..35b16c606d 100644
+index 69c96743aa..7e15f5696f 100644
 --- a/arch/arm/dts/r8a779f0.dtsi
 +++ b/arch/arm/dts/r8a779f0.dtsi
 @@ -57,6 +57,13 @@
@@ -74,5 +74,5 @@ index 741ab62e71..35b16c606d 100644
  
  	timer {
 -- 
-2.34.1
+2.25.1
 
