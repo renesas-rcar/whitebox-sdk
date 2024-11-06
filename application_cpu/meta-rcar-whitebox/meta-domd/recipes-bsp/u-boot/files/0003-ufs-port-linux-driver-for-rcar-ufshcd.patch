@@ -1,15 +1,20 @@
-From 97313803371f0b5c520530fff6a86692fd15b876 Mon Sep 17 00:00:00 2001
+From 52836add288e8e9d0bc3920de77e4c0fd816f9bb Mon Sep 17 00:00:00 2001
 From: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
 Date: Fri, 21 Apr 2023 11:13:10 +0300
-Subject: [PATCH 3/6] ufs: port linux driver for rcar ufshcd
+Subject: [PATCH 3/5] ufs: port linux driver for rcar ufshcd
+
+Add driver for initial support of Renesas UFS host controller.
+Sources for port were taken from v5.10.41/rcar-5.1.7.rc6 Renesas
+Linux BSP branch.
 
 Signed-off-by: Sergiy Kibrik <Sergiy_Kibrik@epam.com>
+Signed-off-by: Dmytro Firsov <dmytro_firsov@epam.com>
+Acked-by: Leonid Komarianskyi <leonid_komarianskyi@epam.com>
 ---
- drivers/ufs/Kconfig         |   7 +
- drivers/ufs/Makefile        |   1 +
- drivers/ufs/cdns-platform.c |   6 +-
- drivers/ufs/renesas-ufs.c   | 386 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 397 insertions(+), 3 deletions(-)
+ drivers/ufs/Kconfig       |   7 +
+ drivers/ufs/Makefile      |   1 +
+ drivers/ufs/renesas-ufs.c | 392 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 400 insertions(+)
  create mode 100644 drivers/ufs/renesas-ufs.c
 
 diff --git a/drivers/ufs/Kconfig b/drivers/ufs/Kconfig
@@ -39,28 +44,12 @@ index 62ed016608..ca4d699185 100644
  obj-$(CONFIG_CADENCE_UFS) += cdns-platform.o
  obj-$(CONFIG_TI_J721E_UFS) += ti-j721e-ufs.o
 +obj-$(CONFIG_RENESAS_UFS) += renesas-ufs.o
-diff --git a/drivers/ufs/cdns-platform.c b/drivers/ufs/cdns-platform.c
-index bad1bf7de5..3910cd4da2 100644
---- a/drivers/ufs/cdns-platform.c
-+++ b/drivers/ufs/cdns-platform.c
-@@ -1,8 +1,8 @@
--// SPDX-License-Identifier: GPL-2.0+
-+// spdx-license-identifier: gpl-2.0+
- /**
-- * cdns-platform.c - Platform driver for Cadence UFSHCI device
-+ * cdns-platform.c - platform driver for cadence ufshci device
-  *
-- * Copyright (C) 2019 Texas Instruments Incorporated - http://www.ti.com
-+ * copyright (c) 2019 texas instruments incorporated - http://www.ti.com
-  */
- 
- #include <clk.h>
 diff --git a/drivers/ufs/renesas-ufs.c b/drivers/ufs/renesas-ufs.c
 new file mode 100644
-index 0000000000..22e90c0385
+index 0000000000..bf46dfabd3
 --- /dev/null
 +++ b/drivers/ufs/renesas-ufs.c
-@@ -0,0 +1,386 @@
+@@ -0,0 +1,392 @@
 +// spdx-license-identifier: gpl-2.0+
 +/**
 + * Renesas UFS host controller driver
@@ -379,13 +368,13 @@ index 0000000000..22e90c0385
 +
 +	ret = clk_get_by_index(hba->dev, 0, &clk);
 +	if (ret < 0) {
-+		dev_err(dev, "failed to get host clock\n");
++		dev_err(hba->dev, "failed to get host clock\n");
 +		return ret;
 +	}
 +
 +	ret = clk_enable(&clk);
 +	if (ret) {
-+		dev_err(dev, "failed to enable host clock\n");
++		dev_err(hba->dev, "failed to enable host clock\n");
 +		return ret;
 +	}
 +
@@ -412,6 +401,7 @@ index 0000000000..22e90c0385
 +{
 +	int err;
 +	u32 val;
++	struct clk clk;
 +	struct ufs_hba *hba = dev_get_uclass_priv(dev);
 +
 +	ufshcd_writel(hba, CONTROLLER_DISABLE,  REG_CONTROLLER_ENABLE);
@@ -420,7 +410,12 @@ index 0000000000..22e90c0385
 +				       (val & CONTROLLER_ENABLE) == CONTROLLER_DISABLE,
 +				       10, 1000);
 +	if (err)
-+		dev_err(dev, "%s: Controller disable failed\n", __func__);
++		dev_err(hba->dev, "%s: Controller disable failed\n", __func__);
++
++	if ((err = clk_get_by_index(dev, 0, &clk)) == 0)
++		err = clk_disable(&clk);
++	if (err)
++		dev_err(hba->dev, "clock disable failed (%d)\n", err);
 +	return err;
 +}
 +
@@ -448,5 +443,5 @@ index 0000000000..22e90c0385
 +	.flags		= DM_FLAG_ACTIVE_DMA | DM_FLAG_OS_PREPARE,
 +};
 -- 
-2.34.1
+2.25.1
 
