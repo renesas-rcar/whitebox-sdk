@@ -37,6 +37,7 @@ do_configure () {
 }
 
 do_compile_prepend() {
+    export GENERATE_SOURCEMAP=false
     cd ${B}
     git reset --hard
     go mod tidy #  -go=1.17
