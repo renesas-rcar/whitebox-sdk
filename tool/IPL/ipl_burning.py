@@ -155,7 +155,13 @@ def get_imgaddr(file):
     """
     with open(file, "r") as f:
         lines = f.readlines()
-    return lines[1][4: 12]
+
+    # srec with S0 record
+    if lines[0][0:2] == "S0":
+        return lines[1][4: 12]
+    # srec without S0 record
+    else:
+        return lines[0][4: 12]
 
 
 ####################################################################################################
