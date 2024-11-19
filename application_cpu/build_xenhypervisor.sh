@@ -106,7 +106,7 @@ moulin ./aos-rcar-gen4-wb.yaml \
     --TARGET_BOARD $1 \
     --USING_UFS_AS_STORAGE $USING_UFS \
     --ENABLE_DOMU $USING_DOMU
-ninja
+ninja || ninja
 ninja image-full
 mv -f full.img $1.${BOOT_DEV}.full.img
 gzip -f $1.${BOOT_DEV}.full.img
