@@ -88,6 +88,7 @@
             builder:
               conf:
                 - [IMAGE_INSTALL_append, " packagegroup-system-monitor"]
+                - [USE_SYSTEM_MONITOR, "1"]
 
   BUILD_DOMD_SDK:
     desc: "Switch build DomD SDK or not"

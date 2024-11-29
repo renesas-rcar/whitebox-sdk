@@ -8,6 +8,9 @@ RDEPENDS_${PN} = "bash"
 DEPENDS_append = " nodejs-native"
 export NODE_OPTIONS="--max-old-space-size=6144"
 
+# This is used to avoid parallel build.
+DEPENDS_append = " prometheus"
+
 inherit go
 GO_IMPORT = "github.com/grafana/grafana"
 GO_INSTALL = "${GO_IMPORT}"
