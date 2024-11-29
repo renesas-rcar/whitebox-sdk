@@ -120,7 +120,8 @@ def main():
 
     for arg in args[3:]:
         if arg in ["all", "g4mh", "cr52"]:
-            burn_mode = arg
+            BURN_MODE = arg
+            if arg == "cr52": BURN_MODE = "rtos"
         elif arg in ["-1", "-2", "-3", "-4"]:
             G4MHOS = burn_patterns[abs(int(arg))][0]
             CR52OS = burn_patterns[abs(int(arg))][1]
