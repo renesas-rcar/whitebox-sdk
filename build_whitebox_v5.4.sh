@@ -75,12 +75,9 @@ mv ${BASE_DIR}/realtime_cpu/deploy ${BASE_DIR}/deploy/cr52_zephyr_deploy
 # Build CA55
 cd ${BASE_DIR}/application_cpu
 ./build_xenhypervisor.sh $1 -c
-cd ${BASE_DIR}/
-cp application_cpu/work/*full.img.gz deploy/
-cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec deploy/
-cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec deploy/
-cp application_cpu/work/yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec deploy/
+mv ${BASE_DIR}/application_cpu/deploy/* -t ${BASE_DIR}/deploy
 
+cd ${BASE_DIR}/
 ls -l deploy
 
 # Prepare IPL
