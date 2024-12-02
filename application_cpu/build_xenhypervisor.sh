@@ -123,4 +123,16 @@ if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/deploy
 fi
 
+# Build FOTA package for Application Note procedure
+if [[ "${ENABLE_FOTA_PKG_BUILD:-no}" == "yes" ]]; then
+    sed -e "s/1.0.0/1.1.0/" \
+        -e 's/DOM0_TYPE: "full"/DOM0_TYPE: ""/' \
+        -e "s/core-image-thin-initramfs/aos-update/" \
+        -e 's/vissr"/vissr vim"/' ${SCRIPT_DIR}/work/aos-rcar-gen4-wb.yaml > ${SCRIPT_DIR}/work/aos-rcar-gen4-wb-fota.yaml
+    moulin ./aos-rcar-gen4-wb-fota.yaml --TARGET_BOARD $1 --USING_UFS_AS_STORAGE $USING_UFS \
+        --ENABLE_AWS no --BUILD_DOMD_SDK no
+    ninja || ninja
+    cp aos-update-*.tar -t ${SCRIPT_DIR}/deploy
+fi
+
 echo "Build finished !"
