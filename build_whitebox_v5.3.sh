@@ -28,6 +28,7 @@ for arr in $@; do
     esac
 done
 if [[ "$TARGET_BOARD" == "all" ]]; then
+    rm -rf deploy_*
     $0 s4sk && mv deploy{,_s4sk}
     $0 spider && mv deploy{,_spider}
     exit
