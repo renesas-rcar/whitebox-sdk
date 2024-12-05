@@ -125,7 +125,6 @@ mkdir -p ${SCRIPT_DIR}/deploy
 
 # build sample
 cd ${SOURCE_DIR}/examples/rh850/sample
-chmod +x ./build.sh
 ./build.sh
 cd ${SOURCE_DIR}
 rm -f G4MH_sample.srec
@@ -137,7 +136,6 @@ cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh.srec
 # build sample(can disable)
 if [ "$1" == "s4sk" ]; then
     cd ${SOURCE_DIR}/examples/rh850/sample
-    chmod +x ./build_not_can.sh
     ./build_not_can.sh
     cd ${SOURCE_DIR}
     rm -f G4MH_sample.srec
