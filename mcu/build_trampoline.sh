@@ -9,6 +9,7 @@ export WINEDEBUG=fixme-all
 export PATH=${SCRIPT_DIR}/../tool/CC-RH/bin:$PATH
 export HLNK_DIR="${SCRIPT_DIR}/../tool/CC-RH"
 
+EXAMPLE_NAME=""
 CLEAN_BUILD_FLAG=false
 DISABLE_WARN_MSG_FLAG=false
 Usage() {
@@ -19,6 +20,7 @@ Usage() {
     echo "    - s4sk: R-Car S4 Starter Kit"
     echo "option:"
     echo "    -c: Clean build flag(Defualt is disable)"
+    echo "    -t: Select build target from trampoline/examples/rh850/"
     echo "    -h: Show this usage"
     echo "    -w: Disable warning message about CC-RH compiler for Linux"
 }
@@ -42,10 +44,11 @@ fi
 
 # Proc arguments
 OPTIND=2
-while getopts "chw" OPT
+while getopts "ct:hw" OPT
 do
     case $OPT in
         c) CLEAN_BUILD_FLAG=true;;
+        t) EXAMPLE_NAME=$OPTARG;;
         h) Usage; exit;;
         w) DISABLE_WARN_MSG_FLAG=true;;
         *) print_err "ERROR: Unsupported option"; Usage; exit;;
@@ -114,25 +117,37 @@ export PATH=${SOURCE_DIR}/goil/makefile-unix:${PATH}
 rm -rf ${SCRIPT_DIR}/deploy
 mkdir -p ${SCRIPT_DIR}/deploy
 
-# build sample
-cd ${SOURCE_DIR}/examples/rh850/sample
-./build.sh
-cd ${SOURCE_DIR}
-rm -f G4MH_sample.srec
-objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/sample/_build/sample_exe.abs sample_exe.s3
-rlink ../G4MH_Head.srec sample_exe.s3 -fo=Stype -ou=G4MH_sample.srec
-rm -f sample_exe.s3
-cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh.srec
-
-# build sample(can disable)
-if [ "$1" == "s4sk" ]; then
+if [[ "${EXAMPLE_NAME}" == "" ]]; then
+    # build sample
     cd ${SOURCE_DIR}/examples/rh850/sample
-    ./build_not_can.sh
+    ./build.sh
     cd ${SOURCE_DIR}
     rm -f G4MH_sample.srec
     objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/sample/_build/sample_exe.abs sample_exe.s3
     rlink ../G4MH_Head.srec sample_exe.s3 -fo=Stype -ou=G4MH_sample.srec
     rm -f sample_exe.s3
-    cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh_can_disable.srec
+    cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh.srec
+
+    # build sample(can disable)
+    if [ "$1" == "s4sk" ]; then
+        cd ${SOURCE_DIR}/examples/rh850/sample
+        ./build_not_can.sh
+        cd ${SOURCE_DIR}
+        rm -f G4MH_sample.srec
+        objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/sample/_build/sample_exe.abs sample_exe.s3
+        rlink ../G4MH_Head.srec sample_exe.s3 -fo=Stype -ou=G4MH_sample.srec
+        rm -f sample_exe.s3
+        cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh_can_disable.srec
+    fi
+else # Use -t option case
+    # build examples
+    cd ${SOURCE_DIR}/examples/rh850/$EXAMPLE_NAME
+    ./build.sh
+    cd ${SOURCE_DIR}
+    rm -f G4MH.srec
+    objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/${EXAMPLE_NAME}/_build/${EXAMPLE_NAME}_exe.abs ${EXAMPLE_NAME}_exe.s3
+    rlink ../G4MH_Head.srec ${EXAMPLE_NAME}_exe.s3 -fo=Stype -ou=G4MH.srec
+    rm -f ${EXAMPLE_NAME}_exe.s3
+    cp -f G4MH.srec ${SCRIPT_DIR}/deploy/g4mh_${EXAMPLE_NAME}.srec
 fi
 
