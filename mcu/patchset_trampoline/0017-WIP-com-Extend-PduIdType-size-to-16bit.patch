@@ -1,0 +1,33 @@
+From 7a8d427804dd72ba56cd5e0fc6a2ea895c538fcc Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 19:08:24 +0900
+Subject: [PATCH] WIP: com: Extend PduIdType size to 16bit
+
+PduIdType can be set to 8bit or 16bit according to Autosar spec.
+By the way. if application expects PduIdType as 16bit length but 8bit,
+the application will be broken in many case.
+In the opposite case, problem is not occured so much.
+
+So, this patch extends the PduIdType size to 16bit.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ com/ComStack_Types.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/com/ComStack_Types.h b/com/ComStack_Types.h
+index 46a0e616..2176ff71 100644
+--- a/com/ComStack_Types.h
++++ b/com/ComStack_Types.h
+@@ -37,7 +37,7 @@
+  * modules where the PduId of the corresponding target module is being used for
+  * referencing.
+  */
+-typedef uint8 PduIdType;
++typedef uint16 PduIdType;
+ 
+ /**
+  * @typedef PduLengthType
+-- 
+2.34.1
+
