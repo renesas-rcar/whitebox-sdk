@@ -1,0 +1,35 @@
+From 922785e71cc0055e0b5f857519e93fad59f05fba Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 16:19:38 +0900
+Subject: [PATCH] example: rh850: can_demo: Use macro instead of magic number
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/rh850/can_demo/can_demo.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/examples/rh850/can_demo/can_demo.c b/examples/rh850/can_demo/can_demo.c
+index d54ecf2f..0e22347d 100644
+--- a/examples/rh850/can_demo/can_demo.c
++++ b/examples/rh850/can_demo/can_demo.c
+@@ -122,7 +122,7 @@ TASK(can_task)
+ 			if ((id_flags == TPL_CAN_ID_TYPE_STANDARD) || (id_flags == TPL_CAN_ID_TYPE_FD_STANDARD))
+ 			{
+ 				id_without_flags = pointer_can_pdu->id & TPL_CAN_ID_STANDARD_MASK;
+-				if (id_without_flags >= 1023) // 11-bit standard ID
++				if (id_without_flags >= TPL_CAN_ID_STANDARD_MASK) // 11-bit standard ID
+ 					id_without_flags = 0;
+ 				else
+ 					id_without_flags++;
+@@ -130,7 +130,7 @@ TASK(can_task)
+ 			else
+ 			{
+ 				id_without_flags = pointer_can_pdu->id & TPL_CAN_ID_EXTENDED_MASK;
+-				if (id_without_flags >= 536870911) // 29-bit extended ID
++				if (id_without_flags >= TPL_CAN_ID_EXTENDED_MASK) // 29-bit extended ID
+ 					id_without_flags = 0;
+ 				else
+ 					id_without_flags++;
+-- 
+2.34.1
+
