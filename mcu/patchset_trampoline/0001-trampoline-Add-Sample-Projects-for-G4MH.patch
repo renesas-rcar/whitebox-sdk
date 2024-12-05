@@ -1,9 +1,10 @@
-From 6eac8d5413a98805a76f919e782dc6dd523cd222 Mon Sep 17 00:00:00 2001
+From 499e55fa0bdf01ff685d181b0b355f65fb8a9584 Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 12 Dec 2023 12:25:03 +0900
-Subject: [PATCH 1/3] trampoline: Add Sample Projects for G4MH
+Subject: [PATCH] trampoline: Add Sample Projects for G4MH
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 ---
  examples/rh850/sample/benchmark.c             |  92 ++++++++
  examples/rh850/sample/build.sh                |  17 ++
@@ -24,7 +25,7 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  examples/rh850/sample/sample_not_can.oil      |  77 +++++++
  17 files changed, 1117 insertions(+)
  create mode 100644 examples/rh850/sample/benchmark.c
- create mode 100644 examples/rh850/sample/build.sh
+ create mode 100755 examples/rh850/sample/build.sh
  create mode 100755 examples/rh850/sample/build_not_can.sh
  create mode 100644 examples/rh850/sample/can_demo.c
  create mode 100644 examples/rh850/sample/cs_plus_rcar_download_all.py
@@ -140,7 +141,7 @@ index 00000000..6dc17d9a
 +#define APP_Task_blink_STOP_SEC_CODE
 +#include "tpl_memmap.h"
 diff --git a/examples/rh850/sample/build.sh b/examples/rh850/sample/build.sh
-new file mode 100644
+new file mode 100755
 index 00000000..0d002f34
 --- /dev/null
 +++ b/examples/rh850/sample/build.sh
@@ -1261,5 +1262,5 @@ index 00000000..f4d2728f
 +
 +};
 -- 
-2.25.1
+2.34.1
 
