@@ -1,0 +1,38 @@
+From 76452265637287ea94d9b256d112bea1d39685f2 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Mon, 1 Jul 2024 14:29:05 +0900
+Subject: [PATCH] g4mh: serial: print: Fix issue program address is used as
+ first argument
+
+This issue may be caused by CC-RH compiler specification.
+This patch skips first argument before process of print function.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/drivers/serial/renesas/printf.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/libraries/drivers/serial/renesas/printf.c b/libraries/drivers/serial/renesas/printf.c
+index b8e3a669..048c1549 100644
+--- a/libraries/drivers/serial/renesas/printf.c
++++ b/libraries/drivers/serial/renesas/printf.c
+@@ -116,6 +116,9 @@ static int print(char **out, int *varg)
+ 	register char *format = (char *)(*varg++);
+ 	char scr[2];
+ 
++#ifndef __arm__ // for G4MH
++	varg++; // In G4MH case, program address is stored in top of varg so that it is skipped.
++#endif
+ 	for (; *format != 0; ++format) {
+ 		if (*format == '%') {
+ 			++format;
+@@ -185,4 +188,4 @@ int debug_sprintf(char *out, const char *format, ...)
+ {
+ 	register int *varg = (int *)(&format);
+ 	return print(&out, varg);
+-}
+\ No newline at end of file
++}
+-- 
+2.34.1
+

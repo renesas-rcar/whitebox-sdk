@@ -101,15 +101,6 @@ if [[ ! -e ${SOURCE_DIR} || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     git apply ${SCRIPT_DIR}/patchset_trampoline/sample_coremark.diff
 fi
 
-# Setup uart baudrate
-if [ "$1" == "s4sk" ]; then
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample.oil
-    sed -i 's/-DHSCIF_1843200BPS/-DHSCIF_921600BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample_not_can.oil
-elif [ "$1" == "spider" ];  then
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample.oil
-    sed -i 's/-DHSCIF_921600BPS/-DHSCIF_1843200BPS/g' ${SOURCE_DIR}/examples/rh850/sample/sample_not_can.oil
-fi
-
 # Setup python build env for building goil
 python3 -m venv ${SOURCE_DIR}/.venv
 source ${SOURCE_DIR}/.venv/bin/activate

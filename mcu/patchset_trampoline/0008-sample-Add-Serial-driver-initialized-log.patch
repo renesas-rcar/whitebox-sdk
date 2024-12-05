@@ -1,0 +1,25 @@
+From 74f169fc687eb0270f285e78e9c2947a8035e2eb Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 14:26:51 +0900
+Subject: [PATCH] sample: Add Serial driver initialized log
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/rh850/sample/sample.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/examples/rh850/sample/sample.c b/examples/rh850/sample/sample.c
+index e6587cd4..d6c21e03 100644
+--- a/examples/rh850/sample/sample.c
++++ b/examples/rh850/sample/sample.c
+@@ -18,6 +18,7 @@ FUNC(int, OS_APPL_CODE) main(void)
+ 	iccom_init();
+ 	memory_unlocker();
+ 	Serial_Init();
++	debug_printf("[G4MH] Serial driver init\n\r");
+ 	StartOS(OSDEFAULTAPPMODE);
+ 	return 0;
+ }
+-- 
+2.34.1
+
