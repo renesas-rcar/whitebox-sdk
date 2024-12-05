@@ -1,4 +1,4 @@
-From 7a301590de44cd8f63bf2e1e93a6e0ef46a6c278 Mon Sep 17 00:00:00 2001
+From a1a175ec2ae57a7339479760fee159825f08847b Mon Sep 17 00:00:00 2001
 From: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 Date: Tue, 12 Dec 2023 12:25:03 +0900
 Subject: [PATCH] trampoline: Add Sample Projects for G4MH
@@ -19,10 +19,10 @@ Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
  examples/rh850/sample/iccom_ll.h              |  42 ++++
  examples/rh850/sample/memory_unlocker.c       |  49 ++++
  examples/rh850/sample/memory_unlocker.h       |  51 +++++
- examples/rh850/sample/sample.c                |  21 ++
+ examples/rh850/sample/sample.c                |  24 ++
  examples/rh850/sample/sample.oil              |  89 ++++++++
  examples/rh850/sample/sample_not_can.oil      |  77 +++++++
- 16 files changed, 1107 insertions(+)
+ 16 files changed, 1110 insertions(+)
  create mode 100644 examples/rh850/sample/benchmark.c
  create mode 100755 examples/rh850/sample/build.sh
  create mode 100755 examples/rh850/sample/build_not_can.sh
@@ -1040,10 +1040,10 @@ index 00000000..af442d23
 +#endif
 diff --git a/examples/rh850/sample/sample.c b/examples/rh850/sample/sample.c
 new file mode 100644
-index 00000000..7df390d0
+index 00000000..e6587cd4
 --- /dev/null
 +++ b/examples/rh850/sample/sample.c
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,24 @@
 +#include "tpl_os.h"
 +#include "spider_serial.h"
 +
@@ -1055,10 +1055,13 @@ index 00000000..7df390d0
 +
 +FUNC(int, OS_APPL_CODE) main(void)
 +{
-+	iccom_init();
 +#ifdef USE_CAN
 +	can_demo_init();
++#else
++	volatile int i = 0;
++	for(i=0; i<5000000; ++i); // adjustment for serial output timing
 +#endif // USE_CAN
++	iccom_init();
 +	memory_unlocker();
 +	Serial_Init();
 +	StartOS(OSDEFAULTAPPMODE);
