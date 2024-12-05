@@ -1,0 +1,31 @@
+From 666f0e49a9b7979c4672c58067925a653d1776c1 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 4 Jul 2024 20:41:16 +0900
+Subject: [PATCH] Fix CAN ID MASK definition
+
+Standart CAN ID requires 11bit(0x7ff) and Extend CAN ID requires 29bit(0x1fff_ffff).
+This patch fixes these definitions.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/net/can/Can_GeneralTypes.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libraries/net/can/Can_GeneralTypes.h b/libraries/net/can/Can_GeneralTypes.h
+index dfc37187..8d19fdec 100644
+--- a/libraries/net/can/Can_GeneralTypes.h
++++ b/libraries/net/can/Can_GeneralTypes.h
+@@ -36,8 +36,8 @@
+ #define TPL_CAN_ID_TYPE_FD_EXTENDED (0x03U << 30)
+ #define TPL_CAN_ID_TYPE_MASK (0x03U << 30)
+ #define TPL_CAN_ID_TYPE_GET(id) ((id & TPL_CAN_ID_TYPE_MASK) >> 30)
+-#define TPL_CAN_ID_STANDARD_MASK (0x3FFU)
+-#define TPL_CAN_ID_EXTENDED_MASK (0x3FFFFFFFU)
++#define TPL_CAN_ID_STANDARD_MASK (0x7FFU)
++#define TPL_CAN_ID_EXTENDED_MASK (0x1FFFFFFFU)
+ 
+ #define TPL_CAN_CLASSIC_FRAME_MAXIMUM_PAYLOAD_SIZE (8)
+ #define TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE (64)
+-- 
+2.34.1
+

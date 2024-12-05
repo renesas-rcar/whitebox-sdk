@@ -1,0 +1,86 @@
+From dda71c81c590ed61eb3f535c70a6b9ecef6b177d Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Wed, 3 Jul 2024 18:42:30 +0900
+Subject: [PATCH] driver: can: spider: Fix incorrect configuration
+
+Current code contains incorrect configuration compared with UM.
+1. Tseg1 contains propseg so that current macro adds propseg twice.
+   Norminal bit time is "sync_seg + prop_seg + phase_seg1 + phase_seg2",
+   and Tseg1=prop_seg+phase_seg1, Tseg2=phase_seg2.
+2. Tseg1,2 register value is not equal with input value(2Tq = 0b01) but
+   current code input the value as is.
+
+This patch fixes these issues.
+And, prop_seg is no longer used, so it will be removed.
+
+This patch is tested in the following cases:
+
+| kbps | Tseg1 | Tseg2 |
+|------|-------|-------|
+| 125  |  5    | 2     |
+| 125  | 14    | 5     |
+| 250  |  5    | 2     |
+| 250  | 14    | 5     |
+| 500  |  5    | 2     |
+| 500  |  7    | 2     |
+| 500  | 11    | 4     |
+| 500  | 14    | 5     |
+| 1000 |  5    | 2     |
+| 1000 |  7    | 2     |
+| 1000 | 11    | 4     |
+| 1000 | 14    | 5     |
+
+These values are calculated on following website:
+- http://www.bittiming.can-wiki.info/
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/drivers/can/renesas/spider_can.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/libraries/drivers/can/renesas/spider_can.c b/libraries/drivers/can/renesas/spider_can.c
+index 19704040..54c43097 100644
+--- a/libraries/drivers/can/renesas/spider_can.c
++++ b/libraries/drivers/can/renesas/spider_can.c
+@@ -39,7 +39,7 @@
+  * The CAN clock that feeds the prescalers (in Hertz).
+  */
+ #define SPIDER_CAN_CLOCK (80000000)
+-#define SPIDER_CAN_COMPUTE_PRESCALER(baud_rate, prop_seg, tseg1, tseg2) ((SPIDER_CAN_CLOCK / (baud_rate * (1 + prop_seg + tseg1 + tseg2))) - 1)
++#define SPIDER_CAN_COMPUTE_PRESCALER(baud_rate, tseg1, tseg2) ((SPIDER_CAN_CLOCK / (baud_rate * (1 + tseg1 + tseg2))) - 1)
+ 
+ static int spider_can_init(struct tpl_can_controller_config_t *config);
+ static int spider_set_baudrate(struct tpl_can_controller_t *ctrl, CanControllerBaudrateConfig *baud_rate_config);
+@@ -103,12 +103,11 @@ static int spider_can_configure_baud_rate_registers(struct tpl_can_controller_t
+ 	// Set the CAN 2.0 baud rate registers
+ 	nominal_bitrate_conf_reg.NBRP = SPIDER_CAN_COMPUTE_PRESCALER(
+ 		baud_rate_config->CanControllerBaudRate * 1000,
+-		baud_rate_config->CanControllerPropSeg,
+ 		baud_rate_config->CanControllerSeg1,
+ 		baud_rate_config->CanControllerSeg2);
+ 	nominal_bitrate_conf_reg.NSJW = baud_rate_config->CanControllerSyncJumpWidth;
+-	nominal_bitrate_conf_reg.NTSEG1 = baud_rate_config->CanControllerSeg1;
+-	nominal_bitrate_conf_reg.NTSEG2 = baud_rate_config->CanControllerSeg2;
++	nominal_bitrate_conf_reg.NTSEG1 = baud_rate_config->CanControllerSeg1 -1;
++	nominal_bitrate_conf_reg.NTSEG2 = baud_rate_config->CanControllerSeg2 -1;
+ 	ctrl_base_address->CFDC0NCFG.BIT = nominal_bitrate_conf_reg;
+ 
+ 	if (baud_rate_config->use_fd_configuration)
+@@ -116,12 +115,11 @@ static int spider_can_configure_baud_rate_registers(struct tpl_can_controller_t
+ 		// Set the CAN-FD baud rate registers
+ 		data_bitrate_config_reg.DBRP = SPIDER_CAN_COMPUTE_PRESCALER(
+ 			baud_rate_config->can_fd_config.CanControllerFdBaudRate * 1000,
+-			baud_rate_config->can_fd_config.CanControllerPropSeg,
+ 			baud_rate_config->can_fd_config.CanControllerSeg1,
+ 			baud_rate_config->can_fd_config.CanControllerSeg2);
+ 		data_bitrate_config_reg.DSJW = baud_rate_config->can_fd_config.CanControllerSyncJumpWidth;
+-		data_bitrate_config_reg.DTSEG1 = baud_rate_config->can_fd_config.CanControllerSeg1;
+-		data_bitrate_config_reg.DTSEG2 = baud_rate_config->can_fd_config.CanControllerSeg2;
++		data_bitrate_config_reg.DTSEG1 = baud_rate_config->can_fd_config.CanControllerSeg1 -1;
++		data_bitrate_config_reg.DTSEG2 = baud_rate_config->can_fd_config.CanControllerSeg2 -1;
+ 		ctrl_base_address->CFDC0DCFG.BIT = data_bitrate_config_reg;
+ 
+ 		// Configure the CAN-FD to work alongside the CAN 2.0
+-- 
+2.34.1
+
