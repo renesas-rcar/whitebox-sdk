@@ -1,0 +1,42 @@
+From bf281fabe47d72ddd585ec2e2cc8e415cccebdb9 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 14:27:49 +0900
+Subject: [PATCH] sample: Use default serial settings as-is
+
+By this patch, there is no need to modify oil file for each board type.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/rh850/sample/sample.oil         | 2 +-
+ examples/rh850/sample/sample_not_can.oil | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/examples/rh850/sample/sample.oil b/examples/rh850/sample/sample.oil
+index a4d42b72..6a5af21f 100644
+--- a/examples/rh850/sample/sample.oil
++++ b/examples/rh850/sample/sample.oil
+@@ -39,7 +39,7 @@ CPU iccom {
+       CFLAGS="-DTIME=TIME";
+       CFLAGS="-Ospeed -Oinline_size";
+       CFLAGS="-I../coremark -I../coremark/barebones -DITERATIONS=30000";
+-      CFLAGS="-DHSCIF_1843200BPS";
++      // CFLAGS="-DHSCIF_1843200BPS";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+       LIBRARY = serial;
+diff --git a/examples/rh850/sample/sample_not_can.oil b/examples/rh850/sample/sample_not_can.oil
+index f4d2728f..37ac979e 100644
+--- a/examples/rh850/sample/sample_not_can.oil
++++ b/examples/rh850/sample/sample_not_can.oil
+@@ -38,7 +38,7 @@ CPU iccom {
+       CFLAGS="-DTIME=TIME";
+       CFLAGS="-Ospeed -Oinline_size";
+       CFLAGS="-I../coremark -I../coremark/barebones -DITERATIONS=30000";
+-      CFLAGS="-DHSCIF_921600BPS";
++      // CFLAGS="-DHSCIF_1843200BPS";
+       LINKER = "rlink";
+       SYSTEM = CMAKE;
+       LIBRARY = serial;
+-- 
+2.34.1
+

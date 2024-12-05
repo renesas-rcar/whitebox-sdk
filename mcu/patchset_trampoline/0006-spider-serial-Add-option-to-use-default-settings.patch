@@ -1,0 +1,66 @@
+From 7cfd3fbf9b67c558a0e67e957b9bf12a8caab11a Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 13:27:57 +0900
+Subject: [PATCH] spider: serial: Add option to use default settings
+
+Serial settings has been done by loader in case of normal boot process
+before booting G4MH core.
+So, serial settings is not mandatory in some case.
+This patch adds option to use serial as-is.
+
+Note: in case of debugging only G4MH core, loader doesn't run so that
+serial settings should be done by G4MH core.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/drivers/serial/renesas/spider_serial.c | 3 ++-
+ libraries/drivers/serial/renesas/spider_serial.h | 5 ++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/libraries/drivers/serial/renesas/spider_serial.c b/libraries/drivers/serial/renesas/spider_serial.c
+index ab01ec3d..3b608a20 100644
+--- a/libraries/drivers/serial/renesas/spider_serial.c
++++ b/libraries/drivers/serial/renesas/spider_serial.c
+@@ -14,6 +14,7 @@ uint32 Serial_Init(void)
+   } while (val != 0x00000001);
+ #endif
+ 
++#ifdef SERIAL_BAUDRATE
+   /* Clear bits TE and RE in HSSCR to 0 */
+   SERIAL_SCR =  SERIAL_SCR_INT_VALUE;
+ 
+@@ -34,7 +35,6 @@ uint32 Serial_Init(void)
+ 
+   /* Baud rate setting */
+   SERIAL_BRR = SERIAL_BAUDRATE;
+-                      
+ #if (SERIAL_BASE_ADDR == SCIF_BASE_ADDR)
+   /* SCIF module used */
+   SERIAL_DL    = SERIAL_DL_SETTING_VALUE;
+@@ -55,6 +55,7 @@ uint32 Serial_Init(void)
+   /* Enable TE and RE bits*/
+   SERIAL_SCR |= SERIAL_SCR_TE_MASK | SERIAL_SCR_RE_MASK;
+ 
++#endif // SERIAL_BAUDRATE
+   return 1;
+ }
+ 
+diff --git a/libraries/drivers/serial/renesas/spider_serial.h b/libraries/drivers/serial/renesas/spider_serial.h
+index 08a8c56e..060e6c5e 100644
+--- a/libraries/drivers/serial/renesas/spider_serial.h
++++ b/libraries/drivers/serial/renesas/spider_serial.h
+@@ -42,7 +42,10 @@
+ #define SERIAL_BASE_ADDR                     HSCIF_BASE_ADDR
+ #define SERIAL_BAUDRATE                      HSBRR_1843200BPS
+ #else
+-#error "No baudrate defined for serial communication"
++/*
++ * if baudrate is not defined, use default settings from ICUMX loader.
++ */
++#define SERIAL_BASE_ADDR                     HSCIF_BASE_ADDR
+ #endif
+ 
+ #define SERIAL_SMR        (*(volatile uint16 *)(SERIAL_BASE_ADDR + 0x00))
+-- 
+2.34.1
+
