@@ -1,0 +1,58 @@
+From c7287ad72aeffe24a25d4eb8495a8fa8b5c5d4d4 Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 3 Oct 2024 15:48:24 +0900
+Subject: [PATCH] WIP: Fix handling PduInfoType.SduDataPtr
+
+Autosar envrionment such as ToppersATK2 seems to handle SduDataPtr as
+pointer to simple data array.
+However, trampoline stores pointer to Can_PduType struct into it.
+This prevents the compatibility of Application by Autosar Specification.
+
+This patch fixes handling SduDataPtr.
+SduDataPtr stores payload only and MetaDataPtr is used instead of it.
+As of now, can driver for Trampoline doesn't depend on PduR module so
+that we can use MetaDataPtr.
+
+This patch contains breaking changes so that existing example should be needed
+to modify the code.
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ libraries/net/can/tpl_can_core.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/libraries/net/can/tpl_can_core.c b/libraries/net/can/tpl_can_core.c
+index d82ce759..d0ce04ce 100644
+--- a/libraries/net/can/tpl_can_core.c
++++ b/libraries/net/can/tpl_can_core.c
+@@ -129,7 +129,8 @@ Std_ReturnType CanIf_Transmit(PduIdType TxPduId, const PduInfoType *PduInfoPtr)
+ 		return E_NOT_OK;
+ 	controller = controller_configs[TxPduId].controller;
+ 
+-	can_pdu = (Can_PduType *) PduInfoPtr->SduDataPtr;
++	can_pdu = (Can_PduType *) PduInfoPtr->MetaDataPtr;
++	can_pdu->sdu = PduInfoPtr->SduDataPtr;
+ 	return Can_Write(controller, can_pdu);
+ }
+ 
+@@ -146,7 +147,7 @@ Std_ReturnType CanIf_ReadRxPduData(PduIdType CanIfRxSduId, PduInfoType *CanIfRxI
+ 	if (!controller->is_data_available(controller))
+ 		return E_NOT_OK;
+ 
+-	can_pdu = (Can_PduType *) CanIfRxInfoPtr->SduDataPtr;
++	can_pdu = (Can_PduType *) CanIfRxInfoPtr->MetaDataPtr;
+ 	return controller->receive(controller, can_pdu);
+ }
+ 
+@@ -199,6 +200,7 @@ void tpl_can_fill_pdu_info(Can_PduType *can_pdu, PduInfoType *pdu_info, Can_IdTy
+ 	can_pdu->sdu = payload;
+ 	can_pdu->length = (uint8) payload_length;
+ 
+-	pdu_info->SduDataPtr = (uint8 *) can_pdu;
++	pdu_info->SduDataPtr = (uint8 *) can_pdu->sdu;
++	pdu_info->MetaDataPtr = (uint8 *) can_pdu;
+ 	pdu_info->SduLength = sizeof(Can_PduType) + payload_length;
+ }
+-- 
+2.34.1
+

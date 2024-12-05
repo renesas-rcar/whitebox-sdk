@@ -1,0 +1,99 @@
+From 4a4c7d8c1e2669eced822da4d1473878c8aa542a Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 19:05:07 +0900
+Subject: [PATCH] WIP: examples: Fix to support new SduDataPtr
+
+This patch depends on [1]:
+
+[1]: WIP: Fix handling PduInfoType.SduDataPtr
+    c7287ad72aeffe24a25d4eb8495a8fa8b5c5d4d4
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ examples/rh850/can_demo/can_demo.c         | 5 +++--
+ examples/rh850/can_demo_isr/can_demo_isr.c | 8 +++++---
+ examples/rh850/sample/can_demo.c           | 5 +++--
+ 3 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/examples/rh850/can_demo/can_demo.c b/examples/rh850/can_demo/can_demo.c
+index 0e22347d..15750786 100644
+--- a/examples/rh850/can_demo/can_demo.c
++++ b/examples/rh850/can_demo/can_demo.c
+@@ -103,7 +103,8 @@ TASK(can_task)
+ 	can_pdu.sdu = payload;
+ 	strcpy((char *) can_pdu.sdu, "Ready!");
+ 	can_pdu.length = strlen((char *) can_pdu.sdu);
+-	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduDataPtr = (uint8 *) can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
+ 	pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
+ 	CanIf_Transmit(0, &pdu_info);
+ 
+@@ -113,7 +114,7 @@ TASK(can_task)
+ 		if (CanIf_ReadRxPduData(0, &pdu_info) == E_OK)
+ 		{
+ 			// Make sure the payload size is compatible with CAN-FD
+-			pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
++			pointer_can_pdu = (Can_PduType *) pdu_info.MetaDataPtr;
+ 			if (pointer_can_pdu->length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
+ 				continue;
+ 
+diff --git a/examples/rh850/can_demo_isr/can_demo_isr.c b/examples/rh850/can_demo_isr/can_demo_isr.c
+index c6f7c6dd..c8f4d1ef 100644
+--- a/examples/rh850/can_demo_isr/can_demo_isr.c
++++ b/examples/rh850/can_demo_isr/can_demo_isr.c
+@@ -104,7 +104,8 @@ int main(void)
+ 	can_pdu.sdu = payload;
+ 	strcpy((char *) can_pdu.sdu, "Ready!");
+ 	can_pdu.length = strlen((char *) can_pdu.sdu);
+-	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduDataPtr = (uint8 *) can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
+ 	pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
+ 	CanIf_Transmit(0, &pdu_info);
+ 
+@@ -123,7 +124,8 @@ void can_recv_proc() {
+ 	strcpy((char *) can_pdu.sdu, "Ready!");
+ 	can_pdu.sdu = payload;
+ 	can_pdu.length = strlen((char *) can_pdu.sdu);
+-	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduDataPtr = (uint8 *) can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
+ 	pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
+ 
+ 	//debug_printf("[G4MH] RSCAN0 interrupt is detected\r\n");
+@@ -133,7 +135,7 @@ void can_recv_proc() {
+ 
+ 	{
+ 		// Make sure the payload size is compatible with CAN-FD
+-		pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
++		pointer_can_pdu = (Can_PduType *) pdu_info.MetaDataPtr;
+ 
+ 		// Show the received frame via Serial 
+ 		/*
+diff --git a/examples/rh850/sample/can_demo.c b/examples/rh850/sample/can_demo.c
+index 5d9e8487..c8e33fd7 100644
+--- a/examples/rh850/sample/can_demo.c
++++ b/examples/rh850/sample/can_demo.c
+@@ -114,7 +114,8 @@ TASK(can_task)
+ 	can_pdu.sdu = payload;
+ 	strcpy((char *) can_pdu.sdu, "Ready!");
+ 	can_pdu.length = strlen((char *) can_pdu.sdu);
+-	pdu_info.SduDataPtr = (uint8 *) &can_pdu;
++	pdu_info.SduDataPtr = (uint8 *) can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
+ 	pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
+ 	CanIf_Transmit(0, &pdu_info);
+ 
+@@ -124,7 +125,7 @@ TASK(can_task)
+ 		if (CanIf_ReadRxPduData(0, &pdu_info) == E_OK)
+ 		{
+ 			// Make sure the payload size is compatible with CAN-FD
+-			pointer_can_pdu = (Can_PduType *) pdu_info.SduDataPtr;
++			pointer_can_pdu = (Can_PduType *) pdu_info.MetaDataPtr;
+ 			if (pointer_can_pdu->length > TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE)
+ 				continue;
+ 
+-- 
+2.34.1
+
