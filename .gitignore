@@ -14,7 +14,11 @@ tool/CC-RH
 tool/tmp
 tool/kitware-archive.sh
 tool/ICUMX_Loader*
-
+tool/for_host_pc_setup/can_demo/
+# tool: not ignored
+!tool/for_host_pc_setup/can_demo/*.sh
+!tool/for_host_pc_setup/can_demo/*.json
+!tool/for_host_pc_setup/can_demo/*.py
 
 # mcu
 mcu/safeg-auto/
