@@ -1,0 +1,1742 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:1058",
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": 1860,
+  "graphTooltip": 1,
+  "id": 8,
+  "links": [
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": true,
+      "title": "GitHub",
+      "type": "link",
+      "url": "https://github.com/rfmoz/grafana-dashboards"
+    },
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": true,
+      "title": "Grafana",
+      "type": "link",
+      "url": "https://grafana.com/grafana/dashboards/1860"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": false,
+      "title": "dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Basic network info per interface",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 4,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*trans.*/"
+            },
+            "properties": [
+              {
+                "id": "custom.transform",
+                "value": "negative-Y"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 324,
+      "interval": "1",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "recv {{device}}",
+          "range": true,
+          "refId": "A",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "trans {{device}} ",
+          "range": true,
+          "refId": "B",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8+irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Total can0",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "recv {{device}}",
+          "range": true,
+          "refId": "D",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "trans {{device}} ",
+          "range": true,
+          "refId": "E",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8+irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Total can0",
+          "range": true,
+          "refId": "F"
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Basic network info per interface",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "max": 1000000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*trans.*/"
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 3,
+        "x": 12,
+        "y": 0
+      },
+      "id": 326,
+      "interval": "1",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "recv {{device}}",
+          "range": true,
+          "refId": "A",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "trans {{device}} ",
+          "range": true,
+          "refId": "B",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8+irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can0\"}[$__rate_interval])*8",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Total can0",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 15,
+        "y": 0
+      },
+      "id": 327,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<style>\niframe {\n  border:none;\n  width:100%;\n  height:90%;\n}\n    .demo_text {\n      font-size: 3.5em;\n    }\n\n    .demo_btn {\n      background-color: #199319;\n      color: white;\n      padding: 2px 10px;\n      font-size: 1.8em;\n      font-size: 3.0em;\n      width: 99%;\n      border-radius: 100px;\n    }\n\n    .btn_ON {\n      background-color: #cc3333;\n    }\n\n    .btn_OFF {\n      background-color: #333333;\n    }\n    label, input, textarea {\n      font-size: 1.5em;\n    }\n</style>\n<div style=\"width: 100%; height: 100%;\">\n<button class=\"\" id=\"CANVIEWER\" onclick=\"canviewer_reset();\" value=\"OFF\">CANVIEWER: RESET</button>\n<iframe id=\"iframe1\"></iframe>\n<div>\n<script>\nvar iframe = document.getElementById(\"iframe1\");\nvar uri = new URL(window.location.href);\n\nvar target_url = \"http://\" + uri.hostname + \":8000\";\niframe.setAttribute('src', target_url);\n</script>\n\n<script>\n  function get_req_v2(url) {\n    var xhr = new XMLHttpRequest();\n    xhr.open(\"GET\", url);\n    xhr.send();\n    xhr.onload = () => {\n      console.log(\"Get response\", xhr.response);\n    };\n  }\n  function canviewer_reset() {\n    var hostname = window.location.hostname;\n    var url = \"http://\" + hostname + \":9000/canviewer/RESET/\";\n    get_req_v2(url);\n  }\n</script>\n",
+        "mode": "html"
+      },
+      "pluginVersion": "11.1.0",
+      "title": "CAN0",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 328,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<body>\n  <style>\n    .demo_text {\n      font-size: 3.5em;\n    }\n\n    .demo_btn {\n      background-color: #199319;\n      color: white;\n      padding: 2px 10px;\n      font-size: 1.8em;\n      font-size: 3.0em;\n      width: 99%;\n      border-radius: 100px;\n    }\n\n    .btn_ON {\n      background-color: #cc3333;\n    }\n\n    .btn_OFF {\n      background-color: #333333;\n    }\n    label, input, textarea {\n      font-size: 1.5em;\n    }\n  </style>\n\n  <button class=\"demo_btn btn_OFF\" id=\"CANFDTEST\" onclick=\"btn_proc('CANFDTEST');\" value=\"OFF\">CANFDTEST: OFF</button>\n\n  <form id=\"canfdtest_form\">\n\n    <label for=\"send_canid\">Send CAN ID(Hex):</label>\n    <input autocomplete=\"off\" type=\"text\" id=\"send_canid\" required minlength=\"1\" maxlength=\"10\" size=\"7\" value=\"0x501\"/>\n    <br />\n    <label for=\"recv_canid\">Recv CAN ID(Hex):</label>\n    <input autocomplete=\"off\" type=\"text\" id=\"recv_canid\" required minlength=\"1\" maxlength=\"10\" size=\"7\" value=\"0x302\"/>\n    <br />\n    <label for=\"testdatasize\">Test Datasize[Byte]:</label>\n    <input autocomplete=\"off\" type=\"text\" id=\"testdatasize\" required minlength=\"1\" maxlength=\"2\" size=\"1\" value=\"64\"/>\n    <!-- <br />\n    Currently not supported: <label for=\"send_frame_cnt\">Number of frame in flight</label> -->\n    <input autocomplete=\"off\" type=\"hidden\" id=\"send_frame_cnt\"  required minlength=\"1\" maxlength=\"2\" size=\"1\" value=\"20\"/>\n    <br />\n    <label for=\"enable_canfd\">Enable CAN-FD frame</label>\n    <input autocomplete=\"off\" type=\"checkbox\" id=\"enable_canfd\" checked />\n    <br/>\n    <label for=\"enable_brs\">Bit Rate Switch(BRS)</label>\n    <input autocomplete=\"off\" type=\"checkbox\" id=\"enable_brs\" />\n    <br/>\n    <label for=\"enable_brs\">Executed Command: </label>\n    <input autocomplete=\"off\" type=\"text\" id=\"canfdtest_cmd\" required minlength=\"1\" maxlength=\"8\" size=\"42\"\n      value=\"canfdtest canX -gvx -d -f20 -s64 -i0x501 -o0x302\" readonly/>\n\n    <input type=\"hidden\" id=\"canfdtest_common\" value=\"canfdtest canX\" readonly/>\n    </form> \n\n<script>\n  const formTestInputValue = document.forms.canfdtest_form;\n  formTestInputValue.addEventListener('input',()=>{\n    let cmdbox = document.getElementById(\"canfdtest_cmd\");\n\n    let send_canid     = document.getElementById('send_canid').value;\n    let recv_canid     = document.getElementById('recv_canid').value;\n    let test_size      = document.getElementById('testdatasize').value;\n    let send_frame_cnt = document.getElementById('send_frame_cnt').value;\n    let common_part    = document.getElementById('canfdtest_common').value;\n\n    let enable_canfd = document.getElementById('enable_canfd').checked;\n    let enable_brs   = document.getElementById('enable_brs').checked;\n    let options = \" -gvx\"\n    if(enable_canfd) options += \" -d\";\n    if(enable_brs)   options += \" -b\";\n    console.log(\"enable_canfd\", enable_canfd);\n    cmdbox.value = common_part + options + \" -f\"+send_frame_cnt+ \" -i\"+send_canid+\" -o\"+recv_canid+\" -s\"+test_size;\n  })\n</script>\n\n  <script>\n    function getBtnState() {\n      var t = document.getElementById(\"Attack\");\n      return t.value;\n    }\n    function btn_proc(btnId, status = \"dummy\") {\n      // toggle button\n      var t = document.getElementById(btnId);\n      if (t.value == \"ON\") {\n        t.value = \"OFF\";\n      }\n      else if (t.value == \"OFF\") {\n        t.value = \"ON\";\n      }\n      t.innerHTML = btnId + \": \"+t.value\n      t.className = \"demo_btn btn_\"+t.value;\n\n      // Proc each function\n      if (btnId == \"CANFDTEST\") {\n        let cmdbox = document.getElementById(\"canfdtest_cmd\");\n        canfdtest_control(t.value, cmdbox.value);\n      }\n    }\n  </script>\n\n  <script>\n    function get_req_v2(url) {\n      var xhr = new XMLHttpRequest();\n      xhr.open(\"GET\", url);\n      xhr.send();\n      xhr.onload = () => {\n        console.log(\"Get response\", xhr.response);\n      };\n    }\n    function canfdtest_control(state, command) {\n      var hostname = window.location.hostname;\n      var url = \"http://\" + hostname + \":9000/canfdtest/\" + state;\n      command.split(\" \").slice(2).forEach(function(item){\n        url += \"/\" + item\n      })\n      get_req_v2(url);\n    }\n  </script>\n\n</body>",
+        "mode": "html"
+      },
+      "pluginVersion": "11.1.0",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Basic network info per interface",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "max": 1000000,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#6ED0E0",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E0F9D7",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_eth2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#CCA300",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "recv_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#7EB26D",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_bytes_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#0A50A1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#99440A",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_drop_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#967302",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_eth0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#BF1B00",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trans_errs_lo"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#890F02",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*trans.*/"
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 3,
+        "x": 12,
+        "y": 11
+      },
+      "id": 331,
+      "interval": "1",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "recv {{device}}",
+          "range": true,
+          "refId": "A",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "trans {{device}} ",
+          "range": true,
+          "refId": "B",
+          "step": 240
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8+irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",device=\"can1\"}[$__rate_interval])*8",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Total can1",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 8,
+        "x": 15,
+        "y": 11
+      },
+      "id": 330,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<style>\niframe {\n  border:none;\n  width:100%;\n  height:90%;\n}\n    .demo_text {\n      font-size: 3.5em;\n    }\n\n    .demo_btn {\n      background-color: #199319;\n      color: white;\n      padding: 2px 10px;\n      font-size: 1.8em;\n      font-size: 3.0em;\n      width: 99%;\n      border-radius: 100px;\n    }\n\n    .btn_ON {\n      background-color: #cc3333;\n    }\n\n    .btn_OFF {\n      background-color: #333333;\n    }\n    label, input, textarea {\n      font-size: 1.5em;\n    }\n</style>\n<div style=\"width: 100%; height: 100%;\">\n<!--\n<button class=\"\" id=\"CANVIEWER2\" onclick=\"canviewer_reset();\" value=\"OFF\">CANVIEWER: RESET</button>\n-->\n<iframe id=\"iframe2\"></iframe>\n<div>\n<script>\nvar iframe = document.getElementById(\"iframe2\");\nvar uri = new URL(window.location.href);\n\nvar target_url = \"http://\" + uri.hostname + \":8001\";\niframe.setAttribute('src', target_url);\n</script>\n\n<script>\n  function get_req_v2(url) {\n    var xhr = new XMLHttpRequest();\n    xhr.open(\"GET\", url);\n    xhr.send();\n    xhr.onload = () => {\n      console.log(\"Get response\", xhr.response);\n    };\n  }\n  function canviewer_reset() {\n    var hostname = window.location.hostname;\n    var url = \"http://\" + hostname + \":9000/canviewer/RESET/\";\n    get_req_v2(url);\n  }\n</script>\n",
+        "mode": "html"
+      },
+      "pluginVersion": "11.1.0",
+      "title": "CAN1",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 329,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<body>\n<style>\n  .demo_text {\n    font-size: 3.5em;\n  }\n\n  .demo_btn {\n    background-color: #199319;\n    color: white;\n    padding: 2px 10px;\n    font-size: 1.8em;\n    font-size: 3.0em;\n    width: 99%;\n    border-radius: 100px;\n  }\n\n  .btn_ON {\n    background-color: #cc3333;\n  }\n\n  .btn_OFF {\n    background-color: #333333;\n    background-color: #111111;\n  }\n  label, input, textarea {\n    font-size: 1.2em;\n  }\n</style>\n\n<button class=\"demo_btn btn_OFF\" id=\"CANSEND\" onclick=\"cansend_control()\" value=\"OFF\">Send CAN Frame</button>\n\n<form id=\"cansend_form\">\n  <label for=\"cansend_canid\">Send CAN ID(Hex): 0x</label>\n  <input autocomplete=\"off\" type=\"text\" id=\"cansend_canid\" required minlength=\"1\" maxlength=\"10\" size=\"7\" value=\"1cd\"/>\n  <br />\n  <label for=\"cansend_data\">Data:</label>\n  <textarea autocomplete=\"off\" type=\"text\" id=\"cansend_data\" required minlength=\"1\" maxlength=\"192\" size=\"20\" cols=\"46\" rows=\"4\" \\\n  >01.23.45.67.89.ab.cd.ef</textarea>\n  <br />\n  <label for=\"cansend_enable_canfd\">Enable CAN-FD frame</label>\n  <input autocomplete=\"off\" type=\"checkbox\" id=\"cansend_enable_canfd\" checked />\n  <br/>\n  <label for=\"cansend_enable_brs\">Enable CAN-FD BRS</label>\n  <input autocomplete=\"off\" type=\"checkbox\" id=\"cansend_enable_brs\" />\n  <br/>\n  <label for=\"cansend_enable_rtr\">Enable CAN2.0 Remote Frame(RTR)</label>\n  <input autocomplete=\"off\" type=\"checkbox\" id=\"cansend_enable_rtr\" disabled />\n  <br/>\n  <label for=\"cansend_rtrlen\">RTR Length[Byte]:</label>\n  <input autocomplete=\"off\" type=\"text\" id=\"cansend_rtrlen\" required minlength=\"1\" maxlength=\"1\" size=\"1\" value=\"0\"/>\n  <br />\n  <label for=\"cansend_cmd\">Executed Command: </label>\n  <input autocomplete=\"off\" type=\"text\" id=\"cansend_cmd\" required minlength=\"1\" maxlength=\"8\" size=\"42\"\n    value=\"cansend canX 1cd##0.01.23.45.67.89.ab.cd.ef\" readonly/>\n  <input type=\"hidden\" id=\"cansend_common\" value=\"cansend canX\" readonly/>\n  </form> \n\n<script>\n  const cansend_form = document.forms.cansend_form;\n  cansend_form.addEventListener('input',()=>{\n    let cmdbox = document.getElementById(\"cansend_cmd\");\n    let cansend_common    = document.getElementById('cansend_common').value;\n\n    let cansend_canid     = document.getElementById('cansend_canid').value;\n    let cansend_data     = document.getElementById('cansend_data').value;\n    let cansend_rtrlen     = document.getElementById('cansend_rtrlen').value;\n\n    let candata = \"\"\n    let canfd_option = \"\";\n    let raw_canfd_option = 0;\n\n    /* canfd frame */\n    if ( document.getElementById('cansend_enable_canfd').checked ) {\n      if ( document.getElementById('cansend_enable_brs').checked )\n        raw_canfd_option |= 0x01;\n      /* Other options? */\n      canfd_option = \"#\" + raw_canfd_option + \".\";\n      candata = cansend_data;\n\n      // form control\n      document.getElementById(\"cansend_enable_rtr\").disabled = true;\n      document.getElementById(\"cansend_enable_rtr\").checked = false;\n      document.getElementById('cansend_data').maxLength  = \"192\";\n      document.getElementById('cansend_data').rows  = \"4\";\n    } \n    else { // Classic CAN frame\n      if (document.getElementById(\"cansend_enable_rtr\").checked) { // RTR frame\n        candata += \"R\" + cansend_rtrlen;\n      } else { // normal frame\n        candata = cansend_data;\n      }\n      \n      // form control\n      document.getElementById(\"cansend_enable_rtr\").disabled= false;\n      document.getElementById('cansend_data').maxLength  = \"23\";\n      document.getElementById('cansend_data').rows  = \"1\";\n    }\n    cmdbox.value = cansend_common + \" \" + cansend_canid + \"#\" + canfd_option + candata;\n  })\n</script>\n\n<script>\n  function get_req_v2(url) {\n    var xhr = new XMLHttpRequest();\n    xhr.open(\"GET\", url);\n    xhr.send();\n    xhr.onload = () => {\n      console.log(\"Get response\", xhr.response);\n    };\n  }\n  function cansend_control() {\n    let command = document.getElementById(\"cansend_cmd\").value;\n    // replacing for URL\n    command = command.replace(/#/g, \"_\")\n    var hostname = window.location.hostname;\n    var url = \"http://\" + hostname + \":9000/cansend/canX\";\n    command.split(\" \").slice(2).forEach(function(item){\n      url += \"/\" + item\n    })\n    get_req_v2(url);\n    console.log(url)\n  }\n</script>\n\n</body>",
+        "mode": "html"
+      },
+      "pluginVersion": "11.1.0",
+      "type": "text"
+    }
+  ],
+  "refresh": "5s",
+  "revision": 1,
+  "schemaVersion": 39,
+  "tags": [
+    "linux"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "default",
+          "value": "default"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "localhost-node",
+          "value": "localhost-node"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Job",
+        "multi": false,
+        "name": "job",
+        "options": [],
+        "query": {
+          "query": "label_values(node_uname_info, job)",
+          "refId": "Prometheus-job-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "localhost:9100",
+          "value": "localhost:9100"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(node_uname_info{job=\"$job\"}, instance)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Host",
+        "multi": false,
+        "name": "node",
+        "options": [],
+        "query": {
+          "query": "label_values(node_uname_info{job=\"$job\"}, instance)",
+          "refId": "Prometheus-node-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+",
+          "value": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "name": "diskdevices",
+        "options": [
+          {
+            "selected": true,
+            "text": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+",
+            "value": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+"
+          }
+        ],
+        "query": "[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "candemodual",
+  "uid": "candemodual",
+  "version": 10,
+  "weekStart": ""
+}
