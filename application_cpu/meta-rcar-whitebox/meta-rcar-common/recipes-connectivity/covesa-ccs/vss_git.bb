@@ -41,7 +41,7 @@ do_compile () {
 }
 
 do_install () {
-    install -d ${D}/${USRBINPATH}/waii
-    install -m 644 ${S}/vss-tools/vss_vissv2.binary ${D}/${USRBINPATH}/waii
+    install -d ${D}/${USRBINPATH}/vissr
+    install -m 644 ${S}/vss-tools/vss_vissv2.binary ${D}/${USRBINPATH}/vissr
 }
 
