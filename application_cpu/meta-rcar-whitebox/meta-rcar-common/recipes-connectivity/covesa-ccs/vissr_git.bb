@@ -34,7 +34,10 @@ SYSTEMD_SERVICE_${PN} = "${SYSTEMD_SERVICE_FILENAMES}"
 
 do_compile_prepend() {
     cd ${S}/src/${GO_IMPORT}
-    sed -i 's|.* => /home/.*||' ./go.mod
+    sed -i -e 's|.* => /home/.*||' \
+        -e 's|w3c/automotive-viss2/|COVESA/vissr/|g' ./go.mod
+    # find ./ -name "*.go" | \
+    #     xargs -i sed -i -e 's|w3c/automotive-viss2/|COVESA/vissr/|g' {}
     go mod tidy -modcacherw
     cd ${S}/src/${GO_IMPORT}/server
     go mod tidy -modcacherw
