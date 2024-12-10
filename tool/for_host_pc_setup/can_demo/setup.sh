@@ -53,8 +53,8 @@ org_role = Admin
 allow_embedding = true
 [users]
 #home_page = "/d/rYdddlPWk/node-exporter-full"
-#home_page = "/d/candemo/candemo"
-home_page = "/d/candemodual/candemo_dual"
+home_page = "/d/candemo/candemo"
+#home_page = "/d/candemodual/candemo_dual"
 [panels]
 disable_sanitize_html = true
 '
