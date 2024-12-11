@@ -139,6 +139,17 @@ if [[ "${EXAMPLE_NAME}" == "" ]]; then
         rm -f sample_exe.s3
         cp -f G4MH_sample.srec ${SCRIPT_DIR}/deploy/g4mh_can_disable.srec
     fi
+
+    # build autosar_api_can_demo
+    EXAMPLE_NAME=autosar_api_can_demo
+    cd ${SOURCE_DIR}/examples/rh850/$EXAMPLE_NAME
+    ./build.sh
+    cd ${SOURCE_DIR}
+    rm -f G4MH.srec
+    objcopy -O srec --srec-forceS3 ${SOURCE_DIR}/examples/rh850/${EXAMPLE_NAME}/_build/${EXAMPLE_NAME}_exe.abs ${EXAMPLE_NAME}_exe.s3
+    rlink ../G4MH_Head.srec ${EXAMPLE_NAME}_exe.s3 -fo=Stype -ou=G4MH.srec
+    rm -f ${EXAMPLE_NAME}_exe.s3
+    cp -f G4MH.srec ${SCRIPT_DIR}/deploy/g4mh_${EXAMPLE_NAME}.srec
 else # Use -t option case
     # build examples
     cd ${SOURCE_DIR}/examples/rh850/$EXAMPLE_NAME

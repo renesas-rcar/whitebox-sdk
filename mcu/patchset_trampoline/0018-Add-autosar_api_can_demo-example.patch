@@ -1,0 +1,746 @@
+From d16752160dd440fbd2ac33e5ae08b7404bee0bef Mon Sep 17 00:00:00 2001
+From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+Date: Thu, 5 Dec 2024 20:35:23 +0900
+Subject: [PATCH] Add autosar_api_can_demo example
+
+Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
+---
+ .../rh850/autosar_api_can_demo/.gitignore     |   4 +
+ .../autosar_api_can_demo.c                    | 189 ++++++++++++++++++
+ .../autosar_api_can_demo.oil                  | 139 +++++++++++++
+ .../autosar_api_can_demo/bsw_can_layer.c      | 142 +++++++++++++
+ .../autosar_api_can_demo/bsw_can_layer.h      |  62 ++++++
+ examples/rh850/autosar_api_can_demo/build.sh  |  17 ++
+ .../rh850/autosar_api_can_demo/can_demo.c     | 125 ++++++++++++
+ 7 files changed, 678 insertions(+)
+ create mode 100644 examples/rh850/autosar_api_can_demo/.gitignore
+ create mode 100644 examples/rh850/autosar_api_can_demo/autosar_api_can_demo.c
+ create mode 100644 examples/rh850/autosar_api_can_demo/autosar_api_can_demo.oil
+ create mode 100644 examples/rh850/autosar_api_can_demo/bsw_can_layer.c
+ create mode 100644 examples/rh850/autosar_api_can_demo/bsw_can_layer.h
+ create mode 100755 examples/rh850/autosar_api_can_demo/build.sh
+ create mode 100644 examples/rh850/autosar_api_can_demo/can_demo.c
+
+diff --git a/examples/rh850/autosar_api_can_demo/.gitignore b/examples/rh850/autosar_api_can_demo/.gitignore
+new file mode 100644
+index 00000000..e587f51b
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/.gitignore
+@@ -0,0 +1,4 @@
++_build/
++build/
++can_demo/
++CMakeLists.txt
+diff --git a/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.c b/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.c
+new file mode 100644
+index 00000000..62c00a6a
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.c
+@@ -0,0 +1,189 @@
++#include <Can.h>
++#include <CanIf.h>
++#include <spider_can.h>
++#include <stdio.h>
++#include <string.h>
++#include <tpl_os.h>
++
++#include "spider_serial.h"
++#include "printf.h"
++
++#include "bsw_can_layer.h"
++
++#define CPUCLK_MHZ 400UL
++#define WAIT_US(t) \
++    { \
++        volatile uint32 cnt; \
++        for (cnt = 0; \
++             cnt < (((uint32)CPUCLK_MHZ * ((uint32)t)) + (uint32)1); \
++             cnt++); \
++    }
++
++// Statically list the configuration of each CAN controller used in the application
++static tpl_can_controller_config_t can_controllers_config[] =
++{
++	// First controller will use CAN 2.0
++	{
++		&spider_can_controller_0,
++		// CAN-FD at 1Mbps without BRS
++		#if USING_500_KBPS
++		{
++			500, // CanControllerBaudRate
++			0, // CanControllerBaudRateConfigID
++			2, // CanControllerPropSeg, fine tune the bus speed, it is measured at 1MHz
++			5, // CanControllerSeg1
++			2, // CanControllerSeg2
++			2, // CanControllerSyncJumpWidth
++			TRUE, // use_fd_configuration
++			{
++				5000, // CanControllerFdBaudRate, still clocked at 1Mbps
++				2, // CanControllerPropSeg
++				10, // CanControllerSeg1
++				5, // CanControllerSeg2
++				15, // CanControllerSspOffset
++				5, // CanControllerSyncJumpWidth
++				FALSE // CanControllerTxBitRateSwitch
++			}
++		}
++		#else
++		{
++			1000, // CanControllerBaudRate
++			0, // CanControllerBaudRateConfigID
++			1, // CanControllerPropSeg, fine tune the bus speed, it is measured at 1MHz
++			5, // CanControllerSeg1
++			2, // CanControllerSeg2
++			2, // CanControllerSyncJumpWidth
++			TRUE, // use_fd_configuration
++			{
++				5000, // CanControllerFdBaudRate, still clocked at 1Mbps
++				2, // CanControllerPropSeg
++				10, // CanControllerSeg1
++				5, // CanControllerSeg2
++				15, // CanControllerSspOffset
++				5, // CanControllerSyncJumpWidth
++				FALSE // CanControllerTxBitRateSwitch
++			}
++		}
++		#endif
++	}
++};
++
++int main(void)
++{
++	static Can_ConfigType can_config_type =
++	{
++		can_controllers_config,
++		sizeof(can_controllers_config) / sizeof(can_controllers_config[0])
++	};
++	int ret, i;
++	// CAN definition
++	static Can_PduType can_pdu;
++	static PduInfoType pdu_info;
++	static payload = "Ready!";
++
++	// Serial Init
++	Serial_Init();
++	
++	// WAIT_US(44*1000); // This is for debug. delay serial log to show it near U-boot log. 
++	debug_printf("[G4MH] Serial: driver is initialized\r\n");
++
++	// Initialize the CAN module 0 channel 0 with the enabled configuration
++	for (i = 0; i < 3; ++i)
++		ret = Can_Init(&can_config_type);
++	if (ret)
++		return -1;
++	debug_printf("[G4MH] CAN: driver is initialized\r\n");
++#if 0
++	// Send a frame to tell that the program is ready
++	can_pdu.id = 0x123 | TPL_CAN_ID_TYPE_STANDARD;
++	can_pdu.sdu = payload;
++	can_pdu.length = strlen((char *) can_pdu.sdu);
++	pdu_info.SduDataPtr = can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *)&can_pdu;
++	pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
++	CanIf_Transmit(0, &pdu_info);
++#endif
++	SwcInit();
++
++	StartOS(OSDEFAULTAPPMODE);
++	return 0;
++}
++
++/* ISR function for RX*/
++ISR(RSCAN0_RX_Int)
++{
++	static boolean ret;
++	static PduIdType PduId;
++
++	// CAN definition
++	static Can_PduType can_pdu;
++	static PduInfoType pdu_info;
++	static uint8 payload[TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE];
++	static Can_IdType id_without_flags;
++
++	can_pdu.sdu = payload;
++	pdu_info.SduDataPtr = can_pdu.sdu;
++	pdu_info.MetaDataPtr = (uint8 *)&can_pdu;
++
++	while (CanIf_ReadRxPduData(0, &pdu_info) == E_OK) // データが無くなるまでフレーム受信
++	{
++		StoreReadData(&pdu_info); // BSW layer側変数にデータ格納
++		id_without_flags = ((Can_PduType *) pdu_info.MetaDataPtr)->id  & TPL_CAN_ID_STANDARD_MASK;
++		PduId = (PduIdType)id_without_flags;
++		pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
++		// debug_printf("[G4MH] CAN ID is 0x%x SduLength=%u\r\n", id_without_flags, pdu_info.SduLength);
++		ret = Com_RxIpduCallout(PduId, &pdu_info);
++		if(!ret)
++			debug_printf("[G4MH] Error on Com_RxIpduCallout function");
++		Com_CbkRxAck(PduId);
++	}
++
++	CallTerminateISR2();
++}
++
++ISR(RSCAN0_RX_IntClear)
++{
++	// debug_printf("[G4MH] RSCAN0_RX_Int is cleared\r\n");
++	spider_can_clear_rx_interrupt(can_controllers_config);
++}
++
++/* ISR function for TX ch0*/
++ISR(RSCAN0_TX_CH0_Int)
++{
++	PduIdType PduId;
++	//static uint32 can_frame = 0;
++	//debug_printf("[G4MH] CAN frame is transmitted(total = %u)\r\n", ++can_frame);
++
++	Com_CbkTxAck( PduId );
++	CallTerminateISR2();
++}
++
++ISR(RSCAN0_TX_CH0_IntClear)
++{
++	// debug_printf("[G4MH] RSCAN0_TX_CH0_Int is cleared\r\n");
++	spider_can_clear_tx_ch0_interrupt(can_controllers_config);
++}
++
++/* Timer callback function */
++DeclareCounter(Software_Counter);
++
++TASK(timer10ms)
++{
++	/*
++	static uint32 elappsed_sec = 0, cnt = 0;
++	if ( (cnt++ % 100) == 0)
++		debug_printf("[G4MH]  10ms timer: %u sec elappsed\n\r", ++elappsed_sec);
++	*/
++	BswM_CS_CbkPostMainFunctionMid();
++
++	TerminateTask();
++}
++
++TASK(timer1000ms)
++{
++	Com_SendIPDU_trigger();
++
++	TerminateTask();
++}
++
++TASK(can_task){} // Dummy function
+diff --git a/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.oil b/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.oil
+new file mode 100644
+index 00000000..3e8298ad
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/autosar_api_can_demo.oil
+@@ -0,0 +1,139 @@
++OIL_VERSION = "4.0";
++
++IMPLEMENTATION trampoline {
++	/* This fix the default STACKSIZE of tasks */
++	TASK {
++		UINT32 STACKSIZE = 2048 ;
++	};
++
++	/* This fix the default STACKSIZE of ISRs */
++	ISR {
++		UINT32 STACKSIZE = 2048 ;
++	};
++};
++
++CPU can_task {
++	OS config {
++		STATUS = EXTENDED;
++		PAINT_STACK = TRUE;
++		PAINT_REGISTERS = TRUE;
++		BUILD = TRUE {
++			TRAMPOLINE_BASE_PATH = "../../../";
++			APP_SRC = "autosar_api_can_demo.c";
++			APP_SRC = "can_demo.c";
++			APP_SRC = "bsw_can_layer.c";
++			APP_NAME = "autosar_api_can_demo_exe";
++			LDFLAGS="-debug -nocompress -NOOPtimize -memory=high -nologo -SHow=ALL";
++			CFLAGS="-Xcpu=g4mh -g -g_line -Xfxu=off -Xasm_path=.";
++			LINKER = "rlink";
++			SYSTEM = CMAKE;
++			LIBRARY = can;
++			CFLAGS = "-DUSE_CAN_ISR";
++
++			LIBRARY = serial;
++			CFLAGS="-DUSING_500_KBPS"; /* if using 1M(1000k)bps, comment out this line */
++
++			/* CAN Config: TX CAN ID */
++			CFLAGS="-DMSG_TxMsg_A_Bus_01=0x301";
++			CFLAGS="-DMSG_TxMsg_A_Bus_02=0x302";
++			CFLAGS="-DMSG_TxMsg_A_Bus_03=0x703";
++			CFLAGS="-DMSG_TxMsg_A_Bus_04=0x704";
++			/* CAN Config: RC CAN ID */
++			CFLAGS="-DMSG_RxMsg_A_Bus_01=0x304";
++			CFLAGS="-DMSG_RxMsg_A_Bus_02=0x305";
++			CFLAGS="-DMSG_RxMsg_A_Bus_03=0x703";
++			CFLAGS="-DMSG_RxMsg_A_Bus_04=0x501";
++			/* CAN config: Periodic sending ( 0=off, 1=on) */
++			CFLAGS="-DPeriodicSend_Bus_01=1";
++			CFLAGS="-DPeriodicSend_Bus_02=0";
++			CFLAGS="-DPeriodicSend_Bus_03=0";
++			CFLAGS="-DPeriodicSend_Bus_04=0";
++			/* CAN config: misc */
++			CFLAGS="-DComConf_ComSignal_TxSig02=0x302"; /* Same as MSG_TxMsg_A_Bus_02 */
++		};
++		SYSTEM_CALL = TRUE;
++	};
++
++	APPMODE stdAppmode {};
++
++	TASK can_task {
++		PRIORITY = 1;
++		AUTOSTART = TRUE {
++			APPMODE = stdAppmode;
++		};
++		ACTIVATION = 1;
++		SCHEDULE = FULL;
++	};
++
++	ISR RSCAN0_RX_IntClear {
++		CATEGORY = 1;
++		PRIORITY = 1;
++		SOURCE = RSCAN0_RX_Int;
++	};
++
++	ISR RSCAN0_RX_Int {
++		CATEGORY = 2; //FSY unsupported
++		PRIORITY = 1;
++		SOURCE = RSCAN0_RX_Int;
++	};
++
++	ISR RSCAN0_TX_CH0_IntClear {
++		CATEGORY = 1;
++		PRIORITY = 1;
++		SOURCE = RSCAN0_TX_CH0_Int;
++	};
++
++	ISR RSCAN0_TX_CH0_Int {
++		CATEGORY = 2; //FSY unsupported
++		PRIORITY = 1;
++		SOURCE = RSCAN0_TX_CH0_Int;
++	};
++
++	COUNTER Software_Counter {
++		MAXALLOWEDVALUE = 100;
++		TICKSPERBASE = 1;
++		MINCYCLE = 1;
++		TYPE = SOFTWARE;
++		SOURCE = SysTick; // 10msec
++	};
++
++	TASK timer10ms {
++		PRIORITY = 3;
++		AUTOSTART = FALSE;
++		ACTIVATION = 1;
++		SCHEDULE = FULL;
++	};
++	ALARM timer_timer10ms {
++		COUNTER = SystemCounter;
++		ACTION = ACTIVATETASK {
++			TASK = timer10ms;
++		};
++
++		AUTOSTART = TRUE {
++			APPMODE = stdAppmode;
++			ALARMTIME = 1;
++			CYCLETIME = 1;
++		};
++	};
++
++	TASK timer1000ms {
++		PRIORITY = 3;
++		AUTOSTART = FALSE;
++		ACTIVATION = 1;
++		SCHEDULE = FULL;
++	};
++	ALARM timer_timer1000ms {
++		COUNTER = SystemCounter;
++		ACTION = ACTIVATETASK {
++			TASK = timer1000ms;
++		};
++
++		AUTOSTART = TRUE {
++			APPMODE = stdAppmode;
++			ALARMTIME = 100;
++			CYCLETIME = 100;
++		};
++	};
++
++
++};
+diff --git a/examples/rh850/autosar_api_can_demo/bsw_can_layer.c b/examples/rh850/autosar_api_can_demo/bsw_can_layer.c
+new file mode 100644
+index 00000000..b675d312
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/bsw_can_layer.c
+@@ -0,0 +1,142 @@
++// SPDX-License-Identifier: MIT OR Apache-2.0
++/******************************************************************************
++
++    bsw_can_layer.c
++
++    This program is beasd on Autosar technology.
++    If you want to exploit Autosar technology in automotive or derived application,
++    you have to sign an AUTOSAR Partner's Agreement.
++
++    For more details, please see following:
++    - (original) https://www.autosar.org/faq/
++    - (mirror) https://web.archive.org/web/20190226094843/https://www.autosar.org/faq/
++
++*******************************************************************************/
++
++#include "bsw_can_layer.h"
++
++#define CAN_TX_BUS_NUM 4
++#define CAN_RX_BUS_NUM 4
++#define CAN_MAX_DATA_SIZE 64
++
++static uint8 MSG_TxMsg_A_Bus_data[CAN_TX_BUS_NUM][CAN_MAX_DATA_SIZE];
++static uint8 MSG_TxMsg_A_Bus_length[CAN_TX_BUS_NUM];
++static uint8 MSG_RxMsg_A_Bus_data[CAN_RX_BUS_NUM][CAN_MAX_DATA_SIZE];
++static Com_MsgSizeType  MSG_RxMsg_A_Bus_Length[CAN_RX_BUS_NUM];
++
++static boolean PeriodicSendFlag[CAN_TX_BUS_NUM] = {
++    PeriodicSend_Bus_01, PeriodicSend_Bus_02, PeriodicSend_Bus_03, PeriodicSend_Bus_04,
++};
++static uint32 CAN_ID_ARRAY[CAN_TX_BUS_NUM] = {
++    MSG_TxMsg_A_Bus_01, MSG_TxMsg_A_Bus_02, MSG_TxMsg_A_Bus_03, MSG_TxMsg_A_Bus_04,
++};
++static uint8 CAN_DATA_SIZE[CAN_TX_BUS_NUM] = { 4,8,8,8 };
++
++static uint8 _get_bus_num_from_id(PduIdType PduId){
++    uint8 bus_no;
++    switch (PduId) {
++    case MSG_TxMsg_A_Bus_01: bus_no = 0; break;
++    case MSG_TxMsg_A_Bus_02: bus_no = 1; break;
++    case MSG_TxMsg_A_Bus_03: bus_no = 2; break;
++    case MSG_TxMsg_A_Bus_04: bus_no = 3; break;
++    default: bus_no = -1; break;
++    }
++    return bus_no;
++}
++
++void Com_StopTxIPDU( PduIdType PduId ){
++    uint8 bus_no = _get_bus_num_from_id(PduId);
++    if(bus_no != -1) PeriodicSendFlag[bus_no] = 0;
++}
++void Com_ResumeTxIPDU( PduIdType PduId ){
++    uint8 bus_no = _get_bus_num_from_id(PduId);
++    if(bus_no != -1) PeriodicSendFlag[bus_no] = 1;
++}
++
++void Com_WriteIPDU(PduIdType PduId, uint8 *TxMsg_Data){
++    uint8 i, bus_no = _get_bus_num_from_id(PduId);
++
++    for (i=0; i<CAN_DATA_SIZE[bus_no]; ++i) {
++        MSG_TxMsg_A_Bus_data[bus_no][i] = TxMsg_Data[i];
++    }
++}
++
++void Com_SendIPDU(PduIdType PduId, uint8 *TxMsg_Data){
++    uint8 i, bus_no = -1;
++
++    static Can_PduType can_pdu, *pointer_can_pdu;
++    static PduInfoType pdu_info;
++    static Can_IdType id_without_flags, id_flags;
++    static uint8 payload[TPL_CAN_FD_FRAME_MAXIMUM_PAYLOAD_SIZE];
++
++    bus_no = _get_bus_num_from_id(PduId);
++
++    can_pdu.id = PduId | TPL_CAN_ID_TYPE_STANDARD;
++    can_pdu.sdu = MSG_TxMsg_A_Bus_data[bus_no];
++    can_pdu.length = CAN_DATA_SIZE[bus_no];
++    pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
++    pdu_info.SduDataPtr = can_pdu.sdu;
++    pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
++    CanIf_Transmit(0, &pdu_info);
++}
++
++void debug_send( PduLengthType SduLength, uint8* SduDataPtr) {
++    int i, payload_size = SduLength;
++    debug_printf("[G4MH] debug_send: [Payload = %02d byte]: ", payload_size);
++    for (i=0; i<payload_size; ++i)
++        debug_printf("%02x ", SduDataPtr[i]);
++    debug_printf("\r\n");
++}
++
++Com_MsgSizeType Com_ReadIPDUSize(PduIdType PduId ){
++    uint8 bus_no = _get_bus_num_from_id(PduId);
++
++    return MSG_RxMsg_A_Bus_Length[bus_no];
++}
++
++void Com_ReadIPDU(PduIdType PduId, uint8 *MSG_RxMsg_data){
++    uint8 i, bus_no = _get_bus_num_from_id(PduId);
++
++    for (i=0; i<CAN_DATA_SIZE[bus_no]; ++i) {
++        MSG_RxMsg_data[i] = MSG_RxMsg_A_Bus_data[bus_no][i]; 
++    }
++}
++
++/*
++ * This compatible layer specific function
++ */
++void Com_SendIPDU_trigger(void){
++    static int i;
++    for (i=0; i<CAN_TX_BUS_NUM; ++i) {
++        if(PeriodicSendFlag[i])
++            Com_SendIPDU(CAN_ID_ARRAY[i], (uint8*)0);
++    }
++}
++
++void StoreReadData(BswConstR PduInfoType* PduInfoPtr) {
++    uint8 i, bus_no = -1;
++    PduIdType PduId = ((Can_PduType *) PduInfoPtr->MetaDataPtr)->id  & TPL_CAN_ID_TYPE_FD_STANDARD;
++    PduIdType payloadLen = ((Can_PduType *) PduInfoPtr->MetaDataPtr)->length;
++
++    bus_no = _get_bus_num_from_id(PduId);
++
++    for (i=0; i<CAN_DATA_SIZE[bus_no]; ++i) {
++        MSG_RxMsg_A_Bus_data[bus_no][i] = ((Can_PduType *) PduInfoPtr->MetaDataPtr)->sdu[i];
++    }
++    MSG_RxMsg_A_Bus_Length[bus_no] = payloadLen;
++}
++
++uint8 Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataPtr ){
++    static Can_PduType can_pdu;
++    static PduInfoType pdu_info;
++
++    /* In this implementation, SignalId = CanId */
++    can_pdu.id = SignalId | TPL_CAN_ID_TYPE_FD_STANDARD; /* ToDo: support extend can id/normal can */
++    can_pdu.sdu = (uint8 *)SignalDataPtr;
++    can_pdu.length = 64; // strlen((char *) can_pdu.sdu); /* Current app may use fixed-size */
++    pdu_info.SduDataPtr = can_pdu.sdu;
++    pdu_info.MetaDataPtr = (uint8 *) &can_pdu;
++    pdu_info.SduLength = sizeof(can_pdu) + can_pdu.length;
++    CanIf_Transmit(0, &pdu_info);
++}
++
+diff --git a/examples/rh850/autosar_api_can_demo/bsw_can_layer.h b/examples/rh850/autosar_api_can_demo/bsw_can_layer.h
+new file mode 100644
+index 00000000..d2621ed1
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/bsw_can_layer.h
+@@ -0,0 +1,62 @@
++// SPDX-License-Identifier: MIT OR Apache-2.0
++/******************************************************************************
++
++    bsw_can_layer.h
++
++    This program is beasd on Autosar technology.
++    If you want to exploit Autosar technology in automotive or derived application,
++    you have to sign an AUTOSAR Partner's Agreement.
++
++    For more details, please see following:
++    - (original) https://www.autosar.org/faq/
++    - (mirror) https://web.archive.org/web/20190226094843/https://www.autosar.org/faq/
++
++*******************************************************************************/
++
++#ifndef __BSW_CAN_LAYER__
++#define __BSW_CAN_LAYER__
++
++#include <Can.h>
++#include <CanIf.h>
++#include <spider_can.h>
++#include <stdio.h>
++#include <string.h>
++#include <tpl_os.h>
++
++#include "spider_serial.h"
++#include "printf.h"
++
++#define BswConstR const
++#define BSWM_CS_SYSSTAT_BAT (0x01)
++#define BSWM_CS_SYSSTAT_IG  (0x02)
++
++typedef uint32 Com_MsgSizeType;
++typedef uint16 Com_SignalIdType; // from Autosar specifications
++typedef tpl_bool boolean;
++typedef tpl_bool Dem_InitMonitorReasonType; // not used in current swc
++
++/* function which exists on can_demo.c */
++extern void SwcInit( void );
++extern void BswM_CS_CbkPostMainFunctionMid(void);
++extern void Com_CbkTxAck( PduIdType PduId );
++extern void Com_CbkRxAck( PduIdType PduId );
++extern boolean Com_RxIpduCallout( PduIdType PduId, BswConstR PduInfoType* PduInfoPtr );
++
++/* Prototype functions for Autosar specification */
++uint8 Com_SendSignal(Com_SignalIdType, const void* SignalDataPtr );
++
++/* Expand function */
++void Com_StopTxIPDU(PduIdType PduId );
++void Com_ResumeTxIPDU( PduIdType PduId );
++void Com_WriteIPDU(PduIdType PduId, uint8 *TxMsg_Data);
++void Com_SendIPDU(PduIdType PduId, uint8 *TxMsg_Data);
++Com_MsgSizeType Com_ReadIPDUSize(PduIdType PduId );
++void Com_ReadIPDU(PduIdType PduId, uint8 *MSG_RxMsg_A_Bus_01_data);
++
++/* This compatible layer specific function */
++void Com_SendIPDU_trigger(void); // called by 1sec timer function
++void StoreReadData(BswConstR PduInfoType* PduInfoPtr); // stores recived can frame into variable in this layer.
++void debug_send( PduLengthType, uint8*); // outputs CAN frame via debug serial
++
++#endif // __BSW_CAN_LAYER__
++
+diff --git a/examples/rh850/autosar_api_can_demo/build.sh b/examples/rh850/autosar_api_can_demo/build.sh
+new file mode 100755
+index 00000000..49df54d9
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/build.sh
+@@ -0,0 +1,17 @@
++#!/usr/bin/env bash
++
++set -e
++set -x
++PROGRAM_NAME=autosar_api_can_demo
++
++echo "*** Run Goil ***"
++mkdir -p _build
++goil --target=rh850/g4mh --templates=../../../goil/templates/ ${PROGRAM_NAME}.oil
++
++echo "*** Run CMake ***"
++cd _build
++cmake -G "Unix Makefiles" -D CMAKE_TOOLCHAIN_FILE=../${PROGRAM_NAME}/compiler.cmake ..
++
++echo "*** Run Make ***"
++make -j$(nproc)
++
+diff --git a/examples/rh850/autosar_api_can_demo/can_demo.c b/examples/rh850/autosar_api_can_demo/can_demo.c
+new file mode 100644
+index 00000000..dce8b54d
+--- /dev/null
++++ b/examples/rh850/autosar_api_can_demo/can_demo.c
+@@ -0,0 +1,125 @@
++// SPDX-License-Identifier: MIT OR Apache-2.0
++/******************************************************************************
++
++    can_demo.c
++
++    This program is beasd on Autosar technology.
++    If you want to exploit Autosar technology in automotive or derived application,
++    you have to sign an AUTOSAR Partner's Agreement.
++
++    For more details, please see following:
++    - (original) https://www.autosar.org/faq/
++    - (mirror) https://web.archive.org/web/20190226094843/https://www.autosar.org/faq/
++
++*******************************************************************************/
++
++#include "bsw_can_layer.h"
++
++static uint8 cyc_msg_buff[4];               /* 定期送信データ(ID:0x301)       */
++static uint8 loop_msg_buff[64];             /* ループバックデータ(ID:0x302)   */
++
++#ifndef MSG_TxMsg_A_Bus_01
++#define MSG_TxMsg_A_Bus_01          0x301
++#endif
++
++#ifndef MSG_RxMsg_A_Bus_04
++#define MSG_RxMsg_A_Bus_04          0x501
++#endif
++
++#ifndef ComConf_ComSignal_TxSig02
++#define ComConf_ComSignal_TxSig02   0x302
++#endif
++
++/*----------------------------------------------------------------------------*/
++/*    ユーザー初期化処理                                                      */
++/*----------------------------------------------------------------------------*/
++void SwcInit( void )
++{
++    int i;
++
++    /* 定期送信データ */
++    cyc_msg_buff[0] = 0x11;
++    cyc_msg_buff[1] = 0x22;
++    cyc_msg_buff[2] = 0x33;
++    cyc_msg_buff[3] = 0x44;
++
++    /* ループバックデータ */
++    for (i = 0; i < 64; i++)
++    {
++        loop_msg_buff[i] = 0x00;
++    }
++
++    return;
++}
++
++/*----------------------------------------------------------------------------*/
++/*    BswM_CS 中優先度処理後通知 - 定期送信データ設定 (CAN ID 0x301)          */
++/*----------------------------------------------------------------------------*/
++void BswM_CS_CbkPostMainFunctionMid( void )
++{
++    static uint8 counter = 0;
++
++    counter++;
++
++    if (counter > 99)
++    {
++        counter = 0;
++
++        Com_WriteIPDU( MSG_TxMsg_A_Bus_01, cyc_msg_buff );
++    }
++
++    return;
++}
++
++/*----------------------------------------------------------------------------*/
++/*    Comメッセージ格納前通知 - ID:0x501で64バイト受信 --> ID:0x302に返送     */
++/*----------------------------------------------------------------------------*/
++boolean Com_RxIpduCallout( PduIdType PduId, BswConstR PduInfoType* PduInfoPtr )
++{
++    uint32 i,len;
++    uint8* ptr;
++
++    switch (PduId)
++    {
++        case MSG_RxMsg_A_Bus_04:
++            len = (uint32) PduInfoPtr->SduLength;
++            ptr = (uint8 *) PduInfoPtr->SduDataPtr;
++
++            while (len >= 64)
++            {
++                for (i = 0; i < 64; i++)
++                {
++                    loop_msg_buff[i] = ptr[i] + 1;
++                }
++                Com_SendSignal(ComConf_ComSignal_TxSig02, loop_msg_buff);
++
++                len -= 64;
++                ptr += 64;
++               }
++
++            break;
++
++        default:
++            break;
++    }
++
++    return TRUE;
++}
++
++/*----------------------------------------------------------------------------*/
++/*    Comメッセージ送信完了通知                                               */
++/*----------------------------------------------------------------------------*/
++void Com_CbkTxAck( PduIdType PduId )
++{
++    return;
++}
++
++/*----------------------------------------------------------------------------*/
++/*    Comメッセージ受信通知                                                   */
++/*----------------------------------------------------------------------------*/
++void Com_CbkRxAck( PduIdType PduId )
++{
++    return;
++}
++
++
+-- 
+2.34.1
+
