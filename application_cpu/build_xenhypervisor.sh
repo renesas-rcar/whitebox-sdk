@@ -77,7 +77,8 @@ cd ${SCRIPT_DIR}/work
 moulin ./whitebox-sdk.yaml \
     --MACHINE $1 \
     --USING_UFS_AS_STORAGE $USING_UFS \
-    --ENABLE_DOMU $USING_DOMU
+    --ENABLE_DOMU $USING_DOMU \
+    --BUILD_DOMD_SDK no
 ninja || ninja
 ninja image-full
 
