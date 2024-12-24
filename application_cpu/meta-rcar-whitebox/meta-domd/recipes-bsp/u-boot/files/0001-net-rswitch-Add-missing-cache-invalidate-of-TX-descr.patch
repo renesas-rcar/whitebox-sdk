@@ -1,0 +1,43 @@
+From cf1e7b2fa6e3d01f9de57e6494d957d4fd8efad8 Mon Sep 17 00:00:00 2001
+From: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Date: Thu, 19 Dec 2024 11:52:46 +0100
+Subject: [PATCH] net: rswitch: Add missing cache invalidate of TX descriptor
+
+TFTP transfers of large files, for example 128 MiB, can sporadically
+get stuck and the transfer slows down considerably.
+
+This happens because the TX DMA descriptor in DRAM becomes out of sync
+with the view of the TX DMA descriptor content from the CPU side, which
+is viewed through the CPU caches. In order to guarantee these two views
+are consistent, the cache over TX DMA descriptor that has possibly been
+written by the rswitch hardware must first be invalidated, only then can
+the descriptor be cleared and updated by the CPU, and finally the cache
+over that area must be flushed back into DRAM to make sure the rswitch
+hardware has consistent view of the updated descriptor content.
+
+The very first invalidation operation was missing, which led to sporadic
+corruption of the TX DMA descriptor. Fix it, add the missing invalidation
+operation.
+
+Reported-by: Enric Balletbo i Serra <eballetb@redhat.com>
+Signed-off-by: Marek Vasut <marek.vasut+renesas@mailbox.org>
+Tested-by: Enric Balletbo i Serra <eballetb@redhat.com>
+---
+ drivers/net/rswitch.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/rswitch.c b/drivers/net/rswitch.c
+index b0dabfe0d1..2f1455db6a 100644
+--- a/drivers/net/rswitch.c
++++ b/drivers/net/rswitch.c
+@@ -1172,6 +1172,7 @@ static int rswitch_send(struct udevice *dev, void *packet, int len)
+ 
+ 	/* Update TX descriptor */
+ 	rswitch_flush_dcache((uintptr_t)packet, len);
++	rswitch_invalidate_dcache((uintptr_t)desc, sizeof(*desc));
+ 	memset(desc, 0x0, sizeof(*desc));
+ 	desc->die_dt = DT_FSINGLE;
+ 	desc->info_ds = len;
+-- 
+2.34.1
+

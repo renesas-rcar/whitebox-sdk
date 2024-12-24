@@ -3,10 +3,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 BRANCH = "v2020.10/rcar-5.1.1.rc10"
 SRCREV = "9ddd54cbb5d2e65fab77bede0b1db35dca539848"
 
-SRC_URI_append = " \
-    file://0001-HACK-Improve-large-file-download-via-TFTP.patch \
-"
-
 # UFS support patchset from meta-xt-prod-devel-rcar
 SRC_URI_append = " \
     file://0001-arm-dts-r8a779f0-Add-Renesas-UFS-HCD-support.patch \
@@ -26,6 +22,7 @@ SRC_URI_append = " \
 # Backport from upstream
 SRC_URI_append = " \
     file://0001-ufs-Handle-UFS-3.0-controllers.patch \
+    file://0001-net-rswitch-Add-missing-cache-invalidate-of-TX-descr.patch \
 "
 
 # Workaround for S4SK
