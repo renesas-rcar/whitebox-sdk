@@ -87,6 +87,9 @@ if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
         git am ../../../patchset_s4sk/*
     fi
 
+    # Remove old virtualenv
+    rm -rf ~/.local/share//virtualenvs/vss-tools*
+
     cd ../../
     #############################################
     # END: Apply patch for meta-aos-rcar-gen4   #
