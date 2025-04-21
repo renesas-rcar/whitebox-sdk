@@ -231,6 +231,8 @@
 	xen,passthrough;
 };
 
+&canfd0                 { xen,passthrough; };
+&canfd1                 { xen,passthrough; };
 &dmac0			{ xen,passthrough; };
 &dmac1			{ xen,passthrough; };
 &rt_dmac0		{ xen,passthrough; };

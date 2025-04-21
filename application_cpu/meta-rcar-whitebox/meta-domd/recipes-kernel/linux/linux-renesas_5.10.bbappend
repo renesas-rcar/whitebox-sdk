@@ -35,6 +35,14 @@ SRC_URI_append = " \
     file://0001-arm64-dts-renesas-r8a779f0-Fix-thermal-driver-regist.patch \
 "
 
+# Add CANFD driver
+SRC_URI_append = " \
+    file://0003-Add-CAN-FD-Driver-for-S4-and-Spider-bo.patch \
+"
+SRC_URI_append_s4sk = " \
+    file://0004-dts-Enable-CANFD-for-S4SK.patch \
+"
+
 ADDITIONAL_DEVICE_TREES = "${XT_DEVICE_TREES}"
 
 # Ignore in-tree defconfig

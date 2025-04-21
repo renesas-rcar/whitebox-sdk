@@ -1,0 +1,59 @@
+From ff5c25a44195db0b39a3eee31819ecba74b356dc Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 11 Apr 2025 13:27:33 +0700
+Subject: [PATCH] dts: Enable CANFD for S4SK
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ arch/arm64/boot/dts/renesas/r8a779f0-s4sk.dts | 28 +++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/renesas/r8a779f0-s4sk.dts b/arch/arm64/boot/dts/renesas/r8a779f0-s4sk.dts
+index 7f3645257022..e92b869f7909 100644
+--- a/arch/arm64/boot/dts/renesas/r8a779f0-s4sk.dts
++++ b/arch/arm64/boot/dts/renesas/r8a779f0-s4sk.dts
+@@ -109,6 +109,24 @@ &mmc0 {
+ 	status = "okay";
+ };
+ 
++&canfd0 {
++	pinctrl-0 = <&canfd0_pins>, <&canfd1_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++
++	channel0 {
++		status = "okay";
++	};
++
++	channel1 {
++		status = "okay";
++	};
++};
++
++&canfd1 {
++	status = "disabled";
++};
++
+ &pfc {
+ 	pinctrl-0 = <&scif_clk_pins>;
+ 	pinctrl-names = "default";
+@@ -203,6 +221,16 @@ pins_mdio {
+ 			power-source = <3300>;
+ 		};
+ 	};
++
++	canfd0_pins: canfd0 {
++		groups = "canfd0_data";
++		function = "canfd0";
++	};
++
++    canfd1_pins: canfd1 {
++        groups = "canfd1_data";
++        function = "canfd1";
++    };
+ };
+ 
+ &rwdt {
+-- 
+2.34.1
+

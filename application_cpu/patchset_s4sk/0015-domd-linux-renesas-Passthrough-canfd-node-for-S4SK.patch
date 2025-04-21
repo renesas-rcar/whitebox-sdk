@@ -1,0 +1,25 @@
+From d5aa3d96f96caa69ec42f82a1afe38a92fc81c53 Mon Sep 17 00:00:00 2001
+From: Duy Dang <duy.dang.yw@renesas.com>
+Date: Fri, 11 Apr 2025 10:36:01 +0700
+Subject: [PATCH] domd: linux-renesas: Passthrough canfd node for S4SK
+
+Signed-off-by: Duy Dang <duy.dang.yw@renesas.com>
+---
+ .../recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts     | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
+index a3a1db6..87c2f6b 100644
+--- a/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
++++ b/meta-aos-rcar-gen4-domd/recipes-kernel/linux/linux-renesas/r8a779f0-s4sk-xen.dts
+@@ -318,6 +318,7 @@
+ &rtdmac_control3_13     { xen,passthrough; };
+ &rtdmac_control3_14     { xen,passthrough; };
+ &rtdmac_control3_15     { xen,passthrough; };
++&canfd0                 { xen,passthrough; };
+ 
+ &soc {
+ 	rswitch_osid1 {
+-- 
+2.34.1
+
