@@ -19,6 +19,7 @@ if [[ $(echo "$ZIPNAME" | wc -l) -ne 1 ]]; then
     exit -1
 fi
 
+sudo apt update
 sudo apt install p7zip-full lib32stdc++6 make binutils default-jre ruby -y
 
 rm -rf ${TARGET_DIR}

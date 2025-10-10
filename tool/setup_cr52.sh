@@ -1,5 +1,6 @@
 #!/bin/bash
 
+sudo apt update
 sudo apt install python3-venv -y
 
 wget -c https://apt.kitware.com/kitware-archive.sh
