@@ -16,9 +16,8 @@ GO_IMPORT = "github.com/grafana/grafana"
 GO_INSTALL = "${GO_IMPORT}"
 GOPATH="${WORKDIR}/gopath"
 GOBIN="${GOPATH}/bin"
-BRANCH = "release-9.2.1"
 SRCREV = "34f7baebda29994f240ce8375765f73be65dca4e"
-SRC_URI = "git://${GO_IMPORT}.git;branch=${BRANCH};protocol=https"
+SRC_URI = "git://${GO_IMPORT}.git;nobranch=1;protocol=https"
 UPSTREAM_CHECK_COMMITS = "1"
 export GOFLAGS="-modcacherw"
 
@@ -43,7 +42,7 @@ do_compile_prepend() {
     cd ${S}
     cd ${B}
     git reset --hard
-    GOARCH= go install github.com/google/wire/cmd/wire@latest
+    GOARCH= go install github.com/google/wire/cmd/wire@v0.6.0
     go mod tidy -modcacherw -go=1.18
     npm install --global yarn
     yarn install
