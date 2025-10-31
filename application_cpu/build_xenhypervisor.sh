@@ -68,7 +68,7 @@ rm -rf ~/.local/share//virtualenvs/vss-tools*
 # To avoid increasing network usage, using local repository
 cd ${SCRIPT_DIR}/work
 if [[ -d $SCRIPT_DIR/common_data/repo ]]; then
-    bash ../setup_local_repository.sh
+    #bash ../setup_local_repository.sh
     # Replace Yocto path
     sed -i -e 's|url: ".*://.*/|url: "../common_data/repo/|' -e 's/\.git//' ./*.yaml
 fi
