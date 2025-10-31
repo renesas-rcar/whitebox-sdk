@@ -48,19 +48,6 @@
                 - [IMAGE_INSTALL_append, " iproute2 iproute2-tc"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-fix-master-branch-issue"
-        images:
-          full:
-            partitions:
-              domd_rootfs:
-                size: 3072 MiB
-              domd_var:
-                size: 1024 MiB
-                files:
-                  "statestorage.db": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/var/statestorage.db"
-                  "boot-mmc.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-mmc.uImage"
-                  "boot-ufs.uImage": "%{YOCTOS_WORK_DIR}/build-domd/tmp/deploy/images/%{MACHINE}/boot-ufs.uImage"
-              domd_aos:
-                size: 3072 MiB
 
 #   USING_REMOTE_META_WHITEBOX_LAYER:
 #     desc: "Using remote repository instead of local meta layer"

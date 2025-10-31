@@ -45,11 +45,10 @@ if [[ "$USING_UFS" == "no" ]]; then
     BOOT_DEV=mmc
 fi
 
-
 export PATH=~/.local/bin:$PATH
 SCRIPT_DIR=$(cd `dirname $0` && pwd)
 
-AOS_VERSION="v1.0.0"
+BSP_BRANCH="s4-1.2.2"
 
 # Prepare working directory
 if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
@@ -57,44 +56,14 @@ if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     rm -rf ./work
     mkdir -p ./work
     cd ./work
-
-    # Preprae yaml file
-    cat ../aos-rcar-gen4.yaml ../aos-rcar-gen4-patch.yaml > ./aos-rcar-gen4-wb.yaml
-
-    #############################################
-    # START: Apply patch for meta-aos-rcar-gen4 #
-    #############################################
-    # Remove meta-aos-rcar-gen from repo list
-    PARTERN='    - type: git
-      url: "https://github.com/aosedge/meta-aos-rcar-gen4.git"
-      rev: "v1.0.0"'
-    sed -i -z "s|${PARTERN//$'\n'/\\n}||" ./aos-rcar-gen4-wb.yaml
-
-    # Prepare additional repo
-    mkdir -p ./yocto
-    git clone https://github.com/aosedge/meta-aos-rcar-gen4 \
-    ./yocto/meta-aos-rcar-gen4
-    cd ./yocto/meta-aos-rcar-gen4
-    git checkout ${AOS_VERSION}
-    cd ../../
-
-    # Apply patch
-    cd ./yocto/meta-aos-rcar-gen4
-    git am ../../../patchset_aos/*
-
-    # Patch for S4SK
-    if [ "$1" == "s4sk" ]; then
-        git am ../../../patchset_s4sk/*
-    fi
-
-    # Remove old virtualenv
-    rm -rf ~/.local/share//virtualenvs/vss-tools*
-
-    cd ../../
-    #############################################
-    # END: Apply patch for meta-aos-rcar-gen4   #
-    #############################################
 fi
+
+# Preprae yaml file
+wget -qN https://raw.githubusercontent.com/renesas-rcar/meta-xt-prod-devel-rcar-gen4/refs/heads/${BSP_BRANCH}/prod-devel-rcar-s4.yaml
+cat prod-devel-rcar-s4.yaml ../whitebox-sdk-patch.yaml > ./whitebox-sdk.yaml
+
+# Remove old virtualenv
+rm -rf ~/.local/share//virtualenvs/vss-tools*
 
 # To avoid increasing network usage, using local repository
 cd ${SCRIPT_DIR}/work
@@ -105,8 +74,8 @@ if [[ -d $SCRIPT_DIR/common_data/repo ]]; then
 fi
 
 cd ${SCRIPT_DIR}/work
-moulin ./aos-rcar-gen4-wb.yaml \
-    --TARGET_BOARD $1 \
+moulin ./whitebox-sdk.yaml \
+    --MACHINE $1 \
     --USING_UFS_AS_STORAGE $USING_UFS \
     --ENABLE_DOMU $USING_DOMU
 ninja || ninja
@@ -124,18 +93,6 @@ cp -f $1.${BOOT_DEV}.full.img.gz -t ${SCRIPT_DIR}/deploy
 if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work
     find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/deploy
-fi
-
-# Build FOTA package for Application Note procedure
-if [[ "${ENABLE_FOTA_PKG_BUILD:-no}" == "yes" ]]; then
-    sed -e "s/1.0.0/1.1.0/" \
-        -e 's/DOM0_TYPE: "full"/DOM0_TYPE: ""/' \
-        -e "s/core-image-thin-initramfs/aos-update/" \
-        -e 's/vissr"/vissr vim"/' ${SCRIPT_DIR}/work/aos-rcar-gen4-wb.yaml > ${SCRIPT_DIR}/work/aos-rcar-gen4-wb-fota.yaml
-    moulin ./aos-rcar-gen4-wb-fota.yaml --TARGET_BOARD $1 --USING_UFS_AS_STORAGE $USING_UFS \
-        --ENABLE_AWS no --BUILD_DOMD_SDK no
-    ninja || ninja
-    cp aos-update-*.tar -t ${SCRIPT_DIR}/deploy
 fi
 
 echo "Build finished !"
