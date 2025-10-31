@@ -3,14 +3,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 BRANCH = "v2020.10/rcar-5.1.1.rc10"
 SRCREV = "9ddd54cbb5d2e65fab77bede0b1db35dca539848"
 
-# UFS support patchset from meta-xt-prod-devel-rcar
-SRC_URI_append = " \
-    file://0001-arm-dts-r8a779f0-Add-Renesas-UFS-HCD-support.patch \
-    file://0002-ufs-flush-invalidate-command-buffer.patch \
-    file://0003-ufs-port-linux-driver-for-rcar-ufshcd.patch \
-    file://0004-clk-renesas-Add-and-enable-CPG-reset-driver-for-Gen4.patch \
-    file://0005-ufs-reset-UFS-controller-on-init.patch \
-"
 # UFS support patchset(Add config + support S4SK)
 SRC_URI_append = " \
     file://0004-config-spider-Add-config-for-ufs.patch \
