@@ -55,8 +55,8 @@ if [[ ! -e "${SCRIPT_DIR}/work" || "$CLEAN_BUILD_FLAG" == "true" ]]; then
     cd ${SCRIPT_DIR}
     rm -rf ./work
     mkdir -p ./work
-    cd ./work
 fi
+cd ${SCRIPT_DIR}/work
 
 # Preprae yaml file
 wget -qN https://raw.githubusercontent.com/renesas-rcar/meta-xt-prod-devel-rcar-gen4/refs/heads/${BSP_BRANCH}/prod-devel-rcar-s4.yaml
