@@ -82,17 +82,17 @@ ninja || ninja
 ninja image-full
 
 mkdir -p ${SCRIPT_DIR}/deploy
-cp yocto/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec ${SCRIPT_DIR}/deploy/
-cp yocto/build-domd/tmp/deploy/images/${1}/tee-${1}.srec ${SCRIPT_DIR}/deploy/
-cp yocto/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec ${SCRIPT_DIR}/deploy/
+cp yocto-$1/build-domd/tmp/deploy/images/${1}/bl31-${1}.srec ${SCRIPT_DIR}/deploy/
+cp yocto-$1/build-domd/tmp/deploy/images/${1}/tee-${1}.srec ${SCRIPT_DIR}/deploy/
+cp yocto-$1/build-domd/tmp/deploy/images/${1}/u-boot-elf-${1}.srec ${SCRIPT_DIR}/deploy/
 
 mv -f full.img $1.${BOOT_DEV}.full.img
 gzip -f $1.${BOOT_DEV}.full.img
 cp -f $1.${BOOT_DEV}.full.img.gz -t ${SCRIPT_DIR}/deploy
 
-if [[ -e "${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk" ]]; then
-    find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work
-    find ${SCRIPT_DIR}/work/yocto/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/deploy
+if [[ -e "${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk" ]]; then
+    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work
+    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/deploy
 fi
 
 echo "Build finished !"
