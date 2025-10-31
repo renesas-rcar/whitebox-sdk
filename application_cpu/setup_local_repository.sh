@@ -11,6 +11,11 @@ for repo in ${repolist[@]}; do
     if [ ! -d ${REPO_DIR}/${DIR_NAME} ]; then
         git clone $repo ${REPO_DIR}/${DIR_NAME}
     fi
-    cd ${REPO_DIR}/${DIR_NAME} && git pull
+    git -C ${REPO_DIR}/${DIR_NAME} fetch --all
+
+    remote_branches=$(git -C ${REPO_DIR}/${DIR_NAME} branch -r | grep -v 'HEAD' | sed 's/ *origin\///')
+    for branch in $remote_branches; do
+        git -C ${REPO_DIR}/${DIR_NAME} checkout -q -B "$branch" "origin/$branch"
+    done
 done
 
