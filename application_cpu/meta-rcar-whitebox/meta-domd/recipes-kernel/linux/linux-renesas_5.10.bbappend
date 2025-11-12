@@ -30,6 +30,11 @@ do_compile_prepend () {
 
     # HACK: Increase the Dom0 Memory
     sed -i ${S}/arch/${ARCH}/boot/dts/renesas/xen-chosen.dtsi -e 's/256M/512M/'
+
+    # Remove iccom_reg passthrough
+    sed -i ${S}/arch/${ARCH}/boot/dts/renesas/r8a779f0-${MACHINE}-xen.dts \
+        -e 's/&iccom_reg.*//'
+
 }
 
 # Add ADDITIONAL_DEVICE_TREES to SRC_URIs and to KERNEL_DEVICETREEs
