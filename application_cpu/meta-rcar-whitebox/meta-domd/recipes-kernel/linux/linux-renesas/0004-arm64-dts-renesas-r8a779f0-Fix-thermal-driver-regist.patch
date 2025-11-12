@@ -1,7 +1,8 @@
-From 084cc8a9e8c896a026d5cf1d720de6fda9655ea9 Mon Sep 17 00:00:00 2001
+From e9629fd1cc1047063d502b9edf1069696bb34f96 Mon Sep 17 00:00:00 2001
 From: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
 Date: Thu, 4 Apr 2024 13:46:12 +0900
-Subject: [PATCH] arm64: dts: renesas: r8a779f0: Fix thermal driver register
+Subject: [PATCH 4/4] arm64: dts: renesas: r8a779f0: Fix thermal driver
+ register
 
 ECM register was introduced but devicetree was not updated.
 This patch fixes it.
@@ -12,7 +13,7 @@ Signed-off-by: Yuya Hamamachi <yuya.hamamachi.sx@renesas.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
-index 1663711515e2..cf9f10d16c98 100644
+index c543ddbd8f93..3dde00216cc0 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
 @@ -517,7 +517,8 @@ tsc: thermal@e6198000 {

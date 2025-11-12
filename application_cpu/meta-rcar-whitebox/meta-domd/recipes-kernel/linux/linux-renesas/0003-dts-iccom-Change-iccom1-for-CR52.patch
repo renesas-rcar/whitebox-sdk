@@ -1,7 +1,7 @@
-From e7e2542eb5809cd6676ecd362143b46287e66117 Mon Sep 17 00:00:00 2001
+From 68482fd8b88f3a02b9a424f40f3b86a68fa8c0de Mon Sep 17 00:00:00 2001
 From: Duy Dang <duy.dang.yw@renesas.com>
 Date: Thu, 13 Jul 2023 15:11:17 +0900
-Subject: [PATCH 2/2] dts: iccom: Change iccom1 for CR52
+Subject: [PATCH 3/4] dts: iccom: Change iccom1 for CR52
 
 Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Tsutomu Muroya <tsutomu.muroya.jy@bp.renesas.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
-index da41e74ffa35..45e0b14cc5d8 100644
+index 703ccd6d7f3c..c543ddbd8f93 100644
 --- a/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
 +++ b/arch/arm64/boot/dts/renesas/r8a779f0.dtsi
 @@ -1292,9 +1292,9 @@ iccom00 {
@@ -25,5 +25,5 @@ index da41e74ffa35..45e0b14cc5d8 100644
  			iccom,ack-timeout = <250>;
  			iccom,int-clear-timeout = <250>;
 -- 
-2.25.1
+2.34.1
 
