@@ -1,0 +1,17 @@
+name: Build Spider
+run-name: Build Spider
+on:
+  push:
+    branches:
+      - '*-dev'
+      - '*-next'
+  workflow_dispatch:
+
+jobs:
+  Build:
+    name: Build
+    if: github.repository_owner == 'renesas-rcar'
+    uses: ./.github/workflows/build_ca55.yaml
+    with:
+      TARGET_BOARD: "spider"
+
