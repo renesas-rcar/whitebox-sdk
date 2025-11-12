@@ -1,0 +1,16 @@
+name: Build S4SK
+run-name: Build S4SK
+on:
+  push:
+    branches:
+      - 'v5.x-dev'
+  workflow_dispatch:
+
+jobs:
+  Build:
+    name: Build
+    if: github.repository_owner == 'renesas-rcar'
+    uses: ./.github/workflows/build_ca55.yaml
+    with:
+      TARGET_BOARD: "s4sk"
+
