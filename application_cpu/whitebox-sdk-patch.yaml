@@ -35,6 +35,7 @@
                 - [IMAGE_INSTALL_append, " pktgen-script"]
                 - [IMAGE_INSTALL_append, " vsomeip vsomeip-test"]
                 - [USE_UFS, "%{USE_UFS}"]
+                - [PREFERRED_PROVIDER_go-native, "go-binary-native"]
               layers:
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-rcar-common"
                 - "%{META_WB_LAYER_PATH}/meta-rcar-whitebox/meta-domd"
