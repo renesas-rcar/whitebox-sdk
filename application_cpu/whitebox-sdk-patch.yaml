@@ -94,6 +94,11 @@
       overrides:
         variables:
           BUILD_DOMD_SDK: "1"
+        components:
+          domd:
+            builder:
+              conf:
+                - [TOOLCHAIN_TARGET_TASK_remove, "target-sdk-provides-dummy"]
 
   ENABLE_AWS:
     desc: "Add AWS services into DomD"
