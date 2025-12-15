@@ -1,5 +1,6 @@
 IMAGE_INSTALL_append = " \
     iccom \
+    kernel-firmware-r8a779f0-ufs \
 "
 
 python () {
