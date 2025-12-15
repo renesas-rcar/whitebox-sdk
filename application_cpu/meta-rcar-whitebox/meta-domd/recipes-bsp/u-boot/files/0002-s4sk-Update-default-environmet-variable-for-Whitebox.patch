@@ -27,7 +27,7 @@ index b7794c5e85..a59e937f34 100644
 -	"tftp 0x48000000 Image-"CONFIG_DEFAULT_FDT_FILE"; " \
 -	"booti 0x48080000 - 0x48000000"
 +	"scsi scan && "	\
-+	"ext4load scsi 0:5 0x83000000 boot-ufs.uImage;"	\
++	"ext4load scsi 0:1 0x83000000 boot-ufs.uImage;"	\
 +	"source 0x83000000"
  
  #endif	/* __RCAR_GEN4_COMMON_H */
