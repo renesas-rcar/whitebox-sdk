@@ -91,8 +91,8 @@ gzip -f $1.${BOOT_DEV}.full.img
 cp -f $1.${BOOT_DEV}.full.img.gz -t ${SCRIPT_DIR}/deploy
 
 if [[ -e "${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk" ]]; then
-    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/work
-    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ -name *.sh | xargs cp -f -t ${SCRIPT_DIR}/deploy
+    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ | grep '.sh$' | xargs cp -f -t ${SCRIPT_DIR}/work
+    find ${SCRIPT_DIR}/work/yocto-$1/build-domd/tmp/deploy/sdk/ | grep '.sh$' | xargs cp -f -t ${SCRIPT_DIR}/deploy
 fi
 
 echo "Build finished !"
