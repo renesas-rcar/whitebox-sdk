@@ -34,6 +34,7 @@
                 - [IMAGE_INSTALL_append, " hw-routing-script"]
                 - [IMAGE_INSTALL_append, " pktgen-script"]
                 - [IMAGE_INSTALL_append, " vsomeip vsomeip-test"]
+                - [IMAGE_INSTALL_append, " htop tcpdump coreutils ethtool mmc-utils rt-tests "]
                 - [USE_UFS, "%{USE_UFS}"]
                 - [PREFERRED_PROVIDER_go-native, "go-binary-native"]
               layers:
