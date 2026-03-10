@@ -12,3 +12,6 @@ if [[ "${UBUNTU_VERSION}" == "24.04" ]]; then
     sudo apt install python3-pyasyncore -y
 fi
 
+# For pkg_resouce issue in vss recipe
+pip3 install virtualenv==20.36.1
+
