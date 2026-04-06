@@ -10,6 +10,5 @@ DEPENDS:append = " \
 LIBS_BUILD = "\
 -DBUILD_ONLY='\
 iot;\
-iotfleetwise;\
 '"
 
