@@ -119,7 +119,6 @@
                 - [CORE_IMAGE_EXTRA_INSTALL_append, " kernel-modules"]
                 - [IMAGE_INSTALL_append, " greengrass-bin texinfo sudo"]
                 - [IMAGE_INSTALL_append, " python3-pip e2fsprogs-resize2fs"]
-                - [IMAGE_INSTALL_append, " aws-iot-fleetwise-edge"]
               layers:
                 - "../meta-aws"
 
