@@ -23,19 +23,27 @@ do_configure[noexec] = "1"
 
 S = "${WORKDIR}/git"
 
+inherit setuptools3
+DEPENDS += " \
+    python3-anytree-native \
+    python3-deprecation-native \
+    python3-graphql-core-native \
+    python3-packaging-native \
+    python3-pyyaml-native \
+    python3-six-native \
+    python3-stringcase-native \
+"
+
 do_compile_prepend () {
     cd ${S}
     git submodule update --init
     cd ${S}/vss-tools
-    sed -i '17,19d' Pipfile
-    python3 -m pip install pipenv
-    python3 -m pipenv install --dev
     $(cd binary && gcc -shared -o binarytool.so -fPIC binarytool.c)
 }
 
 do_compile () {
     cd ${S}/vss-tools
-    python3 -m pipenv run python3 \
+    python3 \
         vspec2binary.py -I ../spec -o ../overlays/extensions/Private.vspec \
         ../spec/VehicleSignalSpecification.vspec vss_vissv2.binary
 }
