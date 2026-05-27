@@ -61,6 +61,7 @@ cd ${SCRIPT_DIR}/work
 # Preprae yaml file
 wget -qN https://raw.githubusercontent.com/renesas-rcar/meta-xt-prod-devel-rcar-gen4/refs/heads/${BSP_BRANCH}/prod-devel-rcar-s4.yaml
 cat prod-devel-rcar-s4.yaml ../whitebox-sdk-patch.yaml > ./whitebox-sdk.yaml
+sed -i -e 's|git://|https://|' ./whitebox-sdk.yaml
 
 # Remove old virtualenv
 rm -rf ~/.local/share//virtualenvs/vss-tools*
